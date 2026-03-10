@@ -15,7 +15,7 @@ const DEFAULT_SUGGESTED_USERS_LIMIT = 5;
 
 // ==================== RATE LIMITING ====================
 const RATE_LIMIT_WINDOW_MS = 15 * 60 * 1000; // 15 minutes
-const RATE_LIMIT_MAX_REQUESTS = 1000; // max 100 requests per window
+const RATE_LIMIT_MAX_REQUESTS = 1000; // max 1000 requests per window
 const LOGIN_RATE_LIMIT_MAX = 5; // max 5 login attempts per 15 min
 const REGISTER_RATE_LIMIT_MAX = 3; // max 3 register attempts per 15 min
 
