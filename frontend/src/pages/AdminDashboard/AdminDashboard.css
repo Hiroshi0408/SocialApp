@@ -1,0 +1,352 @@
+.admin-wrap {
+  padding: 18px;
+  max-width: 1200px;
+  margin: 0 auto;
+}
+
+.admin-header {
+  display: flex;
+  gap: 14px;
+  align-items: flex-end;
+  justify-content: space-between;
+  flex-wrap: wrap;
+  margin-bottom: 12px;
+}
+
+.admin-title {
+  margin: 0;
+  font-size: 24px;
+  font-weight: 800;
+}
+
+.admin-subtitle {
+  margin-top: 4px;
+  font-size: 13px;
+  opacity: 0.8;
+}
+
+.admin-actions {
+  display: flex;
+  gap: 10px;
+  align-items: center;
+}
+
+.admin-tabs {
+  display: flex;
+  gap: 8px;
+  margin: 12px 0 14px;
+  flex-wrap: wrap;
+}
+
+.admin-tab {
+  border: 1px solid rgba(255, 255, 255, 0.12);
+  background: rgba(255, 255, 255, 0.06);
+  color: inherit;
+  padding: 8px 12px;
+  border-radius: 999px;
+  cursor: pointer;
+  transition:
+    transform 0.1s ease,
+    background 0.15s ease;
+}
+
+.admin-tab:hover {
+  transform: translateY(-1px);
+}
+.admin-tab.active {
+  background: rgba(255, 255, 255, 0.14);
+}
+
+.admin-grid {
+  display: grid;
+  gap: 14px;
+}
+
+.admin-grid2 {
+  display: grid;
+  grid-template-columns: 1fr;
+  gap: 14px;
+}
+
+@media (min-width: 980px) {
+  .admin-grid2 {
+    grid-template-columns: 1fr 1fr;
+  }
+}
+
+.admin-cards {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 12px;
+}
+
+@media (min-width: 900px) {
+  .admin-cards {
+    grid-template-columns: repeat(6, minmax(0, 1fr));
+  }
+}
+
+.admin-card {
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  background: rgba(255, 255, 255, 0.06);
+  border-radius: 14px;
+  padding: 12px;
+}
+
+.admin-card-title {
+  font-size: 12px;
+  opacity: 0.8;
+}
+.admin-card-value {
+  font-size: 22px;
+  font-weight: 800;
+  margin-top: 6px;
+}
+.admin-card-hint {
+  font-size: 11px;
+  opacity: 0.7;
+  margin-top: 4px;
+}
+
+.admin-charts {
+  display: grid;
+  grid-template-columns: 1fr;
+  gap: 12px;
+}
+
+@media (min-width: 900px) {
+  .admin-charts {
+    grid-template-columns: 1fr 1fr;
+  }
+}
+
+.admin-chart {
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  background: rgba(255, 255, 255, 0.06);
+  border-radius: 14px;
+  padding: 12px;
+}
+
+.admin-chart-title {
+  font-size: 13px;
+  font-weight: 700;
+  margin-bottom: 10px;
+}
+
+.admin-bars {
+  display: flex;
+  gap: 6px;
+  height: 92px;
+  align-items: flex-end;
+  border-radius: 12px;
+  padding: 10px;
+  background: rgba(0, 0, 0, 0.12);
+}
+
+.admin-bar-wrap {
+  flex: 1;
+  display: flex;
+  align-items: flex-end;
+  justify-content: center;
+}
+
+.admin-bar {
+  width: 100%;
+  border-radius: 8px;
+  background: rgba(255, 255, 255, 0.7);
+}
+
+.admin-chart-axis {
+  margin-top: 8px;
+  display: flex;
+  justify-content: space-between;
+  font-size: 11px;
+  opacity: 0.7;
+}
+
+.admin-section {
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  background: rgba(255, 255, 255, 0.06);
+  border-radius: 14px;
+  padding: 12px;
+}
+
+.admin-section-title {
+  font-size: 14px;
+  font-weight: 800;
+  margin-bottom: 10px;
+}
+
+.admin-filters {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px;
+  align-items: center;
+  margin-bottom: 10px;
+}
+
+.admin-input,
+.admin-select {
+  border: 1px solid rgba(255, 255, 255, 0.12);
+  background: rgba(0, 0, 0, 0.12);
+  color: inherit;
+  padding: 8px 10px;
+  border-radius: 10px;
+  outline: none;
+}
+
+.admin-select.small {
+  padding: 6px 8px;
+  border-radius: 10px;
+}
+
+.admin-btn {
+  border: 1px solid rgba(255, 255, 255, 0.12);
+  background: rgba(255, 255, 255, 0.08);
+  color: inherit;
+  padding: 8px 10px;
+  border-radius: 10px;
+  cursor: pointer;
+}
+
+.admin-btn.primary {
+  background: rgba(255, 255, 255, 0.16);
+  font-weight: 700;
+}
+.admin-btn.danger {
+  background: rgba(255, 0, 0, 0.18);
+  border-color: rgba(255, 0, 0, 0.3);
+}
+
+.admin-btn:disabled {
+  opacity: 0.55;
+  cursor: not-allowed;
+}
+
+.admin-table {
+  width: 100%;
+  border-radius: 12px;
+  overflow: hidden;
+  border: 1px solid rgba(255, 255, 255, 0.08);
+}
+
+.admin-row {
+  display: grid;
+  grid-template-columns: 2fr 1.2fr 0.9fr 0.9fr 0.9fr;
+  gap: 10px;
+  padding: 10px;
+  border-top: 1px solid rgba(255, 255, 255, 0.06);
+  align-items: center;
+}
+
+.admin-row > div {
+  min-width: 0;
+}
+
+.admin-head {
+  border-top: none;
+  background: rgba(0, 0, 0, 0.18);
+  font-size: 12px;
+  font-weight: 800;
+  opacity: 0.95;
+}
+
+.admin-empty {
+  grid-template-columns: 1fr;
+  opacity: 0.75;
+}
+
+.admin-cell {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  min-width: 0;
+}
+.admin-muted {
+  opacity: 0.7;
+  font-size: 11px;
+}
+.admin-ellipsis {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.admin-pill {
+  display: inline-flex;
+  align-items: center;
+  padding: 4px 8px;
+  border-radius: 999px;
+  background: rgba(255, 255, 255, 0.1);
+  border: 1px solid rgba(255, 255, 255, 0.12);
+  font-size: 12px;
+  width: fit-content;
+}
+
+.admin-pill.ok {
+  background: rgba(0, 255, 120, 0.12);
+  border-color: rgba(0, 255, 120, 0.18);
+}
+.admin-pill.danger {
+  background: rgba(255, 0, 0, 0.14);
+  border-color: rgba(255, 0, 0, 0.22);
+}
+
+.admin-actions-inline {
+  display: flex;
+  gap: 8px;
+  justify-content: flex-start;
+}
+
+.admin-actions-inline .admin-btn.ok {
+  background: rgba(0, 255, 120, 0.12);
+  border-color: rgba(0, 255, 120, 0.18);
+}
+
+.admin-pagination {
+  display: flex;
+  justify-content: center;
+  gap: 14px;
+  align-items: center;
+  margin-top: 12px;
+}
+
+.admin-pagination-text {
+  opacity: 0.85;
+}
+
+.admin-note {
+  opacity: 0.85;
+  padding: 10px 0;
+}
+
+/* Make table responsive by allowing horizontal scroll on small screens */
+@media (max-width: 880px) {
+  .admin-table {
+    overflow-x: auto;
+  }
+  .admin-row {
+    min-width: 820px;
+  }
+}
+
+/* Grid templates per table */
+.admin-row.default {
+  grid-template-columns: 2fr 0.8fr 0.8fr 1fr 1fr;
+}
+
+.admin-row.users {
+  grid-template-columns: 2fr 1.6fr 0.9fr 0.9fr 0.7fr 1fr 1fr 1fr;
+}
+
+.admin-row.posts {
+  grid-template-columns: 2fr 1fr 0.9fr 1fr 0.9fr;
+}
+
+.admin-row.comments {
+  grid-template-columns: 2fr 1fr 0.9fr 1fr 0.9fr;
+}
+
+.admin-row.audit {
+  grid-template-columns: 1.1fr 1fr 1fr 1fr 2fr;
+}

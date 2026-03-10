@@ -1,0 +1,75 @@
+.messages-page {
+  display: flex;
+  height: 100vh;
+  overflow: hidden; /* This is key to stop page scrolling */
+  background-color: var(--bg-primary);
+}
+
+.messages-content-wrapper {
+  flex: 1;
+  margin-left: 244px; /* Should match var(--sidebar-width) */
+  position: relative; /* Positioning context for the main content */
+}
+
+.messages-main {
+  /* Make main content fill the wrapper */
+  position: absolute;
+  top: 0;
+  bottom: 0;
+  left: 0;
+  right: 0;
+  /* Add padding, accounting for the fixed header's height */
+  padding: 20px;
+  padding-top: calc(var(--header-height) + 20px);
+  overflow: hidden; /* Hide overflow, children will handle their own scroll */
+  display: flex;
+}
+
+.messages-container {
+  width: 100%;
+  height: 100%; /* Fill the flex parent */
+  display: flex;
+  border: 1px solid var(--border-color);
+  border-radius: 8px;
+  overflow: hidden;
+  background: var(--card-bg);
+}
+
+/* Empty state */
+.messages-empty {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  padding: 40px;
+  color: var(--text-secondary);
+}
+
+.messages-empty-icon {
+  margin-bottom: 24px;
+  opacity: 0.5;
+}
+
+.messages-empty h2 {
+  font-size: 22px;
+  font-weight: 300;
+  margin-bottom: 8px;
+  color: var(--text-primary);
+}
+
+.messages-empty p {
+  font-size: 14px;
+  color: var(--text-secondary);
+}
+
+@media (max-width: 768px) {
+  .messages-content-wrapper {
+    margin-left: 72px;
+  }
+
+  .messages-container {
+    margin: 10px;
+    height: calc(100vh - 80px);
+  }
+}

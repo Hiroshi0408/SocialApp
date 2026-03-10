@@ -1,0 +1,316 @@
+/* ======================================
+   RESET & BASE STYLES
+   ====================================== */
+* {
+  margin: 0;
+  padding: 0;
+  box-sizing: border-box;
+}
+
+body {
+  font-family:
+    -apple-system, BlinkMacSystemFont, "Segoe UI", "Roboto", "Oxygen", "Ubuntu",
+    "Cantarell", "Fira Sans", "Droid Sans", "Helvetica Neue", sans-serif;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+  background-color: var(--bg-color);
+  color: var(--text-primary);
+}
+
+/* ======================================
+   COLOR VARIABLES 
+   ====================================== */
+:root {
+  /* Primary - Purple */
+  --primary-color: #6366f1;
+  --primary-hover: #4f46e5;
+  --primary-light: #eef2ff;
+  --primary-text-color: #ffffff;
+  --primary-text: #eef2ff;
+
+  /* Background */
+  --bg-color: #f8f9fb;
+  --bg-secondary: #f5f5f5;
+  --card-bg: #ffffff;
+  --black: #000000;
+  --white: #ffffff;
+
+  /* Text */
+  --text-primary: #1a1a2e;
+  --text-secondary: #6b7280;
+  --header-text-color: var(--white);
+
+  /* Border */
+  --border-color: #e5e7eb;
+
+  /* Status colors */
+  --error-color: #ef4444;
+  --success-color: #31a24c;
+  --warning-color: #f7b500;
+  --like-red: #ed4956;
+  --like-red-hover: #c13642;
+  --like-red-light: rgba(237, 73, 86, 0.1);
+
+  /* Brand colors */
+  --brand-blue: #0081d6;
+
+  /* Header Gradient */
+  --header-gradient-start: rgb(99, 102, 241);
+  --header-gradient-end: rgb(139, 92, 246);
+  /* Header Border */
+  --header-border: rgba(255, 255, 255, 0.18);
+  --header-nav-hover-bg: rgba(0, 0, 0, 0.1);
+
+  /* Header Blur */
+  --header-blur: 8px;
+
+  /* Sidebar */
+  --sidebar-bg: #ffffff;
+  --sidebar-hover: #f3f4f6;
+  --sidebar-active: #e8e9fc;
+
+  /* Skeleton */
+  --skeleton-light: #f0f0f0;
+  --skeleton-dark: #e0e0e0;
+
+  /* Shadows */
+  --shadow-sm: 0 1px 2px rgba(0, 0, 0, 0.05);
+  --shadow-md: 0 2px 6px rgba(0, 0, 0, 0.08);
+  --shadow-lg: 0 6px 16px rgba(0, 0, 0, 0.1);
+
+  /* Spacing Scale */
+  --spacing-xs: 4px;
+  --spacing-sm: 8px;
+  --spacing-md: 12px;
+  --spacing-base: 16px;
+  --spacing-lg: 20px;
+  --spacing-xl: 24px;
+  --spacing-2xl: 30px;
+  --spacing-3xl: 40px;
+
+  /* Border Radius */
+  --radius-xs: 3px;
+  --radius-sm: 4px;
+  --radius-md: 6px;
+  --radius-lg: 8px;
+  --radius-xl: 12px;
+  --radius-full: 50%;
+
+  /* Font Sizes */
+  --font-xs: 10px;
+  --font-sm: 12px;
+  --font-base: 13px;
+  --font-md: 14px;
+  --font-lg: 15px;
+  --font-xl: 16px;
+  --font-2xl: 18px;
+  --font-3xl: 20px;
+  --font-4xl: 24px;
+  --font-5xl: 28px;
+  --font-6xl: 32px;
+  --font-7xl: 40px;
+  --font-8xl: 48px;
+
+  /* Layout Dimensions */
+  --sidebar-width: 245px;
+  --sidebar-width-collapsed: 72px;
+  --header-height: 60px;
+  --feed-max-width: 614px;
+  --container-max-width: 935px;
+  --modal-max-width: 1200px;
+
+  /* Avatar Sizes */
+  --avatar-xs: 28px;
+  --avatar-sm: 32px;
+  --avatar-md: 40px;
+  --avatar-lg: 56px;
+  --avatar-xl: 66px;
+  --avatar-2xl: 77px;
+  --avatar-3xl: 150px;
+
+  /* Z-Index Scale */
+  --z-dropdown: 10;
+  --z-sticky: 20;
+  --z-fixed: 30;
+  --z-modal-backdrop: 99;
+  --z-modal: 100;
+  --z-popover: 110;
+  --z-tooltip: 120;
+
+  /* Transitions */
+  --transition-fast: 150ms ease-in-out;
+  --transition-base: 200ms ease-in-out;
+  --transition-slow: 300ms ease-in-out;
+
+  /* Icon Sizes */
+  --icon-xs: 12px;
+  --icon-sm: 16px;
+  --icon-md: 20px;
+  --icon-lg: 24px;
+  --icon-xl: 28px;
+
+  /* Other Colors */
+  --gray: #8e8e8e;
+  --light-gray: #f0f0f0;
+  --lighter-gray: #f5f5f5;
+  --overlay-light: rgba(0, 0, 0, 0.3);
+  --overlay-medium: rgba(0, 0, 0, 0.6);
+  --overlay-dark: rgba(0, 0, 0, 0.85);
+
+  /* Gradient */
+  --gradient-start: #4f46e5;
+  --gradient-step-1: #6366f1;
+  --gradient-step-2: #818cf8;
+  --gradient-step-3: #a5b4fc;
+  --gradient-end: #eef2ff;
+}
+
+/* ======================================
+   DARK MODE
+   ====================================== */
+[data-theme="dark"] {
+  /* Primary - Purple */
+  --primary-color: #818cf8;
+  --primary-hover: #6366f1;
+  --primary-light: rgba(99, 102, 241, 0.15);
+  --primary-text-color: #ffffff;
+  --primary-text: #ffffff;
+
+  /* Background */
+  --bg-color: #121212;
+  --bg-secondary: #1e1e1e;
+  --card-bg: #1e1e1e;
+
+  /* Text */
+  --text-primary: #e5e7eb;
+  --text-secondary: #9ca3af;
+  --header-text-color: var(--text-primary);
+
+  /* Border */
+  --border-color: #373737;
+
+  /* Header Gradient */
+  --header-gradient-start: #1e1e1e;
+  --header-gradient-end: #2c2c2c;
+  --header-border: #373737;
+  --header-nav-hover-bg: rgba(255, 255, 255, 0.1);
+
+  /* Status colors */
+  --error-color: #ef4444;
+  --success-color: #31a24c;
+  --warning-color: #f7b500;
+  --like-red: #ed4956;
+  --like-red-hover: #c13642;
+  --like-red-light: rgba(237, 73, 86, 0.1);
+
+  /* Sidebar */
+  --sidebar-bg: #1e1e1e;
+  --sidebar-hover: #2c2c2c;
+  --sidebar-active: #32334a;
+
+  /* Skeleton */
+  --skeleton-light: #2c2c2c;
+  --skeleton-dark: #373737;
+
+  /* Shadows */
+  --shadow-sm: 0 1px 2px rgba(0, 0, 0, 0.2);
+  --shadow-md: 0 2px 6px rgba(0, 0, 0, 0.3);
+  --shadow-lg: 0 6px 16px rgba(0, 0, 0, 0.4);
+
+  /* Other Colors */
+  --gray: #8e8e8e;
+  --light-gray: #2c2c2c;
+  --lighter-gray: #1e1e1e;
+  --overlay-light: rgba(255, 255, 255, 0.1);
+  --overlay-medium: rgba(0, 0, 0, 0.6);
+  --overlay-dark: rgba(0, 0, 0, 0.85);
+}
+
+/* ======================================
+   SCROLLBAR STYLING
+   ====================================== */
+::-webkit-scrollbar {
+  width: 8px;
+  height: 8px;
+}
+
+::-webkit-scrollbar-track {
+  background: var(--bg-color);
+}
+
+::-webkit-scrollbar-thumb {
+  background: var(--border-color);
+  border-radius: 4px;
+}
+
+::-webkit-scrollbar-thumb:hover {
+  background: var(--text-secondary);
+}
+body.no-scroll {
+  overflow: hidden;
+}
+
+/* ======================================
+   UTILITY CLASSES
+   ====================================== */
+
+/* Text Alignment */
+.text-center {
+  text-align: center;
+}
+
+.text-left {
+  text-align: left;
+}
+
+.text-right {
+  text-align: right;
+}
+
+/* Colors */
+.text-primary {
+  color: var(--text-primary);
+}
+
+.text-secondary {
+  color: var(--text-secondary);
+}
+
+.text-gray {
+  color: var(--gray);
+}
+
+/* Test Account Box - Reusable Style */
+.test-account-box {
+  margin-top: var(--spacing-lg);
+  padding: var(--spacing-md);
+  background-color: #fffbea;
+  border: 1px solid #ffd93d;
+  border-radius: var(--radius-lg);
+  font-size: var(--font-base);
+  color: #666;
+}
+
+/* Centered Text Style - Reusable */
+.centered-text {
+  text-align: center;
+  color: var(--gray);
+  padding: var(--spacing-lg);
+}
+
+/* Empty State */
+.empty-state {
+  text-align: center;
+  color: var(--text-secondary);
+  padding: var(--spacing-3xl) var(--spacing-lg);
+}
+
+.empty-state h3 {
+  margin-bottom: var(--spacing-sm);
+  font-size: var(--font-3xl);
+  color: var(--text-primary);
+}
+
+.empty-state p {
+  font-size: var(--font-md);
+}

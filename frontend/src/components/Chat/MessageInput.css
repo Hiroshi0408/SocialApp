@@ -1,0 +1,116 @@
+.message-input-container {
+  padding: 16px 20px;
+  border-top: 1px solid var(--border-color);
+  background: var(--card-bg);
+}
+
+.message-input-wrapper {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  background: var(--bg-secondary);
+  border: 1px solid var(--border-color);
+  border-radius: 24px;
+  padding: 8px 12px;
+  transition: border-color 0.2s;
+}
+
+.message-input-wrapper:focus-within {
+  border-color: var(--primary-color);
+}
+
+.message-input {
+  flex: 1;
+  border: none;
+  outline: none;
+  background: transparent;
+  font-size: 15px;
+  color: var(--text-primary);
+  padding: 4px 8px;
+}
+
+.message-input::placeholder {
+  color: var(--text-secondary);
+}
+
+.message-send-button {
+  background: none;
+  border: none;
+  color: var(--primary-color);
+  cursor: pointer;
+  padding: 4px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: opacity 0.2s, transform 0.2s;
+}
+
+.message-send-button:hover:not(:disabled) {
+  transform: scale(1.1);
+}
+
+.message-send-button:disabled {
+  opacity: 0.3;
+  cursor: not-allowed;
+}
+
+.message-send-button:active:not(:disabled) {
+  transform: scale(0.95);
+}
+
+.message-image-preview {
+  position: relative;
+  margin-bottom: 12px;
+  max-width: 200px;
+}
+
+.message-image-preview img {
+  width: 100%;
+  height: auto;
+  border-radius: 12px;
+  display: block;
+}
+
+.message-image-remove {
+  position: absolute;
+  top: 8px;
+  right: 8px;
+  width: 28px;
+  height: 28px;
+  background: var(--overlay-medium);
+  color: var(--white);
+  border: none;
+  border-radius: 50%;
+  cursor: pointer;
+  font-size: 20px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: background 0.2s;
+}
+
+.message-image-remove:hover {
+  background: var(--overlay-dark);
+}
+
+.message-image-button {
+  background: none;
+  border: none;
+  color: var(--text-secondary);
+  cursor: pointer;
+  padding: 4px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: color 0.2s, transform 0.2s;
+}
+
+.message-image-button:hover:not(:disabled) {
+  color: var(--primary-color);
+  transform: scale(1.1);
+}
+
+.message-image-button:disabled {
+  opacity: 0.3;
+  cursor: not-allowed;
+}

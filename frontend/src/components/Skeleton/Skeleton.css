@@ -1,0 +1,68 @@
+/* Base Skeleton Animation */
+.skeleton {
+  background: linear-gradient(
+    90deg,
+    var(--skeleton-light) 25%,
+    var(--skeleton-dark) 50%,
+    var(--skeleton-light) 75%
+  );
+  background-size: 200% 100%;
+  animation: loading 1.5s infinite;
+  border-radius: 4px;
+}
+
+@keyframes loading {
+  0% {
+    background-position: 200% 0;
+  }
+  100% {
+    background-position: -200% 0;
+  }
+}
+
+/* Skeleton Shapes */
+.skeleton-avatar {
+  width: 32px;
+  height: 32px;
+  border-radius: 50%;
+}
+
+.skeleton-avatar-small {
+  width: 32px;
+  height: 32px;
+  border-radius: 50%;
+}
+
+.skeleton-story-avatar {
+  width: 66px;
+  height: 66px;
+  border-radius: 50%;
+}
+
+.skeleton-text {
+  height: 14px;
+  border-radius: 4px;
+}
+
+.skeleton-image {
+  width: 100%;
+  aspect-ratio: 1 / 1;
+  border-radius: 0;
+}
+
+.skeleton-icon {
+  width: 24px;
+  height: 24px;
+  border-radius: 4px;
+}
+
+.skeleton-button {
+  width: 60px;
+  height: 28px;
+  border-radius: 6px;
+}
+
+/* Skeleton Card Spacing */
+.skeleton-card {
+  pointer-events: none;
+}
