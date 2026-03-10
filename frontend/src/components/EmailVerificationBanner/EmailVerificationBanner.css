@@ -1,0 +1,130 @@
+.email-verification-banner {
+  background: linear-gradient(135deg, #fef3c7 0%, #fde68a 100%);
+  border-bottom: 1px solid #f59e0b;
+  padding: 12px 20px;
+  position: sticky;
+  top: 0;
+  z-index: 1000;
+  animation: slideDown 0.3s ease-out;
+}
+
+@keyframes slideDown {
+  from {
+    transform: translateY(-100%);
+    opacity: 0;
+  }
+  to {
+    transform: translateY(0);
+    opacity: 1;
+  }
+}
+
+.banner-content {
+  max-width: 1200px;
+  margin: 0 auto;
+  display: flex;
+  align-items: center;
+  gap: 15px;
+}
+
+.banner-icon {
+  color: #f59e0b;
+  flex-shrink: 0;
+}
+
+.banner-text {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
+.banner-text strong {
+  font-size: 14px;
+  font-weight: 600;
+  color: #78350f;
+}
+
+.banner-text span {
+  font-size: 13px;
+  color: #92400e;
+}
+
+.banner-actions {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.resend-btn {
+  padding: 8px 16px;
+  background: #f59e0b;
+  color: white;
+  border: none;
+  border-radius: 6px;
+  font-size: 13px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.2s;
+  white-space: nowrap;
+}
+
+.resend-btn:hover:not(:disabled) {
+  background: #d97706;
+  transform: translateY(-1px);
+}
+
+.resend-btn:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+}
+
+.dismiss-btn {
+  width: 28px;
+  height: 28px;
+  background: transparent;
+  border: none;
+  color: #92400e;
+  font-size: 24px;
+  cursor: pointer;
+  transition: color 0.2s;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 0;
+}
+
+.dismiss-btn:hover {
+  color: #78350f;
+}
+
+@media (max-width: 768px) {
+  .email-verification-banner {
+    padding: 10px 15px;
+  }
+
+  .banner-content {
+    gap: 10px;
+  }
+
+  .banner-text {
+    min-width: 0;
+  }
+
+  .banner-text strong {
+    font-size: 13px;
+  }
+
+  .banner-text span {
+    font-size: 12px;
+    display: -webkit-box;
+    -webkit-line-clamp: 2;
+    -webkit-box-orient: vertical;
+    overflow: hidden;
+  }
+
+  .resend-btn {
+    padding: 6px 12px;
+    font-size: 12px;
+  }
+}

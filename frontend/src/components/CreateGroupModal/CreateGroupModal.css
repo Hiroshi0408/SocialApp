@@ -1,0 +1,167 @@
+.cgm-scoped.modal-overlay {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background-color: var(--overlay-medium);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 1000;
+}
+
+.cgm-scoped .modal-content {
+  background: var(--card-bg);
+  border-radius: 12px;
+  box-shadow: var(--shadow-lg);
+  width: 90%;
+  max-width: 500px;
+  max-height: 90vh;
+  display: flex;
+  flex-direction: column;
+}
+
+.cgm-scoped .modal-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 20px;
+  border-bottom: 1px solid var(--border-color);
+}
+
+.cgm-scoped .modal-header h2 {
+  margin: 0;
+  font-size: 1.5rem;
+  color: var(--text-primary);
+}
+
+.cgm-scoped .modal-close {
+  background: none;
+  border: none;
+  font-size: 1.5rem;
+  cursor: pointer;
+  color: var(--text-secondary);
+  padding: 0;
+  width: 30px;
+  height: 30px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: color 0.2s;
+}
+
+.cgm-scoped .modal-close:hover {
+  color: var(--text-primary);
+}
+
+.cgm-scoped .create-form {
+  padding: 20px;
+  display: flex;
+  flex-direction: column;
+  gap: 20px;
+  overflow-y: auto;
+  flex-grow: 1;
+}
+
+.cgm-scoped .form-group {
+  display: flex;
+  flex-direction: column;
+}
+
+.cgm-scoped .form-group label {
+  margin-bottom: 8px;
+  font-weight: 600;
+  color: var(--text-primary);
+  font-size: 0.95rem;
+}
+
+.cgm-scoped .form-group input,
+.cgm-scoped .form-group textarea {
+  padding: 12px;
+  border: 1px solid var(--border-color);
+  border-radius: 8px;
+  font-size: 1rem;
+  font-family: inherit;
+  transition: border-color 0.2s;
+  background-color: var(--bg-color);
+  color: var(--text-primary);
+  width: 100%;
+  box-sizing: border-box;
+}
+
+.cgm-scoped .form-group input:focus,
+.cgm-scoped .form-group textarea:focus {
+  outline: none;
+  border-color: var(--primary-color);
+  box-shadow: 0 0 0 3px var(--primary-light);
+}
+
+.cgm-scoped .preview-container {
+  min-height: 250px;
+  width: 100%;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  background-color: var(--bg-secondary);
+  border-radius: 8px;
+}
+
+.cgm-scoped .group-preview {
+  max-width: 100%;
+  max-height: 250px;
+  border-radius: 8px;
+  object-fit: cover;
+}
+
+.cgm-scoped .error-message {
+  padding: 12px;
+  background-color: #fdeaea;
+  border: 1px solid #f5aca6;
+  border-radius: 8px;
+  color: #c13828;
+  font-size: 0.9rem;
+}
+
+.cgm-scoped .modal-actions {
+  display: flex;
+  gap: 12px;
+  justify-content: flex-end;
+  padding: 20px;
+  border-top: 1px solid var(--border-color);
+}
+
+.cgm-scoped .btn-cancel,
+.cgm-scoped .btn-create {
+  padding: 10px 20px;
+  border-radius: 8px;
+  border: none;
+  font-size: 1rem;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.2s;
+}
+
+.cgm-scoped .btn-cancel {
+  background-color: var(--bg-secondary);
+  color: var(--text-primary);
+}
+
+.cgm-scoped .btn-cancel:hover {
+  background-color: var(--border-color);
+}
+
+.cgm-scoped .btn-create {
+  background-color: var(--primary-color);
+  color: var(--primary-text-color);
+}
+
+.cgm-scoped .btn-create:hover:not(:disabled) {
+  background-color: var(--primary-hover);
+}
+
+.cgm-scoped .btn-create:disabled {
+  background-color: var(--primary-light);
+  color: var(--text-secondary);
+  cursor: not-allowed;
+}

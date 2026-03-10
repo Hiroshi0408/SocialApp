@@ -1,0 +1,18 @@
+.text-with-mentions {
+  word-break: break-word;
+}
+
+.mention-link {
+  color: var(--primary-color);
+  font-weight: 600;
+  text-decoration: none;
+}
+
+.mention-link:hover {
+  text-decoration: underline;
+}
+
+.hashtag-link {
+  color: var(--primary-color);
+  font-weight: 500;
+}
