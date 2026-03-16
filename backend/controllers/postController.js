@@ -16,6 +16,7 @@ const {
 const { extractMentions, validateMentions } = require("../utils/mentionHelper");
 const Follow = require("../models/Follow");
 const { moderateText } = require("../services/geminiModeration");
+const { formatPostsWithMetadata } = require("../helpers/postHelper");
 
 // Get feed posts from followed users
 exports.getFeed = async (req, res) => {
@@ -67,22 +68,11 @@ exports.getFeed = async (req, res) => {
     const likedPostIds = new Set(likes.map((l) => l.targetId.toString()));
     const savedPostIds = new Set(saves.map((s) => s.postId.toString()));
 
-    const postsWithMetadata = posts.map((post) => ({
-      ...post,
-      _id: post._id.toString(),
-      user: {
-        _id: post.userId._id,
-        username: post.userId.username,
-        fullName: post.userId.fullName,
-        avatar: post.userId.avatar,
-      },
-      likes: post.likesCount,
-      comments: post.commentsCount,
-      isLiked: likedPostIds.has(post._id.toString()),
-      isSaved: savedPostIds.has(post._id.toString()),
-      timestamp: getTimeAgo(post.createdAt),
-      commentsList: [],
-    }));
+    const formattedPosts = formatPostsWithMetadata(
+      posts,
+      likedPostIds,
+      savedPostIds,
+    );
 
     const total = await Post.countDocuments({
       userId: { $in: followingIds },
@@ -90,18 +80,18 @@ exports.getFeed = async (req, res) => {
     });
 
     console.log(
-      ` Feed: ${postsWithMetadata.length} posts from ${followingIds.length} users`,
+      ` Feed: ${formattedPosts.length} posts from ${followingIds.length} users`,
     );
 
     res.json({
       success: true,
-      posts: postsWithMetadata,
+      posts: formattedPosts,
       pagination: {
         page,
         limit,
         total,
         totalPages: Math.ceil(total / limit),
-        hasMore: skip + postsWithMetadata.length < total,
+        hasMore: skip + formattedPosts.length < total,
       },
     });
   } catch (error) {
@@ -152,37 +142,26 @@ exports.getAllPosts = async (req, res) => {
     const likedPostIds = new Set(likes.map((l) => l.targetId.toString()));
     const savedPostIds = new Set(saves.map((s) => s.postId.toString()));
 
-    const postsWithMetadata = posts.map((post) => ({
-      ...post,
-      _id: post._id.toString(),
-      user: {
-        _id: post.userId._id,
-        username: post.userId.username,
-        fullName: post.userId.fullName,
-        avatar: post.userId.avatar,
-      },
-      likes: post.likesCount,
-      comments: post.commentsCount,
-      isLiked: likedPostIds.has(post._id.toString()),
-      isSaved: savedPostIds.has(post._id.toString()),
-      timestamp: getTimeAgo(post.createdAt),
-      commentsList: [],
-    }));
+    const formattedPosts = formatPostsWithMetadata(
+      posts,
+      likedPostIds,
+      savedPostIds,
+    );
 
     // Total count for pagination
     const total = await Post.countDocuments({ deleted: false });
 
-    console.log(` Retrieved ${postsWithMetadata.length} posts`);
+    console.log(` Retrieved ${formattedPosts.length} posts`);
 
     res.json({
       success: true,
-      posts: postsWithMetadata,
+      posts: formattedPosts,
       pagination: {
         page,
         limit,
         total,
         totalPages: Math.ceil(total / limit),
-        hasMore: skip + postsWithMetadata.length < total,
+        hasMore: skip + formattedPosts.length < total,
       },
     });
   } catch (error) {
@@ -944,16 +923,11 @@ exports.searchByHashtag = async (req, res) => {
     const likedPostIds = new Set(likes.map((l) => l.targetId.toString()));
     const savedPostIds = new Set(saves.map((s) => s.postId.toString()));
 
-    const postsWithMetadata = posts.map((post) => ({
-      ...post,
-      user: post.userId,
-      likes: post.likesCount,
-      comments: post.commentsCount,
-      isLiked: likedPostIds.has(post._id.toString()),
-      isSaved: savedPostIds.has(post._id.toString()),
-      timestamp: getTimeAgo(post.createdAt),
-      commentsList: [],
-    }));
+    const formattedPosts = formatPostsWithMetadata(
+      posts,
+      likedPostIds,
+      savedPostIds,
+    );
 
     const total = await Post.countDocuments({
       hashtags: searchTag,
@@ -963,12 +937,12 @@ exports.searchByHashtag = async (req, res) => {
     res.json({
       success: true,
       hashtag: searchTag,
-      posts: postsWithMetadata,
+      posts: formattedPosts,
       pagination: {
         page,
         limit,
         total,
-        hasMore: skip + postsWithMetadata.length < total,
+        hasMore: skip + formattedPosts.length < total,
       },
     });
   } catch (error) {
@@ -1022,39 +996,28 @@ exports.getTaggedPosts = async (req, res) => {
     const likedPostIds = new Set(likes.map((l) => l.targetId.toString()));
     const savedPostIds = new Set(saves.map((s) => s.postId.toString()));
 
-    const postsWithMetadata = posts.map((post) => ({
-      ...post,
-      _id: post._id.toString(),
-      user: {
-        _id: post.userId._id,
-        username: post.userId.username,
-        fullName: post.userId.fullName,
-        avatar: post.userId.avatar,
-      },
-      likes: post.likesCount,
-      comments: post.commentsCount,
-      isLiked: likedPostIds.has(post._id.toString()),
-      isSaved: savedPostIds.has(post._id.toString()),
-      timestamp: getTimeAgo(post.createdAt),
-      commentsList: [],
-    }));
+    const formattedPosts = formatPostsWithMetadata(
+      posts,
+      likedPostIds,
+      savedPostIds,
+    );
 
     const total = await Post.countDocuments({
       taggedUsers: userId,
       deleted: false,
     });
 
-    console.log(`Retrieved ${postsWithMetadata.length} tagged posts`);
+    console.log(`Retrieved ${formattedPosts.length} tagged posts`);
 
     res.json({
       success: true,
-      posts: postsWithMetadata,
+      posts: formattedPosts,
       pagination: {
         page,
         limit,
         total,
         totalPages: Math.ceil(total / limit),
-        hasMore: skip + postsWithMetadata.length < total,
+        hasMore: skip + formattedPosts.length < total,
       },
     });
   } catch (error) {
