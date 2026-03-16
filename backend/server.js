@@ -5,7 +5,7 @@ const dotenv = require("dotenv");
 const connectDatabase = require("./config/database");
 const { apiLimiter } = require("./middlewares/rateLimiter.middleware");
 const { initializeSocket } = require("./config/socket");
-
+const errorHandler = require("./middlewares/errorHandler");
 // Load environment variables
 dotenv.config();
 
@@ -97,16 +97,7 @@ app.use((req, res) => {
 });
 
 // ERROR HANDLER
-app.use((err, req, res, next) => {
-  console.error(" Error:", err.stack);
-
-  res.status(err.status || 500).json({
-    success: false,
-    message: err.message || "Internal server error",
-    error: process.env.NODE_ENV === "development" ? err.stack : undefined,
-  });
-});
-
+app.use(errorHandler);
 // START SERVER
 const PORT = process.env.PORT || 5000;
 
