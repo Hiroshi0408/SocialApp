@@ -5,6 +5,7 @@ const Like = require("../models/Like");
 const Save = require("../models/Save");
 const { getTimeAgo } = require("../utils/timeHelper");
 const { createNotification } = require("./notificationController");
+const { formatPostsWithMetadata } = require("../helpers/postHelper");
 const {
   DEFAULT_POST_LIMIT,
   MAX_POST_LIMIT,
@@ -64,7 +65,7 @@ exports.getUserPosts = async (req, res) => {
     const page = parseInt(req.query.page) || 1;
     const limit = Math.min(
       parseInt(req.query.limit) || DEFAULT_POST_LIMIT,
-      MAX_POST_LIMIT
+      MAX_POST_LIMIT,
     );
     const skip = (page - 1) * limit;
     const currentUserId = req.user.id;
@@ -98,27 +99,22 @@ exports.getUserPosts = async (req, res) => {
     const likedPostIds = new Set(likes.map((l) => l.targetId.toString()));
     const savedPostIds = new Set(saves.map((s) => s.postId.toString()));
 
-    const postsWithMetadata = posts.map((post) => ({
-      ...post,
-      user: post.userId,
-      likes: post.likesCount,
-      comments: post.commentsCount,
-      isLiked: likedPostIds.has(post._id.toString()),
-      isSaved: savedPostIds.has(post._id.toString()),
-      timestamp: getTimeAgo(post.createdAt),
-      commentsList: [],
-    }));
+    const formattedPosts = formatPostsWithMetadata(
+      posts,
+      likedPostIds,
+      savedPostIds,
+    );
 
     const total = await Post.countDocuments({ userId, deleted: false });
 
     res.json({
       success: true,
-      posts: postsWithMetadata,
+      posts: formattedPosts,
       pagination: {
         page,
         limit,
         total,
-        hasMore: skip + postsWithMetadata.length < total,
+        hasMore: skip + formattedPosts.length < total,
       },
     });
   } catch (error) {
@@ -137,7 +133,9 @@ exports.followUser = async (req, res) => {
     const { userId } = req.params;
     const currentUserId = req.user.id;
 
-    console.log(`Follow user - Follower: ${req.user.username}, Following: ${userId}`);
+    console.log(
+      `Follow user - Follower: ${req.user.username}, Following: ${userId}`,
+    );
 
     if (userId === currentUserId) {
       return res.status(400).json({
@@ -216,7 +214,9 @@ exports.unfollowUser = async (req, res) => {
     const { userId } = req.params;
     const currentUserId = req.user.id;
 
-    console.log(`Unfollow user - Follower: ${req.user.username}, Following: ${userId}`);
+    console.log(
+      `Unfollow user - Follower: ${req.user.username}, Following: ${userId}`,
+    );
 
     const follow = await Follow.findOneAndDelete({
       follower: currentUserId,
@@ -273,12 +273,14 @@ exports.getSuggestedUsers = async (req, res) => {
     const currentUserId = req.user.id;
     const limit = Math.min(
       parseInt(req.query.limit) || DEFAULT_SUGGESTED_USERS_LIMIT,
-      MAX_USER_LIMIT
+      MAX_USER_LIMIT,
     );
 
     console.log(`Get suggested users - User: ${req.user.username}`);
 
-    const following = await Follow.find({ follower: currentUserId }).select("following");
+    const following = await Follow.find({ follower: currentUserId }).select(
+      "following",
+    );
     const followingIds = following.map((f) => f.following);
 
     const suggestedUsers = await User.find({
@@ -318,7 +320,7 @@ exports.searchUsers = async (req, res) => {
     const page = parseInt(req.query.page) || 1;
     const limit = Math.min(
       parseInt(req.query.limit) || DEFAULT_USER_LIMIT,
-      MAX_USER_LIMIT
+      MAX_USER_LIMIT,
     );
     const skip = (page - 1) * limit;
 
@@ -377,7 +379,7 @@ exports.getFollowers = async (req, res) => {
     const page = parseInt(req.query.page) || 1;
     const limit = Math.min(
       parseInt(req.query.limit) || DEFAULT_USER_LIMIT,
-      MAX_USER_LIMIT
+      MAX_USER_LIMIT,
     );
     const skip = (page - 1) * limit;
 
@@ -421,7 +423,7 @@ exports.getFollowing = async (req, res) => {
     const page = parseInt(req.query.page) || 1;
     const limit = Math.min(
       parseInt(req.query.limit) || DEFAULT_USER_LIMIT,
-      MAX_USER_LIMIT
+      MAX_USER_LIMIT,
     );
     const skip = (page - 1) * limit;
 
@@ -530,7 +532,7 @@ exports.uploadAvatar = async (req, res) => {
     const user = await User.findByIdAndUpdate(
       userId,
       { avatar },
-      { new: true }
+      { new: true },
     );
 
     console.log(`Avatar updated - User: ${user.username}`);

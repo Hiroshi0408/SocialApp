@@ -1,3 +1,5 @@
+const { getTimeAgo } = require("../utils/timeHelper");
+
 const formatPostsWithMetadata = (posts, likedPostIds, savedPostIds) => {
   return posts.map((post) => ({
     ...post,
@@ -9,6 +11,4 @@ const formatPostsWithMetadata = (posts, likedPostIds, savedPostIds) => {
   }));
 };
 
-module.exports = {
-  formatPostsWithMetadata,
-};
+module.exports = { formatPostsWithMetadata };
