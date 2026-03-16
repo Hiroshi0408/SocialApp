@@ -1,6 +1,7 @@
 const Story = require("../models/Story");
 const User = require("../models/User");
 const { getTimeAgo } = require("../utils/timeHelper");
+const logger = require("../utils/logger.js");
 
 // Create new story
 exports.createStory = async (req, res) => {
@@ -24,7 +25,7 @@ exports.createStory = async (req, res) => {
     await story.save();
     await story.populate("userId", "username fullName avatar");
 
-    console.log(`Story created by ${req.user.username}`);
+    logger.info(`Story created by ${req.user.username}`);
 
     res.status(201).json({
       success: true,
@@ -37,7 +38,7 @@ exports.createStory = async (req, res) => {
       },
     });
   } catch (error) {
-    console.error("Create story error:", error);
+    logger.error("Create story error:", error);
     res.status(500).json({
       success: false,
       message: "Failed to create story",
@@ -100,7 +101,7 @@ exports.getAllStories = async (req, res) => {
       storyGroups,
     });
   } catch (error) {
-    console.error("Get stories error:", error);
+    logger.error("Get stories error:", error);
     res.status(500).json({
       success: false,
       message: "Failed to get stories",
@@ -138,7 +139,7 @@ exports.getUserStories = async (req, res) => {
       stories: storiesWithMeta,
     });
   } catch (error) {
-    console.error("Get user stories error:", error);
+    logger.error("Get user stories error:", error);
     res.status(500).json({
       success: false,
       message: "Failed to get user stories",
@@ -184,7 +185,7 @@ exports.viewStory = async (req, res) => {
       viewsCount: updatedStory ? updatedStory.viewsCount : story.viewsCount,
     });
   } catch (error) {
-    console.error("View story error:", error);
+    logger.error("View story error:", error);
     if (error.name === "ValidationError") {
       return res.status(400).json({ success: false, message: error.message });
     }
@@ -225,7 +226,7 @@ exports.deleteStory = async (req, res) => {
       message: "Story deleted successfully",
     });
   } catch (error) {
-    console.error("Delete story error:", error);
+    logger.error("Delete story error:", error);
     res.status(500).json({
       success: false,
       message: "Failed to delete story",
@@ -263,7 +264,7 @@ exports.getStoryViewers = async (req, res) => {
       totalViews: story.viewsCount,
     });
   } catch (error) {
-    console.error("Get story viewers error:", error);
+    logger.error("Get story viewers error:", error);
     res.status(500).json({
       success: false,
       message: "Failed to get story viewers",

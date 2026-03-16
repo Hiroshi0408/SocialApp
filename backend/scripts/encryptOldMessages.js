@@ -5,6 +5,7 @@ const mongoose = require("mongoose");
 const crypto = require("crypto");
 const Message = require("../models/Message");
 const Conversation = require("../models/Conversation");
+const logger = require("../utils/logger.js");
 
 const ENCRYPTION_ALGORITHM = "aes-256-gcm";
 const IV_LENGTH = 12;
@@ -65,7 +66,7 @@ async function encryptOldMessages() {
           !conversation.participants ||
           conversation.participants.length < 2
         ) {
-          console.warn(
+          logger.warn(
             `Skipping message ${message._id}: Cannot find valid conversation or participants.`,
           );
           errorCount++;
@@ -111,6 +112,6 @@ async function encryptOldMessages() {
 }
 
 encryptOldMessages().catch((e) => {
-  console.error("Unhandled exception in script:", e);
+  logger.error("Unhandled exception in script:", e);
   process.exit(1);
 });

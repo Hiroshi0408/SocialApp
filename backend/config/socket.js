@@ -2,6 +2,7 @@ const { Server } = require("socket.io");
 const jwt = require("jsonwebtoken");
 const setupChatHandlers = require("../socket/chatHandlers");
 const setupCallHandlers = require("../socket/callHandlers");
+const logger = require("../utils/logger.js");
 
 let io;
 // Map to store online users: { userId -> socketId }
@@ -30,14 +31,14 @@ const initializeSocket = (server) => {
       socket.username = decoded.username;
       next();
     } catch (error) {
-      console.error("Socket authentication error:", error.message);
+      logger.error("Socket authentication error:", error.message);
       next(new Error("Authentication error: Invalid token"));
     }
   });
 
   // Connection event
   io.on("connection", (socket) => {
-    console.log(`✓ User connected: ${socket.username} (${socket.userId})`);
+    logger.info(`✓ User connected: ${socket.username} (${socket.userId})`);
 
     // Add user to online list and broadcast the new list
     onlineUsers.set(socket.userId, socket.id);
@@ -52,7 +53,7 @@ const initializeSocket = (server) => {
 
     // Handle disconnect
     socket.on("disconnect", () => {
-      console.log(`✗ User disconnected: ${socket.username} (${socket.userId})`);
+      logger.info(`✗ User disconnected: ${socket.username} (${socket.userId})`);
       onlineUsers.delete(socket.userId);
       // Broadcast the updated list
       io.emit("user:online-list", Array.from(onlineUsers.keys()));
@@ -60,11 +61,11 @@ const initializeSocket = (server) => {
 
     // Handle errors
     socket.on("error", (error) => {
-      console.error("Socket error:", error);
+      logger.error("Socket error:", error);
     });
   });
 
-  console.log("✓ Socket.io initialized successfully");
+  logger.info("✓ Socket.io initialized successfully");
   return io;
 };
 

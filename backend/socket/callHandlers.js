@@ -1,8 +1,9 @@
 // backend/socketHandlers/callHandlers.js
 const Conversation = require("../models/Conversation");
+const logger = require("../utils/logger.js");
 
 const setupCallHandlers = (io, socket) => {
-  console.log(`📞 Call handlers initialized for user ${socket.username}`);
+  logger.info(`📞 Call handlers initialized for user ${socket.username}`);
 
   // Initiate a call to another user
   socket.on(
@@ -20,11 +21,11 @@ const setupCallHandlers = (io, socket) => {
           return;
         }
 
-        console.log(
+        logger.info(
           `📞 ${socket.username} initiating ${isVideoCall ? "video" : "voice"} call to user ${recipientId}`,
         );
 
-        console.log(
+        logger.info(
           `📢 Emitting call:incoming to user ${recipientId} in room user:${recipientId}`,
         );
         // Notify recipient about incoming call
@@ -38,7 +39,7 @@ const setupCallHandlers = (io, socket) => {
         // Notify caller that call is ringing
         socket.emit("call:ringing", { recipientId });
       } catch (error) {
-        console.error("Call initiate error:", error);
+        logger.error("Call initiate error:", error);
         socket.emit("call:error", { message: "Failed to initiate call" });
       }
     },
@@ -46,7 +47,7 @@ const setupCallHandlers = (io, socket) => {
 
   // Accept incoming call
   socket.on("call:accept", ({ callerId, conversationId }) => {
-    console.log(`✅ ${socket.username} accepted call from ${callerId}`);
+    logger.info(`✅ ${socket.username} accepted call from ${callerId}`);
 
     // Notify caller that call was accepted
     io.to(`user:${callerId}`).emit("call:accepted", {
@@ -57,7 +58,7 @@ const setupCallHandlers = (io, socket) => {
 
   // Reject incoming call
   socket.on("call:reject", ({ callerId, conversationId }) => {
-    console.log(`❌ ${socket.username} rejected call from ${callerId}`);
+    logger.info(`❌ ${socket.username} rejected call from ${callerId}`);
 
     // Notify caller that call was rejected
     io.to(`user:${callerId}`).emit("call:rejected", {
@@ -68,7 +69,7 @@ const setupCallHandlers = (io, socket) => {
 
   // WebRTC Signaling - Send offer
   socket.on("call:offer", ({ recipientId, offer }) => {
-    console.log(
+    logger.info(
       `📤 Sending offer from ${socket.username} to user ${recipientId}`,
     );
 
@@ -80,7 +81,7 @@ const setupCallHandlers = (io, socket) => {
 
   // WebRTC Signaling - Send answer
   socket.on("call:answer", ({ callerId, answer }) => {
-    console.log(
+    logger.info(
       `📤 Sending answer from ${socket.username} to user ${callerId}`,
     );
 
@@ -100,7 +101,7 @@ const setupCallHandlers = (io, socket) => {
 
   // End call
   socket.on("call:end", ({ recipientId, conversationId }) => {
-    console.log(`📞 ${socket.username} ended call with user ${recipientId}`);
+    logger.info(`📞 ${socket.username} ended call with user ${recipientId}`);
 
     // Notify other user that call ended
     io.to(`user:${recipientId}`).emit("call:ended", {
@@ -120,7 +121,7 @@ const setupCallHandlers = (io, socket) => {
   // Handle disconnect during call
   socket.on("disconnect", () => {
     // You can store active calls in Redis/memory to notify other participant
-    console.log(
+    logger.info(
       `📞 User ${socket.username} disconnected, ending any active calls`,
     );
   });

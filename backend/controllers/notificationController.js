@@ -2,6 +2,7 @@ const Notification = require("../models/Notification");
 const { getTimeAgo } = require("../utils/timeHelper");
 const { DEFAULT_PAGE_SIZE, MAX_PAGE_SIZE } = require("../constants");
 const { getIO } = require("../config/socket");
+const logger = require("../utils/logger.js");
 
 // [GET] /api/notifications - Get user notifications
 exports.getNotifications = async (req, res) => {
@@ -14,7 +15,7 @@ exports.getNotifications = async (req, res) => {
     );
     const skip = (page - 1) * limit;
 
-    console.log(`Get notifications - User: ${req.user.username}`);
+    logger.info(`Get notifications - User: ${req.user.username}`);
 
     const notifications = await Notification.find({ recipientId: userId })
       .populate("senderId", "username fullName avatar")
@@ -51,7 +52,7 @@ exports.getNotifications = async (req, res) => {
       },
     });
   } catch (error) {
-    console.error("Get notifications error:", error);
+    logger.error("Get notifications error:", error);
     res.status(500).json({
       success: false,
       message: "Failed to get notifications",
@@ -84,7 +85,7 @@ exports.markAsRead = async (req, res) => {
       message: "Notification marked as read",
     });
   } catch (error) {
-    console.error("Mark notification as read error:", error);
+    logger.error("Mark notification as read error:", error);
     res.status(500).json({
       success: false,
       message: "Failed to mark notification as read",
@@ -105,7 +106,7 @@ exports.markAllAsRead = async (req, res) => {
       message: "All notifications marked as read",
     });
   } catch (error) {
-    console.error("Mark all as read error:", error);
+    logger.error("Mark all as read error:", error);
     res.status(500).json({
       success: false,
       message: "Failed to mark all as read",
@@ -137,7 +138,7 @@ exports.deleteNotification = async (req, res) => {
       message: "Notification deleted",
     });
   } catch (error) {
-    console.error("Delete notification error:", error);
+    logger.error("Delete notification error:", error);
     res.status(500).json({
       success: false,
       message: "Failed to delete notification",
@@ -161,7 +162,7 @@ exports.getUnreadCount = async (req, res) => {
       count,
     });
   } catch (error) {
-    console.error("Get unread count error:", error);
+    logger.error("Get unread count error:", error);
     res.status(500).json({
       success: false,
       message: "Failed to get unread count",
@@ -207,17 +208,17 @@ exports.createNotification = async (data) => {
       io.to(`user:${recipientId}`).emit("notification:new", {
         notification: formattedNotification,
       });
-      console.log(`Notification sent - Type: ${type}, Recipient: ${recipientId}`);
+      logger.info(`Notification sent - Type: ${type}, Recipient: ${recipientId}`);
     } catch (socketError) {
-      console.error("Socket emit error:", socketError.message);
+      logger.error("Socket emit error:", socketError.message);
     }
 
-    console.log(`Notification created - Type: ${type}, Recipient: ${recipientId}`);
+    logger.info(`Notification created - Type: ${type}, Recipient: ${recipientId}`);
   } catch (error) {
     if (error.code === 11000) {
-      console.log("Duplicate notification ignored");
+      logger.info("Duplicate notification ignored");
       return;
     }
-    console.error("Create notification error:", error);
+    logger.error("Create notification error:", error);
   }
 };

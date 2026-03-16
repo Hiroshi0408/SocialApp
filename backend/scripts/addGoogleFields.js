@@ -3,6 +3,7 @@ require("dotenv").config();
 
 const mongoose = require("mongoose");
 const User = require("../models/User");
+const logger = require("../utils/logger.js");
 
 async function addGoogleFields() {
   try {
@@ -11,19 +12,19 @@ async function addGoogleFields() {
       throw new Error("MONGODB_URI is not defined in .env file");
     }
 
-    console.log("🔄 Connecting to MongoDB...");
+    logger.info("🔄 Connecting to MongoDB...");
     await mongoose.connect(process.env.MONGODB_URI);
-    console.log("✅ Connected to MongoDB");
+    logger.info("✅ Connected to MongoDB");
 
     // Đếm số users cần update
     const usersToUpdate = await User.countDocuments({
       isGoogleAccount: { $exists: false },
     });
 
-    console.log(`📊 Found ${usersToUpdate} users to update`);
+    logger.info(`📊 Found ${usersToUpdate} users to update`);
 
     if (usersToUpdate === 0) {
-      console.log("✅ All users already have Google fields");
+      logger.info("✅ All users already have Google fields");
       await mongoose.connection.close();
       process.exit(0);
     }
@@ -39,15 +40,15 @@ async function addGoogleFields() {
       },
     );
 
-    console.log(`✅ Updated ${result.modifiedCount} users successfully`);
+    logger.info(`✅ Updated ${result.modifiedCount} users successfully`);
 
     // Close connection
     await mongoose.connection.close();
-    console.log("👋 Database connection closed");
+    logger.info("👋 Database connection closed");
 
     process.exit(0);
   } catch (error) {
-    console.error("❌ Migration failed:", error.message);
+    logger.error("❌ Migration failed:", error.message);
 
     if (mongoose.connection.readyState === 1) {
       await mongoose.connection.close();

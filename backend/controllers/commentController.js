@@ -3,6 +3,7 @@ const Post = require("../models/Post");
 const Like = require("../models/Like");
 const Notification = require("../models/Notification");
 const { createNotification } = require("./notificationController");
+const logger = require("../utils/logger.js");
 
 //[DELETE] /api/comments/:id - Delete Comment
 exports.deleteComment = async (req, res) => {
@@ -10,7 +11,7 @@ exports.deleteComment = async (req, res) => {
     const commentId = req.params.id;
     const userId = req.user.id;
 
-    console.log(` Delete comment - Comment: ${commentId}, User: ${req.user.username}`);
+    logger.info(` Delete comment - Comment: ${commentId}, User: ${req.user.username}`);
 
     // Find comment
     const comment = await Comment.findOne({
@@ -53,7 +54,7 @@ exports.deleteComment = async (req, res) => {
     const totalCommentsToDelete = 1 + childComments.length;
     const allCommentIds = [commentId, ...childComments.map(c => c._id)];
 
-    console.log(` Deleting comment and ${childComments.length} child replies`);
+    logger.info(` Deleting comment and ${childComments.length} child replies`);
 
     // Soft delete comment and all children
     const deletedAt = new Date();
@@ -103,14 +104,14 @@ exports.deleteComment = async (req, res) => {
       ]);
     }
 
-    console.log(`Comment deleted - ID: ${commentId}, Total deleted: ${totalCommentsToDelete}`);
+    logger.info(`Comment deleted - ID: ${commentId}, Total deleted: ${totalCommentsToDelete}`);
 
     res.json({
       success: true,
       message: "Comment deleted successfully",
     });
   } catch (error) {
-    console.error(" Delete comment error:", error);
+    logger.error(" Delete comment error:", error);
     res.status(500).json({
       success: false,
       message: "Failed to delete comment",
@@ -125,7 +126,7 @@ exports.getCommentReplies = async (req, res) => {
     const { id: commentId } = req.params;
     const userId = req.user.id;
 
-    console.log(` Get comment replies - Comment: ${commentId}`);
+    logger.info(` Get comment replies - Comment: ${commentId}`);
 
     // Check if parent comment exists
     const parentComment = await Comment.findOne({
@@ -172,7 +173,7 @@ exports.getCommentReplies = async (req, res) => {
       replies: formattedReplies,
     });
   } catch (error) {
-    console.error(" Get comment replies error:", error);
+    logger.error(" Get comment replies error:", error);
     res.status(500).json({
       success: false,
       message: "Failed to get comment replies",
@@ -187,7 +188,7 @@ exports.toggleCommentLike = async (req, res) => {
     const commentId = req.params.id;
     const userId = req.user.id;
 
-    console.log(` Toggle comment like - Comment: ${commentId}, User: ${req.user.username}`);
+    logger.info(` Toggle comment like - Comment: ${commentId}, User: ${req.user.username}`);
 
     // Check if comment exists
     const comment = await Comment.findOne({
@@ -227,7 +228,7 @@ exports.toggleCommentLike = async (req, res) => {
         type: "like",
       });
 
-      console.log(` Comment unliked - ID: ${commentId}`);
+      logger.info(` Comment unliked - ID: ${commentId}`);
 
       return res.json({
         success: true,
@@ -248,7 +249,7 @@ exports.toggleCommentLike = async (req, res) => {
         $inc: { likesCount: 1 },
       });
 
-      console.log(` Comment liked - ID: ${commentId}`);
+      logger.info(` Comment liked - ID: ${commentId}`);
 
       // Create notification for comment owner
       await createNotification({
@@ -267,7 +268,7 @@ exports.toggleCommentLike = async (req, res) => {
       });
     }
   } catch (error) {
-    console.error(" Toggle comment like error:", error);
+    logger.error(" Toggle comment like error:", error);
 
     // Handle duplicate key error (race condition)
     if (error.code === 11000) {

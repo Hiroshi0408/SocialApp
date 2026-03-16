@@ -1,3 +1,4 @@
+const logger = require("../utils/logger.js");
 const cloudinary = require("cloudinary").v2;
 
 // Configure Cloudinary
@@ -23,10 +24,10 @@ const uploadImage = async (fileBuffer, folder = "social-app") => {
         },
         (error, result) => {
           if (error) {
-            console.error("Cloudinary upload error:", error);
+            logger.error("Cloudinary upload error:", error);
             reject(error);
           } else {
-            console.log("Image uploaded to Cloudinary:", result.secure_url);
+            logger.info("Image uploaded to Cloudinary:", result.secure_url);
             resolve({
               url: result.secure_url,
               publicId: result.public_id,
@@ -40,7 +41,7 @@ const uploadImage = async (fileBuffer, folder = "social-app") => {
       uploadStream.end(fileBuffer);
     });
   } catch (error) {
-    console.error("Upload failed:", error);
+    logger.error("Upload failed:", error);
     throw error;
   }
 };
@@ -61,10 +62,10 @@ const uploadVideo = async (fileBuffer, folder = "social-app/videos") => {
         },
         (error, result) => {
           if (error) {
-            console.error("Cloudinary video upload error:", error);
+            logger.error("Cloudinary video upload error:", error);
             reject(error);
           } else {
-            console.log("Video uploaded to Cloudinary:", result.secure_url);
+            logger.info("Video uploaded to Cloudinary:", result.secure_url);
             resolve({
               url: result.secure_url,
               publicId: result.public_id,
@@ -80,7 +81,7 @@ const uploadVideo = async (fileBuffer, folder = "social-app/videos") => {
       uploadStream.end(fileBuffer);
     });
   } catch (error) {
-    console.error("Video upload failed:", error);
+    logger.error("Video upload failed:", error);
     throw error;
   }
 };
@@ -97,10 +98,10 @@ const uploadMedia = async (fileBuffer, mimetype, folder = "social-app") => {
 const deleteImage = async (publicId) => {
   try {
     const result = await cloudinary.uploader.destroy(publicId);
-    console.log("Image deleted from Cloudinary:", publicId);
+    logger.info("Image deleted from Cloudinary:", publicId);
     return result;
   } catch (error) {
-    console.error("Delete failed:", error);
+    logger.error("Delete failed:", error);
     throw error;
   }
 };
