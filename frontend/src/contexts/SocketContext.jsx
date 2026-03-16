@@ -40,14 +40,15 @@ export const SocketProvider = ({ children }) => {
 
     if (socket) {
       console.log(
-        "Disconnecting old socket connection before creating new one"
+        "Disconnecting old socket connection before creating new one",
       );
       socket.disconnect();
     }
 
     console.log(`Creating socket connection for user: ${user.username}`);
 
-    const socketUrl = process.env.REACT_APP_SOCKET_URL || "http://localhost:5000";
+    const socketUrl =
+      process.env.REACT_APP_SOCKET_URL || "http://localhost:5000";
     const newSocket = io(socketUrl, {
       auth: {
         token,
@@ -87,8 +88,8 @@ export const SocketProvider = ({ children }) => {
             notification.type === "like"
               ? "liked your post"
               : notification.type === "comment"
-              ? "commented on your post"
-              : "started following you"
+                ? "commented on your post"
+                : "started following you"
           }`,
           icon: notification.sender?.avatar || "/default-avatar.png",
         });
@@ -114,7 +115,7 @@ export const SocketProvider = ({ children }) => {
       setIsConnected(false);
       setOnlineUsers([]);
     };
-  }, [isAuthenticated, user?._id, user?.username]);
+  }, [isAuthenticated, user?._id]);
 
   const value = {
     socket,
