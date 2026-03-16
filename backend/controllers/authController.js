@@ -3,6 +3,7 @@ const jwt = require("jsonwebtoken");
 const crypto = require("crypto");
 const admin = require("../config/firebaseAdmin");
 const { JWT_EXPIRATION } = require("../constants");
+const logger = require("../utils/logger.js");
 const {
   sendVerificationEmail,
   sendPasswordResetEmail,
@@ -19,7 +20,7 @@ exports.register = async (req, res) => {
   try {
     const { fullName, username, email, password } = req.body;
 
-    console.log("Register attempt:", { username, email });
+    logger.info("Register attempt:", { username, email });
 
     // Validate required fields
     if (!fullName || !username || !email || !password) {
@@ -59,16 +60,16 @@ exports.register = async (req, res) => {
 
     await user.save();
 
-    console.log("User registered successfully:", user.username);
+    logger.info("User registered successfully:", user.username);
 
     const verificationToken = user.generateEmailVerificationToken();
     await user.save({ validateBeforeSave: false });
 
     try {
       await sendVerificationEmail(user.email, user.username, verificationToken);
-      console.log("Verification email sent to:", user.email);
+      logger.info("Verification email sent to:", user.email);
     } catch (emailError) {
-      console.error("Failed to send verification email:", emailError.message);
+      logger.error("Failed to send verification email:", emailError.message);
     }
 
     const token = generateToken(user._id, user.username);
@@ -81,7 +82,7 @@ exports.register = async (req, res) => {
       user: user.toJSON(),
     });
   } catch (error) {
-    console.error("Register error:", error);
+    logger.error("Register error:", error);
 
     // Mongoose validation errors
     if (error.name === "ValidationError") {
@@ -119,7 +120,7 @@ exports.login = async (req, res) => {
   try {
     const { username, password } = req.body;
 
-    console.log("Login attempt:", username);
+    logger.info("Login attempt:", username);
 
     // Validate input
     if (!username || !password) {
@@ -153,7 +154,7 @@ exports.login = async (req, res) => {
       });
     }
 
-    console.log("Login successful:", user.username);
+    logger.info("Login successful:", user.username);
 
     const token = generateToken(user._id, user.username);
 
@@ -164,7 +165,7 @@ exports.login = async (req, res) => {
       user: user.toJSON(),
     });
   } catch (error) {
-    console.error("Login error:", error);
+    logger.error("Login error:", error);
     res.status(500).json({
       success: false,
       message: "Login failed",
@@ -178,13 +179,13 @@ exports.googleLogin = async (req, res) => {
   try {
     const { googleToken, email, displayName, photoURL } = req.body;
 
-    console.log("Google login attempt:", email);
+    logger.info("Google login attempt:", email);
 
     let decodedToken;
     try {
       decodedToken = await admin.auth().verifyIdToken(googleToken);
     } catch (error) {
-      console.error("Firebase token verification failed:", error);
+      logger.error("Firebase token verification failed:", error);
 
       if (error.code === "auth/id-token-expired") {
         return res.status(401).json({
@@ -206,7 +207,7 @@ exports.googleLogin = async (req, res) => {
       });
     }
     if (decodedToken.email !== email) {
-      console.error(
+      logger.error(
         "Email mismatch - Token:",
         decodedToken.email,
         "Request:",
@@ -246,7 +247,7 @@ exports.googleLogin = async (req, res) => {
 
       await user.save({ validateBeforeSave: false });
 
-      console.log("New Google user created:", {
+      logger.info("New Google user created:", {
         username: user.username,
         email: user.email,
       });
@@ -273,7 +274,7 @@ exports.googleLogin = async (req, res) => {
         await user.save({ validateBeforeSave: false });
       }
 
-      console.log("Existing user logged in with Google:", user.username);
+      logger.info("Existing user logged in with Google:", user.username);
     }
     const token = generateToken(user._id, user.username);
     res.json({
@@ -283,7 +284,7 @@ exports.googleLogin = async (req, res) => {
       user: user.toJSON(),
     });
   } catch (error) {
-    console.error("Google login error:", error);
+    logger.error("Google login error:", error);
 
     res.status(500).json({
       success: false,
@@ -310,7 +311,7 @@ exports.getCurrentUser = async (req, res) => {
       user: user.toJSON(),
     });
   } catch (error) {
-    console.error("Get current user error:", error);
+    logger.error("Get current user error:", error);
     res.status(500).json({
       success: false,
       message: "Failed to get user",
@@ -327,7 +328,7 @@ exports.logout = async (req, res) => {
       message: "Logout successful",
     });
   } catch (error) {
-    console.error("Logout error:", error);
+    logger.error("Logout error:", error);
     res.status(500).json({
       success: false,
       message: "Logout failed",
@@ -359,7 +360,7 @@ exports.verifyEmail = async (req, res) => {
     user.emailVerificationExpires = undefined;
     await user.save({ validateBeforeSave: false });
 
-    console.log("Email verified for user:", user.username);
+    logger.info("Email verified for user:", user.username);
 
     res.json({
       success: true,
@@ -367,7 +368,7 @@ exports.verifyEmail = async (req, res) => {
       user: user.toJSON(),
     });
   } catch (error) {
-    console.error("Email verification error:", error);
+    logger.error("Email verification error:", error);
     res.status(500).json({
       success: false,
       message: "Email verification failed",
@@ -402,9 +403,9 @@ exports.resendVerification = async (req, res) => {
 
     try {
       await sendVerificationEmail(user.email, user.username, verificationToken);
-      console.log("Verification email resent to:", user.email);
+      logger.info("Verification email resent to:", user.email);
     } catch (emailError) {
-      console.error("Failed to resend verification email:", emailError.message);
+      logger.error("Failed to resend verification email:", emailError.message);
       return res.status(500).json({
         success: false,
         message: "Failed to send verification email",
@@ -416,7 +417,7 @@ exports.resendVerification = async (req, res) => {
       message: "Verification email sent. Please check your inbox.",
     });
   } catch (error) {
-    console.error("Resend verification error:", error);
+    logger.error("Resend verification error:", error);
     res.status(500).json({
       success: false,
       message: "Failed to resend verification email",
@@ -452,9 +453,9 @@ exports.forgotPassword = async (req, res) => {
 
     try {
       await sendPasswordResetEmail(user.email, user.username, resetToken);
-      console.log("Password reset email sent to:", user.email);
+      logger.info("Password reset email sent to:", user.email);
     } catch (emailError) {
-      console.error("Failed to send password reset email:", emailError.message);
+      logger.error("Failed to send password reset email:", emailError.message);
       user.passwordResetToken = undefined;
       user.passwordResetExpires = undefined;
       await user.save({ validateBeforeSave: false });
@@ -471,7 +472,7 @@ exports.forgotPassword = async (req, res) => {
         "If an account exists with that email, a password reset link has been sent.",
     });
   } catch (error) {
-    console.error("Forgot password error:", error);
+    logger.error("Forgot password error:", error);
     res.status(500).json({
       success: false,
       message: "Password reset request failed",
@@ -486,7 +487,7 @@ exports.resetPassword = async (req, res) => {
     const { token } = req.params;
     const { password } = req.body;
 
-    console.log("Reset password attempt with token:", token);
+    logger.info("Reset password attempt with token:", token);
     if (!password || password.length < 6) {
       return res.status(400).json({
         success: false,
@@ -513,7 +514,7 @@ exports.resetPassword = async (req, res) => {
     user.passwordResetExpires = undefined;
     await user.save();
 
-    console.log("Password reset successful for user:", user.username);
+    logger.info("Password reset successful for user:", user.username);
 
     const authToken = generateToken(user._id, user.username);
 
@@ -524,7 +525,7 @@ exports.resetPassword = async (req, res) => {
       user: user.toJSON(),
     });
   } catch (error) {
-    console.error("Reset password error:", error);
+    logger.error("Reset password error:", error);
     res.status(500).json({
       success: false,
       message: "Password reset failed",
@@ -574,14 +575,14 @@ exports.changePassword = async (req, res) => {
     user.password = newPassword;
     await user.save();
 
-    console.log("Password changed successfully for user:", user.username);
+    logger.info("Password changed successfully for user:", user.username);
 
     res.json({
       success: true,
       message: "Password changed successfully",
     });
   } catch (error) {
-    console.error("Change password error:", error);
+    logger.error("Change password error:", error);
     res.status(500).json({
       success: false,
       message: "Failed to change password",

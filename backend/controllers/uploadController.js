@@ -1,5 +1,6 @@
 const { uploadImage, uploadVideo, uploadMedia } = require("../config/cloudinary");
 const User = require("../models/User");
+const logger = require("../utils/logger.js");
 
 //[POST] /api/upload/image - Upload Image
 exports.uploadImageToCloudinary = async (req, res) => {
@@ -12,7 +13,7 @@ exports.uploadImageToCloudinary = async (req, res) => {
       });
     }
 
-    console.log(` Uploading image: ${req.file.originalname} (${req.file.size} bytes)`);
+    logger.info(` Uploading image: ${req.file.originalname} (${req.file.size} bytes)`);
 
     // Upload to Cloudinary
     const result = await uploadImage(req.file.buffer, "social-app/posts");
@@ -26,7 +27,7 @@ exports.uploadImageToCloudinary = async (req, res) => {
       height: result.height,
     });
   } catch (error) {
-    console.error(" Upload error:", error);
+    logger.error(" Upload error:", error);
     res.status(500).json({
       success: false,
       message: "Failed to upload image",
@@ -45,7 +46,7 @@ exports.uploadVideoToCloudinary = async (req, res) => {
       });
     }
 
-    console.log(` Uploading video: ${req.file.originalname} (${req.file.size} bytes)`);
+    logger.info(` Uploading video: ${req.file.originalname} (${req.file.size} bytes)`);
 
     const result = await uploadVideo(req.file.buffer, "social-app/posts/videos");
 
@@ -61,7 +62,7 @@ exports.uploadVideoToCloudinary = async (req, res) => {
       mediaType: "video",
     });
   } catch (error) {
-    console.error(" Video upload error:", error);
+    logger.error(" Video upload error:", error);
     res.status(500).json({
       success: false,
       message: "Failed to upload video",
@@ -81,7 +82,7 @@ exports.uploadMediaToCloudinary = async (req, res) => {
     }
 
     const isVideo = req.file.mimetype.startsWith("video/");
-    console.log(` Uploading ${isVideo ? "video" : "image"}: ${req.file.originalname} (${req.file.size} bytes)`);
+    logger.info(` Uploading ${isVideo ? "video" : "image"}: ${req.file.originalname} (${req.file.size} bytes)`);
 
     const result = await uploadMedia(req.file.buffer, req.file.mimetype, "social-app/posts");
 
@@ -102,7 +103,7 @@ exports.uploadMediaToCloudinary = async (req, res) => {
 
     res.status(200).json(response);
   } catch (error) {
-    console.error(" Media upload error:", error);
+    logger.error(" Media upload error:", error);
     res.status(500).json({
       success: false,
       message: "Failed to upload media",
@@ -122,7 +123,7 @@ exports.uploadAvatar = async (req, res) => {
     }
 
     const userId = req.user.id;
-    console.log(`Uploading avatar - User: ${req.user.username}`);
+    logger.info(`Uploading avatar - User: ${req.user.username}`);
 
     const result = await uploadImage(req.file.buffer, "social-app/avatars");
 
@@ -139,7 +140,7 @@ exports.uploadAvatar = async (req, res) => {
       });
     }
 
-    console.log(`Avatar updated - User: ${user.username}`);
+    logger.info(`Avatar updated - User: ${user.username}`);
 
     res.status(200).json({
       success: true,
@@ -149,7 +150,7 @@ exports.uploadAvatar = async (req, res) => {
       user: user.toJSON(),
     });
   } catch (error) {
-    console.error("Upload avatar error:", error);
+    logger.error("Upload avatar error:", error);
     res.status(500).json({
       success: false,
       message: "Failed to upload avatar",

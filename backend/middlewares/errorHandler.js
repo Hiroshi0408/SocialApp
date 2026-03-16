@@ -1,4 +1,5 @@
 const AppError = require("../utils/AppError");
+const logger = require("../utils/logger.js");
 
 module.exports = (err, req, res, next) => {
   // Nếu là AppError (lỗi có thể dự đoán)
@@ -10,7 +11,7 @@ module.exports = (err, req, res, next) => {
   }
 
   // Lỗi không mong đợi (bug, crash...)
-  console.error("UNEXPECTED ERROR:", err);
+  logger.error("UNEXPECTED ERROR:", err);
   res.status(500).json({
     success: false,
     message: "Something went wrong",

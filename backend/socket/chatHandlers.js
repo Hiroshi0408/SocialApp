@@ -1,5 +1,6 @@
 const Message = require("../models/Message");
 const Conversation = require("../models/Conversation");
+const logger = require("../utils/logger.js");
 
 const setupChatHandlers = (io, socket) => {
   // Join a conversation room
@@ -17,13 +18,13 @@ const setupChatHandlers = (io, socket) => {
       }
 
       socket.join(`conversation:${conversationId}`);
-      console.log(
+      logger.info(
         `✓ User ${socket.username} joined conversation ${conversationId}`
       );
 
       socket.emit("chat:joined", { conversationId });
     } catch (error) {
-      console.error("Join conversation error:", error);
+      logger.error("Join conversation error:", error);
       socket.emit("error", { message: "Failed to join conversation" });
     }
   });
@@ -31,7 +32,7 @@ const setupChatHandlers = (io, socket) => {
   // Leave a conversation room
   socket.on("chat:leave", (conversationId) => {
     socket.leave(`conversation:${conversationId}`);
-    console.log(
+    logger.info(
       `✓ User ${socket.username} left conversation ${conversationId}`
     );
   });
@@ -121,11 +122,11 @@ const setupChatHandlers = (io, socket) => {
         conversationId,
       });
 
-      console.log(
+      logger.info(
         `✓ Message sent in conversation ${conversationId} by ${socket.username}`
       );
     } catch (error) {
-      console.error("Send message error:", error);
+      logger.error("Send message error:", error);
       socket.emit("error", { message: "Failed to send message" });
     }
   });
@@ -176,11 +177,11 @@ const setupChatHandlers = (io, socket) => {
         readBy: socket.userId,
       });
 
-      console.log(
+      logger.info(
         `✓ Messages marked as read in conversation ${conversationId} by ${socket.username}`
       );
     } catch (error) {
-      console.error("Mark as read error:", error);
+      logger.error("Mark as read error:", error);
       socket.emit("error", { message: "Failed to mark as read" });
     }
   });

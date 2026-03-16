@@ -4,6 +4,7 @@ const Like = require("../models/Like");
 const { getTimeAgo } = require("../utils/timeHelper");
 const { DEFAULT_POST_LIMIT, MAX_POST_LIMIT } = require("../constants");
 const mongoose = require("mongoose");
+const logger = require("../utils/logger.js");
 
 // [POST] /api/saves/:postId - Save a post
 exports.savePost = async (req, res) => {
@@ -11,7 +12,7 @@ exports.savePost = async (req, res) => {
     const { postId } = req.params;
     const userId = req.user.id;
 
-    console.log(`Save post - User: ${req.user.username}, Post: ${postId}`);
+    logger.info(`Save post - User: ${req.user.username}, Post: ${postId}`);
 
     const post = await Post.findOne({ _id: postId, deleted: false });
     if (!post) {
@@ -34,7 +35,7 @@ exports.savePost = async (req, res) => {
 
     await Post.findByIdAndUpdate(postId, { $inc: { savesCount: 1 } });
 
-    console.log(`Post saved - ID: ${postId}`);
+    logger.info(`Post saved - ID: ${postId}`);
 
     res.json({
       success: true,
@@ -42,7 +43,7 @@ exports.savePost = async (req, res) => {
       isSaved: true,
     });
   } catch (error) {
-    console.error("Save post error:", error);
+    logger.error("Save post error:", error);
 
     if (error.code === 11000) {
       return res.json({
@@ -66,7 +67,7 @@ exports.unsavePost = async (req, res) => {
     const { postId } = req.params;
     const userId = req.user.id;
 
-    console.log(`Unsave post - User: ${req.user.username}, Post: ${postId}`);
+    logger.info(`Unsave post - User: ${req.user.username}, Post: ${postId}`);
 
     const save = await Save.findOneAndDelete({ userId, postId });
 
@@ -85,7 +86,7 @@ exports.unsavePost = async (req, res) => {
       },
     ]);
 
-    console.log(`Post unsaved - ID: ${postId}`);
+    logger.info(`Post unsaved - ID: ${postId}`);
 
     res.json({
       success: true,
@@ -93,7 +94,7 @@ exports.unsavePost = async (req, res) => {
       isSaved: false,
     });
   } catch (error) {
-    console.error("Unsave post error:", error);
+    logger.error("Unsave post error:", error);
     res.status(500).json({
       success: false,
       message: "Failed to unsave post",
@@ -113,7 +114,7 @@ exports.getSavedPosts = async (req, res) => {
     );
     const skip = (page - 1) * limit;
 
-    console.log(`Get saved posts - User: ${req.user.username}`);
+    logger.info(`Get saved posts - User: ${req.user.username}`);
 
     const saves = await Save.find({ userId })
       .sort({ createdAt: -1 })
@@ -180,7 +181,7 @@ exports.getSavedPosts = async (req, res) => {
       },
     });
   } catch (error) {
-    console.error("Get saved posts error:", error);
+    logger.error("Get saved posts error:", error);
     res.status(500).json({
       success: false,
       message: "Failed to get saved posts",
@@ -202,7 +203,7 @@ exports.checkSaveStatus = async (req, res) => {
       isSaved: !!save,
     });
   } catch (error) {
-    console.error("Check save status error:", error);
+    logger.error("Check save status error:", error);
     res.status(500).json({
       success: false,
       message: "Failed to check save status",

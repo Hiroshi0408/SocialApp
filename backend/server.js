@@ -6,6 +6,7 @@ const connectDatabase = require("./config/database");
 const { apiLimiter } = require("./middlewares/rateLimiter.middleware");
 const { initializeSocket } = require("./config/socket");
 const errorHandler = require("./middlewares/errorHandler");
+const logger = require("./utils/logger.js");
 // Load environment variables
 dotenv.config();
 
@@ -20,8 +21,8 @@ const requiredEnvVars = [
 const missingEnvVars = requiredEnvVars.filter((envVar) => !process.env[envVar]);
 
 if (missingEnvVars.length > 0) {
-  console.error(" Missing required environment variables:");
-  missingEnvVars.forEach((envVar) => console.error(`   - ${envVar}`));
+  logger.error(" Missing required environment variables:");
+  missingEnvVars.forEach((envVar) => logger.error(`   - ${envVar}`));
   process.exit(1);
 }
 
@@ -56,7 +57,7 @@ app.use("/api/", apiLimiter);
 // Request logging (development only)
 if (process.env.NODE_ENV === "development") {
   app.use((req, res, next) => {
-    console.log(`${req.method} ${req.path}`);
+    logger.info(`${req.method} ${req.path}`);
     next();
   });
 }
@@ -102,10 +103,10 @@ app.use(errorHandler);
 const PORT = process.env.PORT || 5000;
 
 server.listen(PORT, () => {
-  console.log("\n================================");
-  console.log(` Server running on port ${PORT}`);
-  console.log(` Environment: ${process.env.NODE_ENV}`);
-  console.log(` API URL: http://localhost:${PORT}/api`);
-  console.log(` Socket.io: Enabled`);
-  console.log(" ================================\n");
+  logger.info("\n================================");
+  logger.info(` Server running on port ${PORT}`);
+  logger.info(` Environment: ${process.env.NODE_ENV}`);
+  logger.info(` API URL: http://localhost:${PORT}/api`);
+  logger.info(` Socket.io: Enabled`);
+  logger.info(" ================================\n");
 });

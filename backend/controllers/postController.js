@@ -17,6 +17,7 @@ const { extractMentions, validateMentions } = require("../utils/mentionHelper");
 const Follow = require("../models/Follow");
 const { moderateText } = require("../services/geminiModeration");
 const { formatPostsWithMetadata } = require("../helpers/postHelper");
+const logger = require("../utils/logger.js");
 
 // Get feed posts from followed users
 exports.getFeed = async (req, res) => {
@@ -29,7 +30,7 @@ exports.getFeed = async (req, res) => {
     const skip = (page - 1) * limit;
     const userId = req.user.id;
 
-    console.log(` Get feed - User: ${req.user.username}, Page: ${page}`);
+    logger.info(` Get feed - User: ${req.user.username}, Page: ${page}`);
 
     // Get list of users that current user follows
     const following = await Follow.find({ follower: userId }).select(
@@ -79,7 +80,7 @@ exports.getFeed = async (req, res) => {
       deleted: false,
     });
 
-    console.log(
+    logger.info(
       ` Feed: ${formattedPosts.length} posts from ${followingIds.length} users`,
     );
 
@@ -95,7 +96,7 @@ exports.getFeed = async (req, res) => {
       },
     });
   } catch (error) {
-    console.error(" Get feed error:", error);
+    logger.error(" Get feed error:", error);
     res.status(500).json({
       success: false,
       message: "Failed to get feed",
@@ -113,7 +114,7 @@ exports.getAllPosts = async (req, res) => {
     );
     const skip = (page - 1) * limit;
 
-    console.log(` Get posts - Page: ${page}, Limit: ${limit}`);
+    logger.info(` Get posts - Page: ${page}, Limit: ${limit}`);
 
     // Get posts with user info populated
     const posts = await Post.find({ deleted: false })
@@ -151,7 +152,7 @@ exports.getAllPosts = async (req, res) => {
     // Total count for pagination
     const total = await Post.countDocuments({ deleted: false });
 
-    console.log(` Retrieved ${formattedPosts.length} posts`);
+    logger.info(` Retrieved ${formattedPosts.length} posts`);
 
     res.json({
       success: true,
@@ -165,7 +166,7 @@ exports.getAllPosts = async (req, res) => {
       },
     });
   } catch (error) {
-    console.error(" Get posts error:", error);
+    logger.error(" Get posts error:", error);
     res.status(500).json({
       success: false,
       message: "Failed to get posts",
@@ -179,7 +180,7 @@ exports.getPostById = async (req, res) => {
   try {
     const postId = req.params.id;
 
-    console.log(` Get post by ID: ${postId}`);
+    logger.info(` Get post by ID: ${postId}`);
 
     const post = await Post.findOne({
       _id: postId,
@@ -234,7 +235,7 @@ exports.getPostById = async (req, res) => {
       },
     });
   } catch (error) {
-    console.error(" Get post error:", error);
+    logger.error(" Get post error:", error);
     res.status(500).json({
       success: false,
       message: "Failed to get post",
@@ -257,7 +258,7 @@ exports.createPost = async (req, res) => {
     } = req.body;
     const userId = req.user.id;
 
-    console.log(`Create post - User: ${req.user.username} Caption: ${caption}`);
+    logger.info(`Create post - User: ${req.user.username} Caption: ${caption}`);
 
     if (!image && !video) {
       return res.status(400).json({
@@ -284,7 +285,7 @@ exports.createPost = async (req, res) => {
           });
         }
       } catch (err) {
-        console.error(" Gemini moderation error (caption):", err);
+        logger.error(" Gemini moderation error (caption):", err);
         return res.status(500).json({
           success: false,
           message: "Moderation service unavailable",
@@ -316,7 +317,7 @@ exports.createPost = async (req, res) => {
     // Populate user info
     await post.populate("userId", "username fullName avatar");
 
-    console.log(` Post created - ID: ${post._id}`);
+    logger.info(` Post created - ID: ${post._id}`);
 
     // Send mention notifications
     if (post.mentions && post.mentions.length > 0) {
@@ -369,7 +370,7 @@ exports.createPost = async (req, res) => {
       },
     });
   } catch (error) {
-    console.error(" Create post error:", error);
+    logger.error(" Create post error:", error);
     res.status(500).json({
       success: false,
       message: "Failed to create post",
@@ -385,7 +386,7 @@ exports.updatePost = async (req, res) => {
     const { caption, location, taggedUsers } = req.body;
     const userId = req.user.id;
 
-    console.log(` Update post - ID: ${postId}`);
+    logger.info(` Update post - ID: ${postId}`);
 
     const post = await Post.findOne({
       _id: postId,
@@ -422,7 +423,7 @@ exports.updatePost = async (req, res) => {
           });
         }
       } catch (err) {
-        console.error(" Gemini moderation error (caption update):", err);
+        logger.error(" Gemini moderation error (caption update):", err);
         return res.status(500).json({
           success: false,
           message: "Moderation service unavailable",
@@ -440,7 +441,7 @@ exports.updatePost = async (req, res) => {
 
     await post.populate("userId", "username fullName avatar");
 
-    console.log(` Post updated - ID: ${postId}`);
+    logger.info(` Post updated - ID: ${postId}`);
 
     res.json({
       success: true,
@@ -451,7 +452,7 @@ exports.updatePost = async (req, res) => {
       },
     });
   } catch (error) {
-    console.error(" Update post error:", error);
+    logger.error(" Update post error:", error);
     res.status(500).json({
       success: false,
       message: "Failed to update post",
@@ -466,7 +467,7 @@ exports.deletePost = async (req, res) => {
     const postId = req.params.id;
     const userId = req.user.id;
 
-    console.log(` Delete post - ID: ${postId}`);
+    logger.info(` Delete post - ID: ${postId}`);
 
     // Find post
     const post = await Post.findOne({
@@ -512,14 +513,14 @@ exports.deletePost = async (req, res) => {
       User.findByIdAndUpdate(userId, { $inc: { postsCount: -1 } }),
     ]);
 
-    console.log(` Post deleted - ID: ${postId}`);
+    logger.info(` Post deleted - ID: ${postId}`);
 
     res.json({
       success: true,
       message: "Post deleted successfully",
     });
   } catch (error) {
-    console.error(" Delete post error:", error);
+    logger.error(" Delete post error:", error);
     res.status(500).json({
       success: false,
       message: "Failed to delete post",
@@ -534,7 +535,7 @@ exports.toggleLike = async (req, res) => {
     const postId = req.params.id;
     const userId = req.user.id;
 
-    console.log(` Toggle like - Post: ${postId}, User: ${req.user.username}`);
+    logger.info(` Toggle like - Post: ${postId}, User: ${req.user.username}`);
 
     // Check if post exists
     const post = await Post.findOne({
@@ -574,7 +575,7 @@ exports.toggleLike = async (req, res) => {
         type: "like",
       });
 
-      console.log(` Post unliked - ID: ${postId}`);
+      logger.info(` Post unliked - ID: ${postId}`);
 
       return res.json({
         success: true,
@@ -595,7 +596,7 @@ exports.toggleLike = async (req, res) => {
         $inc: { likesCount: 1 },
       });
 
-      console.log(` Post liked - ID: ${postId}`);
+      logger.info(` Post liked - ID: ${postId}`);
 
       await createNotification({
         recipientId: post.userId,
@@ -613,7 +614,7 @@ exports.toggleLike = async (req, res) => {
       });
     }
   } catch (error) {
-    console.error(" Toggle like error:", error);
+    logger.error(" Toggle like error:", error);
 
     if (error.code === 11000) {
       const post = await Post.findById(postId);
@@ -645,7 +646,7 @@ exports.addComment = async (req, res) => {
     const { text, parentCommentId } = req.body;
     const userId = req.user.id;
 
-    console.log(` Add comment - Post: ${postId}, User: ${req.user.username}`);
+    logger.info(` Add comment - Post: ${postId}, User: ${req.user.username}`);
 
     // Validation
     if (!text || !text.trim()) {
@@ -670,7 +671,7 @@ exports.addComment = async (req, res) => {
         });
       }
     } catch (err) {
-      console.error(" Gemini moderation error (comment):", err);
+      logger.error(" Gemini moderation error (comment):", err);
       return res.status(500).json({
         success: false,
         message: "Moderation service unavailable",
@@ -701,7 +702,7 @@ exports.addComment = async (req, res) => {
 
     // If replying to a comment, validate parent exists and check depth
     if (parentCommentId) {
-      console.log(
+      logger.info(
         ` Replying to comment: ${parentCommentId} on post: ${postId}`,
       );
       const parentComment = await Comment.findOne({
@@ -711,13 +712,13 @@ exports.addComment = async (req, res) => {
       });
 
       if (!parentComment) {
-        console.log(` Parent comment not found: ${parentCommentId}`);
+        logger.info(` Parent comment not found: ${parentCommentId}`);
         return res.status(404).json({
           success: false,
           message: "Parent comment not found or belongs to different post",
         });
       }
-      console.log(` Parent comment found: ${parentComment._id}`);
+      logger.info(` Parent comment found: ${parentComment._id}`);
 
       // Check comment nesting depth
       let depth = 1;
@@ -762,7 +763,7 @@ exports.addComment = async (req, res) => {
 
     await comment.populate("userId", "username fullName avatar");
 
-    console.log(` Comment added - ID: ${comment._id}`);
+    logger.info(` Comment added - ID: ${comment._id}`);
 
     await createNotification({
       recipientId: post.userId,
@@ -803,7 +804,7 @@ exports.addComment = async (req, res) => {
       },
     });
   } catch (error) {
-    console.error(" Add comment error:", error);
+    logger.error(" Add comment error:", error);
     res.status(500).json({
       success: false,
       message: "Failed to add comment",
@@ -823,7 +824,7 @@ exports.getComments = async (req, res) => {
     );
     const skip = (page - 1) * limit;
 
-    console.log(` Get comments - Post: ${postId}`);
+    logger.info(` Get comments - Post: ${postId}`);
 
     // Get comments
     const comments = await Comment.find({
@@ -861,7 +862,7 @@ exports.getComments = async (req, res) => {
       },
     });
   } catch (error) {
-    console.error(" Get comments error:", error);
+    logger.error(" Get comments error:", error);
     res.status(500).json({
       success: false,
       message: "Failed to get comments",
@@ -882,7 +883,7 @@ exports.searchByHashtag = async (req, res) => {
     const skip = (page - 1) * limit;
     const userId = req.user.id;
 
-    console.log(`Search posts by hashtag: ${q}`);
+    logger.info(`Search posts by hashtag: ${q}`);
 
     if (!q || q.trim().length === 0) {
       return res.status(400).json({
@@ -946,7 +947,7 @@ exports.searchByHashtag = async (req, res) => {
       },
     });
   } catch (error) {
-    console.error("Search hashtag error:", error);
+    logger.error("Search hashtag error:", error);
     res.status(500).json({
       success: false,
       message: "Failed to search hashtag",
@@ -965,7 +966,7 @@ exports.getTaggedPosts = async (req, res) => {
     );
     const skip = (page - 1) * limit;
 
-    console.log(`Get tagged posts - User: ${userId}, Page: ${page}`);
+    logger.info(`Get tagged posts - User: ${userId}, Page: ${page}`);
 
     const posts = await Post.find({
       taggedUsers: userId,
@@ -1007,7 +1008,7 @@ exports.getTaggedPosts = async (req, res) => {
       deleted: false,
     });
 
-    console.log(`Retrieved ${formattedPosts.length} tagged posts`);
+    logger.info(`Retrieved ${formattedPosts.length} tagged posts`);
 
     res.json({
       success: true,
@@ -1021,7 +1022,7 @@ exports.getTaggedPosts = async (req, res) => {
       },
     });
   } catch (error) {
-    console.error("Get tagged posts error:", error);
+    logger.error("Get tagged posts error:", error);
     res.status(500).json({
       success: false,
       message: "Failed to get tagged posts",

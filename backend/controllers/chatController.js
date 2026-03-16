@@ -2,6 +2,7 @@ const Conversation = require("../models/Conversation");
 const Message = require("../models/Message");
 const User = require("../models/User");
 const { getIO } = require("../config/socket");
+const logger = require("../utils/logger.js");
 
 // [GET] /api/chat/conversations - Get all conversations for current user
 exports.getConversations = async (req, res) => {
@@ -42,7 +43,7 @@ exports.getConversations = async (req, res) => {
       conversations: formattedConversations,
     });
   } catch (error) {
-    console.error("Get conversations error:", error);
+    logger.error("Get conversations error:", error);
     res.status(500).json({
       success: false,
       message: "Failed to get conversations",
@@ -91,7 +92,7 @@ exports.getOrCreateConversation = async (req, res) => {
       conversation,
     });
   } catch (error) {
-    console.error("Get/create conversation error:", error);
+    logger.error("Get/create conversation error:", error);
     res.status(500).json({
       success: false,
       message: "Failed to get conversation",
@@ -142,7 +143,7 @@ exports.getMessages = async (req, res) => {
       deleted: false,
     });
 
-    console.log(
+    logger.info(
       `📨 Retrieved ${messages.length} messages (${messages.filter((m) => m.isEncrypted).length} encrypted)`,
     );
 
@@ -158,7 +159,7 @@ exports.getMessages = async (req, res) => {
       },
     });
   } catch (error) {
-    console.error("Get messages error:", error);
+    logger.error("Get messages error:", error);
     res.status(500).json({
       success: false,
       message: "Failed to get messages",
@@ -248,11 +249,11 @@ exports.sendMessage = async (req, res) => {
         conversationId,
       });
 
-      console.log(
+      logger.info(
         `📬 ${isEncrypted ? "Encrypted" : "Plain"} message sent to user:${otherParticipant}`,
       );
     } catch (socketError) {
-      console.error("Socket emit error:", socketError);
+      logger.error("Socket emit error:", socketError);
       // Don't fail the request if socket emit fails
     }
 
@@ -261,7 +262,7 @@ exports.sendMessage = async (req, res) => {
       message: message.toJSON(),
     });
   } catch (error) {
-    console.error("Send message error:", error);
+    logger.error("Send message error:", error);
     res.status(500).json({
       success: false,
       message: "Failed to send message",
@@ -322,7 +323,7 @@ exports.markAsRead = async (req, res) => {
         readBy: userId,
       });
     } catch (socketError) {
-      console.error("Socket emit error:", socketError);
+      logger.error("Socket emit error:", socketError);
     }
 
     res.json({
@@ -330,7 +331,7 @@ exports.markAsRead = async (req, res) => {
       message: "Messages marked as read",
     });
   } catch (error) {
-    console.error("Mark as read error:", error);
+    logger.error("Mark as read error:", error);
     res.status(500).json({
       success: false,
       message: "Failed to mark messages as read",

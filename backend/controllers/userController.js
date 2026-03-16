@@ -6,6 +6,7 @@ const Save = require("../models/Save");
 const { getTimeAgo } = require("../utils/timeHelper");
 const { createNotification } = require("./notificationController");
 const { formatPostsWithMetadata } = require("../helpers/postHelper");
+const logger = require("../utils/logger.js");
 const {
   DEFAULT_POST_LIMIT,
   MAX_POST_LIMIT,
@@ -20,7 +21,7 @@ exports.getUserProfile = async (req, res) => {
     const { username } = req.params;
     const currentUserId = req.user.id;
 
-    console.log(`Get user profile: ${username}`);
+    logger.info(`Get user profile: ${username}`);
 
     const user = await User.findOne({
       username,
@@ -49,7 +50,7 @@ exports.getUserProfile = async (req, res) => {
       },
     });
   } catch (error) {
-    console.error("Get user profile error:", error);
+    logger.error("Get user profile error:", error);
     res.status(500).json({
       success: false,
       message: "Failed to get user profile",
@@ -70,7 +71,7 @@ exports.getUserPosts = async (req, res) => {
     const skip = (page - 1) * limit;
     const currentUserId = req.user.id;
 
-    console.log(`Get user posts - User: ${userId}`);
+    logger.info(`Get user posts - User: ${userId}`);
 
     const posts = await Post.find({
       userId,
@@ -118,7 +119,7 @@ exports.getUserPosts = async (req, res) => {
       },
     });
   } catch (error) {
-    console.error("Get user posts error:", error);
+    logger.error("Get user posts error:", error);
     res.status(500).json({
       success: false,
       message: "Failed to get user posts",
@@ -133,7 +134,7 @@ exports.followUser = async (req, res) => {
     const { userId } = req.params;
     const currentUserId = req.user.id;
 
-    console.log(
+    logger.info(
       `Follow user - Follower: ${req.user.username}, Following: ${userId}`,
     );
 
@@ -176,7 +177,7 @@ exports.followUser = async (req, res) => {
       User.findByIdAndUpdate(userId, { $inc: { followersCount: 1 } }),
     ]);
 
-    console.log(`User followed - ID: ${userId}`);
+    logger.info(`User followed - ID: ${userId}`);
 
     await createNotification({
       recipientId: userId,
@@ -191,7 +192,7 @@ exports.followUser = async (req, res) => {
       message: "User followed successfully",
     });
   } catch (error) {
-    console.error("Follow user error:", error);
+    logger.error("Follow user error:", error);
 
     if (error.code === 11000) {
       return res.json({
@@ -214,7 +215,7 @@ exports.unfollowUser = async (req, res) => {
     const { userId } = req.params;
     const currentUserId = req.user.id;
 
-    console.log(
+    logger.info(
       `Unfollow user - Follower: ${req.user.username}, Following: ${userId}`,
     );
 
@@ -251,14 +252,14 @@ exports.unfollowUser = async (req, res) => {
       ]),
     ]);
 
-    console.log(`User unfollowed - ID: ${userId}`);
+    logger.info(`User unfollowed - ID: ${userId}`);
 
     res.json({
       success: true,
       message: "User unfollowed successfully",
     });
   } catch (error) {
-    console.error("Unfollow user error:", error);
+    logger.error("Unfollow user error:", error);
     res.status(500).json({
       success: false,
       message: "Failed to unfollow user",
@@ -276,7 +277,7 @@ exports.getSuggestedUsers = async (req, res) => {
       MAX_USER_LIMIT,
     );
 
-    console.log(`Get suggested users - User: ${req.user.username}`);
+    logger.info(`Get suggested users - User: ${req.user.username}`);
 
     const following = await Follow.find({ follower: currentUserId }).select(
       "following",
@@ -304,7 +305,7 @@ exports.getSuggestedUsers = async (req, res) => {
       users,
     });
   } catch (error) {
-    console.error("Get suggested users error:", error);
+    logger.error("Get suggested users error:", error);
     res.status(500).json({
       success: false,
       message: "Failed to get suggested users",
@@ -324,7 +325,7 @@ exports.searchUsers = async (req, res) => {
     );
     const skip = (page - 1) * limit;
 
-    console.log(`Search users - Query: ${q}`);
+    logger.info(`Search users - Query: ${q}`);
 
     if (!q || q.trim().length === 0) {
       return res.status(400).json({
@@ -363,7 +364,7 @@ exports.searchUsers = async (req, res) => {
       },
     });
   } catch (error) {
-    console.error("Search users error:", error);
+    logger.error("Search users error:", error);
     res.status(500).json({
       success: false,
       message: "Failed to search users",
@@ -383,7 +384,7 @@ exports.getFollowers = async (req, res) => {
     );
     const skip = (page - 1) * limit;
 
-    console.log(`Get followers - User: ${userId}`);
+    logger.info(`Get followers - User: ${userId}`);
 
     const followers = await Follow.find({ following: userId })
       .populate("follower", "username fullName avatar followersCount")
@@ -407,7 +408,7 @@ exports.getFollowers = async (req, res) => {
       },
     });
   } catch (error) {
-    console.error("Get followers error:", error);
+    logger.error("Get followers error:", error);
     res.status(500).json({
       success: false,
       message: "Failed to get followers",
@@ -427,7 +428,7 @@ exports.getFollowing = async (req, res) => {
     );
     const skip = (page - 1) * limit;
 
-    console.log(`Get following - User: ${userId}`);
+    logger.info(`Get following - User: ${userId}`);
 
     const following = await Follow.find({ follower: userId })
       .populate("following", "username fullName avatar followersCount")
@@ -451,7 +452,7 @@ exports.getFollowing = async (req, res) => {
       },
     });
   } catch (error) {
-    console.error("Get following error:", error);
+    logger.error("Get following error:", error);
     res.status(500).json({
       success: false,
       message: "Failed to get following",
@@ -466,7 +467,7 @@ exports.updateProfile = async (req, res) => {
     const userId = req.user.id;
     const { fullName, bio, website } = req.body;
 
-    console.log(`Update profile - User: ${req.user.username}`);
+    logger.info(`Update profile - User: ${req.user.username}`);
 
     const user = await User.findById(userId);
 
@@ -483,7 +484,7 @@ exports.updateProfile = async (req, res) => {
 
     await user.save();
 
-    console.log(`Profile updated - User: ${user.username}`);
+    logger.info(`Profile updated - User: ${user.username}`);
 
     res.json({
       success: true,
@@ -491,7 +492,7 @@ exports.updateProfile = async (req, res) => {
       user: user.toJSON(),
     });
   } catch (error) {
-    console.error("Update profile error:", error);
+    logger.error("Update profile error:", error);
 
     if (error.name === "ValidationError") {
       const errors = {};
@@ -520,7 +521,7 @@ exports.uploadAvatar = async (req, res) => {
     const userId = req.user.id;
     const { avatar } = req.body;
 
-    console.log(`Upload avatar - User: ${req.user.username}`);
+    logger.info(`Upload avatar - User: ${req.user.username}`);
 
     if (!avatar) {
       return res.status(400).json({
@@ -535,7 +536,7 @@ exports.uploadAvatar = async (req, res) => {
       { new: true },
     );
 
-    console.log(`Avatar updated - User: ${user.username}`);
+    logger.info(`Avatar updated - User: ${user.username}`);
 
     res.json({
       success: true,
@@ -544,7 +545,7 @@ exports.uploadAvatar = async (req, res) => {
       user: user.toJSON(),
     });
   } catch (error) {
-    console.error("Upload avatar error:", error);
+    logger.error("Upload avatar error:", error);
     res.status(500).json({
       success: false,
       message: "Failed to upload avatar",
@@ -569,7 +570,7 @@ exports.checkFollowStatus = async (req, res) => {
       isFollowing: !!isFollowing,
     });
   } catch (error) {
-    console.error("Check follow status error:", error);
+    logger.error("Check follow status error:", error);
     res.status(500).json({
       success: false,
       message: "Failed to check follow status",

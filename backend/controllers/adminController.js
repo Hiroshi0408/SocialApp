@@ -3,6 +3,7 @@ const Post = require("../models/Post");
 const Comment = require("../models/Comment");
 const Like = require("../models/Like");
 const { logAdminAction } = require("../utils/auditLog");
+const logger = require("../utils/logger.js");
 
 const toInt = (v, fallback) => {
   const n = parseInt(v, 10);
@@ -110,7 +111,7 @@ exports.listUsers = async (req, res) => {
       users,
     });
   } catch (error) {
-    console.error("Admin list users error:", error);
+    logger.error("Admin list users error:", error);
     res.status(500).json({
       success: false,
       message: "Failed to list users",
@@ -149,7 +150,7 @@ exports.banUser = async (req, res) => {
 
     res.json({ success: true, message: "User banned", user });
   } catch (error) {
-    console.error("Admin ban user error:", error);
+    logger.error("Admin ban user error:", error);
     res.status(500).json({
       success: false,
       message: "Failed to ban user",
@@ -188,7 +189,7 @@ exports.unbanUser = async (req, res) => {
 
     res.json({ success: true, message: "User unbanned", user });
   } catch (error) {
-    console.error("Admin unban user error:", error);
+    logger.error("Admin unban user error:", error);
     res.status(500).json({
       success: false,
       message: "Failed to unban user",
@@ -232,7 +233,7 @@ exports.setUserRole = async (req, res) => {
 
     res.json({ success: true, message: "Role updated", user });
   } catch (error) {
-    console.error("Admin set role error:", error);
+    logger.error("Admin set role error:", error);
     res.status(500).json({
       success: false,
       message: "Failed to set role",
@@ -284,7 +285,7 @@ exports.listPosts = async (req, res) => {
       posts,
     });
   } catch (error) {
-    console.error("Admin list posts error:", error);
+    logger.error("Admin list posts error:", error);
     res.status(500).json({
       success: false,
       message: "Failed to list posts",
@@ -321,7 +322,7 @@ exports.adminDeletePost = async (req, res) => {
 
     res.json({ success: true, message: "Post soft-deleted" });
   } catch (error) {
-    console.error("Admin delete post error:", error);
+    logger.error("Admin delete post error:", error);
     res.status(500).json({
       success: false,
       message: "Failed to delete post",
@@ -358,7 +359,7 @@ exports.restorePost = async (req, res) => {
 
     res.json({ success: true, message: "Post restored" });
   } catch (error) {
-    console.error("Admin restore post error:", error);
+    logger.error("Admin restore post error:", error);
     res.status(500).json({
       success: false,
       message: "Failed to restore post",
@@ -405,7 +406,7 @@ exports.listComments = async (req, res) => {
       comments,
     });
   } catch (error) {
-    console.error("Admin list comments error:", error);
+    logger.error("Admin list comments error:", error);
     res.status(500).json({
       success: false,
       message: "Failed to list comments",
@@ -442,7 +443,7 @@ exports.adminDeleteComment = async (req, res) => {
 
     res.json({ success: true, message: "Comment soft-deleted" });
   } catch (error) {
-    console.error("Admin delete comment error:", error);
+    logger.error("Admin delete comment error:", error);
     res.status(500).json({
       success: false,
       message: "Failed to delete comment",
@@ -479,7 +480,7 @@ exports.restoreComment = async (req, res) => {
 
     res.json({ success: true, message: "Comment restored" });
   } catch (error) {
-    console.error("Admin restore comment error:", error);
+    logger.error("Admin restore comment error:", error);
     res.status(500).json({
       success: false,
       message: "Failed to restore comment",
@@ -578,7 +579,7 @@ exports.getStats = async (req, res) => {
       topPosts,
     });
   } catch (error) {
-    console.error("Admin stats error:", error);
+    logger.error("Admin stats error:", error);
     res.status(500).json({
       success: false,
       message: "Failed to get stats",
@@ -605,7 +606,7 @@ exports.listAuditLogs = async (req, res) => {
 
     res.json({ success: true, logs });
   } catch (error) {
-    console.error("Admin audit list error:", error);
+    logger.error("Admin audit list error:", error);
     res.status(500).json({
       success: false,
       message: "Failed to list audit logs",
