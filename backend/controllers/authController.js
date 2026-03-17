@@ -1,6 +1,7 @@
 const User = require("../models/User");
 const jwt = require("jsonwebtoken");
 const crypto = require("crypto");
+const bcrypt = require("bcryptjs");
 const admin = require("../config/firebaseAdmin");
 const { JWT_EXPIRATION } = require("../constants");
 const logger = require("../utils/logger.js");
@@ -206,23 +207,37 @@ exports.googleLogin = async (req, res) => {
         message: "Invalid Google token",
       });
     }
-    if (decodedToken.email !== email) {
-      logger.error(
-        "Email mismatch - Token:",
-        decodedToken.email,
-        "Request:",
-        email,
-      );
+
+    const tokenEmail = decodedToken.email?.toLowerCase();
+    if (!tokenEmail) {
+      return res.status(401).json({
+        success: false,
+        message: "Google account has no email",
+      });
+    }
+
+    if (!decodedToken.email_verified) {
+      return res.status(401).json({
+        success: false,
+        message: "Google email is not verified",
+      });
+    }
+
+    if (email && tokenEmail !== email.toLowerCase()) {
+      logger.error("Email mismatch - Token:", tokenEmail, "Request:", email);
       return res.status(401).json({
         success: false,
         message: "Email verification failed",
       });
     }
 
-    let user = await User.findOne({ email: email.toLowerCase() });
+    let user = await User.findOne({ email: tokenEmail });
+
+    const tokenDisplayName = decodedToken.name || displayName;
+    const tokenPhotoURL = decodedToken.picture || photoURL;
 
     if (!user) {
-      let baseUsername = email
+      let baseUsername = tokenEmail
         .split("@")[0]
         .toLowerCase()
         .replace(/[^a-z0-9]/g, "");
@@ -236,10 +251,10 @@ exports.googleLogin = async (req, res) => {
       }
 
       user = new User({
-        email: email.toLowerCase(),
-        fullName: displayName || email.split("@")[0],
+        email: tokenEmail,
+        fullName: tokenDisplayName || tokenEmail.split("@")[0],
         username,
-        avatar: photoURL || null,
+        avatar: tokenPhotoURL || null,
         firebaseUid: decodedToken.uid,
         isGoogleAccount: true,
         isEmailVerified: true,
@@ -254,20 +269,33 @@ exports.googleLogin = async (req, res) => {
     } else {
       let updated = false;
 
+      if (user.firebaseUid && user.firebaseUid !== decodedToken.uid) {
+        logger.error("Firebase UID mismatch for email:", tokenEmail);
+        return res.status(401).json({
+          success: false,
+          message: "Google account mismatch",
+        });
+      }
+
       if (!user.firebaseUid && !user.password) {
         user.firebaseUid = decodedToken.uid;
         user.isGoogleAccount = true;
         updated = true;
       } else if (!user.firebaseUid && user.password) {
         user.firebaseUid = decodedToken.uid;
+        user.isGoogleAccount = true;
         updated = true;
       }
       if (!user.isEmailVerified && decodedToken.email_verified) {
         user.isEmailVerified = true;
         updated = true;
       }
-      if (photoURL && !user.avatar) {
-        user.avatar = photoURL;
+      if (tokenPhotoURL && !user.avatar) {
+        user.avatar = tokenPhotoURL;
+        updated = true;
+      }
+      if (tokenDisplayName && !user.fullName) {
+        user.fullName = tokenDisplayName;
         updated = true;
       }
       if (updated) {
@@ -509,7 +537,7 @@ exports.resetPassword = async (req, res) => {
       });
     }
 
-    user.password = password;
+    user.password = await bcrypt.hash(password, 10);
     user.passwordResetToken = undefined;
     user.passwordResetExpires = undefined;
     await user.save();
@@ -572,7 +600,7 @@ exports.changePassword = async (req, res) => {
       });
     }
 
-    user.password = newPassword;
+    user.password = await bcrypt.hash(newPassword, 10);
     await user.save();
 
     logger.info("Password changed successfully for user:", user.username);

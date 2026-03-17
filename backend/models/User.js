@@ -132,13 +132,16 @@ const userSchema = new mongoose.Schema(
 // Bỏ các index duplicate, chỉ giữ index cho createdAt
 userSchema.index({ createdAt: -1 });
 
-// Encrypt password - UPDATE ĐỂ SKIP GOOGLE ACCOUNTS
+// Encrypt password whenever password is modified and non-empty
 userSchema.pre("save", async function (next) {
-  // Skip hash password nếu:
-  // 1. Password không được modified
-  // 2. Là Google account (không có password)
-  // 3. Password là null/undefined
-  if (!this.isModified("password") || this.isGoogleAccount || !this.password) {
+  // Skip only when password is unchanged or empty.
+  // This allows Google-linked accounts to set/reset a password safely.
+  if (!this.isModified("password") || !this.password) {
+    return next();
+  }
+
+  // If password is already a bcrypt hash, avoid hashing again.
+  if (/^\$2[aby]\$\d{2}\$/.test(this.password)) {
     return next();
   }
 
@@ -151,11 +154,11 @@ userSchema.pre("save", async function (next) {
   }
 });
 
-// Compare password - UPDATE ĐỂ HANDLE GOOGLE ACCOUNTS
+// Compare password - allow password auth whenever a password exists
 userSchema.methods.comparePassword = async function (candidatePassword) {
   try {
-    // Google accounts không có password
-    if (this.isGoogleAccount || !this.password) {
+    // Cannot compare if account has no stored password
+    if (!this.password) {
       return false;
     }
 

@@ -4,14 +4,17 @@ const Like = require("../models/Like");
 const Notification = require("../models/Notification");
 const { createNotification } = require("./notificationController");
 const logger = require("../utils/logger.js");
-
+const mongoose = require("mongoose");
+const { getTimeAgo } = require("../utils/timeHelper");
 //[DELETE] /api/comments/:id - Delete Comment
 exports.deleteComment = async (req, res) => {
   try {
     const commentId = req.params.id;
     const userId = req.user.id;
 
-    logger.info(` Delete comment - Comment: ${commentId}, User: ${req.user.username}`);
+    logger.info(
+      ` Delete comment - Comment: ${commentId}, User: ${req.user.username}`,
+    );
 
     // Find comment
     const comment = await Comment.findOne({
@@ -35,24 +38,21 @@ exports.deleteComment = async (req, res) => {
     }
 
     // Find all child replies (recursive)
-    const findAllChildComments = async (parentId) => {
-      const children = await Comment.find({
-        parentCommentId: parentId,
-        deleted: false,
-      });
-
-      let allChildren = [...children];
-      for (const child of children) {
-        const grandChildren = await findAllChildComments(child._id);
-        allChildren = [...allChildren, ...grandChildren];
-      }
-
-      return allChildren;
-    };
-
-    const childComments = await findAllChildComments(commentId);
+    const childComments = await Comment.aggregate([
+      {
+        $graphLookup: {
+          from: "comments",
+          startWith: "$_id",
+          connectFromField: "_id",
+          connectToField: "parentCommentId",
+          as: "descendants",
+          restrictSearchWithMatch: { deleted: false },
+        },
+      },
+      { $match: { _id: new mongoose.Types.ObjectId(commentId) } },
+    ]).then((res) => res[0]?.descendants || []);
     const totalCommentsToDelete = 1 + childComments.length;
-    const allCommentIds = [commentId, ...childComments.map(c => c._id)];
+    const allCommentIds = [commentId, ...childComments.map((c) => c._id)];
 
     logger.info(` Deleting comment and ${childComments.length} child replies`);
 
@@ -60,13 +60,13 @@ exports.deleteComment = async (req, res) => {
     const deletedAt = new Date();
     await Comment.updateOne(
       { _id: commentId },
-      { $set: { deleted: true, deletedAt } }
+      { $set: { deleted: true, deletedAt } },
     );
 
     if (childComments.length > 0) {
       await Comment.updateMany(
-        { _id: { $in: childComments.map(c => c._id) } },
-        { $set: { deleted: true, deletedAt } }
+        { _id: { $in: childComments.map((c) => c._id) } },
+        { $set: { deleted: true, deletedAt } },
       );
     }
 
@@ -75,20 +75,22 @@ exports.deleteComment = async (req, res) => {
       // Delete all likes on these comments
       Like.deleteMany({
         targetId: { $in: allCommentIds },
-        targetType: "comment"
+        targetType: "comment",
       }),
       // Delete all notifications related to these comments
       Notification.deleteMany({
         targetId: { $in: allCommentIds },
-        targetType: "comment"
-      })
+        targetType: "comment",
+      }),
     ]);
 
     // Decrement post's comments count (prevent negative)
     await Post.findByIdAndUpdate(comment.postId, [
       {
         $set: {
-          commentsCount: { $max: [0, { $subtract: ["$commentsCount", totalCommentsToDelete] }] },
+          commentsCount: {
+            $max: [0, { $subtract: ["$commentsCount", totalCommentsToDelete] }],
+          },
         },
       },
     ]);
@@ -104,7 +106,9 @@ exports.deleteComment = async (req, res) => {
       ]);
     }
 
-    logger.info(`Comment deleted - ID: ${commentId}, Total deleted: ${totalCommentsToDelete}`);
+    logger.info(
+      `Comment deleted - ID: ${commentId}, Total deleted: ${totalCommentsToDelete}`,
+    );
 
     res.json({
       success: true,
@@ -151,21 +155,21 @@ exports.getCommentReplies = async (req, res) => {
       .lean();
 
     // Check if user has liked each reply
-    const replyIds = replies.map(r => r._id);
+    const replyIds = replies.map((r) => r._id);
     const likes = await Like.find({
       userId,
       targetId: { $in: replyIds },
       targetType: "comment",
     }).select("targetId");
 
-    const likedReplyIds = new Set(likes.map(l => l.targetId.toString()));
+    const likedReplyIds = new Set(likes.map((l) => l.targetId.toString()));
 
     // Format replies
     const formattedReplies = replies.map((reply) => ({
       ...reply,
       user: reply.userId,
       isLiked: likedReplyIds.has(reply._id.toString()),
-      timestamp: require("../utils/timeHelper").getTimeAgo(reply.createdAt),
+      timestamp: getTimeAgo(reply.createdAt),
     }));
 
     res.json({
@@ -188,7 +192,9 @@ exports.toggleCommentLike = async (req, res) => {
     const commentId = req.params.id;
     const userId = req.user.id;
 
-    logger.info(` Toggle comment like - Comment: ${commentId}, User: ${req.user.username}`);
+    logger.info(
+      ` Toggle comment like - Comment: ${commentId}, User: ${req.user.username}`,
+    );
 
     // Check if comment exists
     const comment = await Comment.findOne({
