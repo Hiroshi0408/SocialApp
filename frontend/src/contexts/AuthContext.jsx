@@ -61,7 +61,7 @@ export const AuthProvider = ({ children }) => {
 
           if (user && storedUser.id !== user.id) {
             console.log(
-              "Different user logged in from another tab, reloading..."
+              "Different user logged in from another tab, reloading...",
             );
             const freshUser = await authService.getCurrentUser();
 
@@ -69,7 +69,8 @@ export const AuthProvider = ({ children }) => {
               setUser(freshUser);
             } else {
               console.warn("Token mismatch detected, logging out...");
-              authService.logout();
+              localStorage.removeItem("token");
+              localStorage.removeItem("user");
               setUser(null);
               window.location.href = "/";
             }

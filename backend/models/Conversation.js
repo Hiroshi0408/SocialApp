@@ -2,6 +2,11 @@ const mongoose = require("mongoose");
 
 const conversationSchema = new mongoose.Schema(
   {
+    type: {
+      type: String,
+      enum: ["direct", "group"],
+      default: "direct",
+    },
     participants: [
       {
         type: mongoose.Schema.Types.ObjectId,
@@ -9,6 +14,19 @@ const conversationSchema = new mongoose.Schema(
         required: true,
       },
     ],
+    groupName: {
+      type: String,
+      trim: true,
+      maxlength: [100, "Group name cannot exceed 100 characters"],
+    },
+    groupAvatar: {
+      type: String,
+      default: "",
+    },
+    admin: {
+      type: mongoose.Schema.Types.ObjectId,
+      ref: "User",
+    },
     lastMessage: {
       type: mongoose.Schema.Types.ObjectId,
       ref: "Message",
@@ -17,7 +35,6 @@ const conversationSchema = new mongoose.Schema(
       type: Date,
       default: Date.now,
     },
-    // Track unread count for each participant
     unreadCount: {
       type: Map,
       of: Number,
@@ -26,27 +43,37 @@ const conversationSchema = new mongoose.Schema(
   },
   {
     timestamps: true,
-  }
+  },
 );
 
-// Compound index to ensure participants are unique and efficient queries
 conversationSchema.index({ participants: 1 });
 conversationSchema.index({ lastMessageAt: -1 });
 
-// Ensure exactly 2 participants for 1-1 chat
+// Validate participants theo type
 conversationSchema.pre("save", function (next) {
-  if (this.participants.length !== 2) {
-    return next(new Error("Conversation must have exactly 2 participants"));
+  if (this.type === "direct" && this.participants.length !== 2) {
+    return next(
+      new Error("Direct conversation must have exactly 2 participants"),
+    );
+  }
+  if (this.type === "group" && this.participants.length < 3) {
+    return next(
+      new Error("Group conversation must have at least 3 participants"),
+    );
+  }
+  if (this.type === "group" && !this.groupName) {
+    return next(new Error("Group name is required"));
   }
   next();
 });
 
-// Method to find conversation between two users
+// Tìm conversation 1-1 giữa 2 users
 conversationSchema.statics.findBetweenUsers = async function (
   userId1,
-  userId2
+  userId2,
 ) {
   return this.findOne({
+    type: "direct",
     participants: { $all: [userId1, userId2] },
   })
     .populate("participants", "username avatar fullName")
@@ -65,7 +92,7 @@ conversationSchema.methods.toJSON = function () {
 const Conversation = mongoose.model(
   "Conversation",
   conversationSchema,
-  "conversations"
+  "conversations",
 );
 
 module.exports = Conversation;

@@ -1,4 +1,4 @@
-import React, { useState } from "react";
+import React, { useEffect, useRef, useState } from "react";
 import { Link, useNavigate } from "react-router-dom";
 import { useTranslation } from "react-i18next";
 import { signInWithPopup } from "firebase/auth";
@@ -12,10 +12,11 @@ import "./Login.css";
 function Login() {
   const { t } = useTranslation();
   const navigate = useNavigate();
-  const { login } = useAuth();
+  const { login, isAuthenticated, loading } = useAuth();
   const [isLoading, setIsLoading] = useState(false);
   const [isGoogleLoading, setIsGoogleLoading] = useState(false);
   const [showPassword, setShowPassword] = useState(false);
+  const submitLockRef = useRef(false);
 
   const validateLogin = (values) => {
     const newErrors = {};
@@ -42,7 +43,18 @@ function Login() {
       validateLogin,
     );
 
+  useEffect(() => {
+    if (!loading && isAuthenticated) {
+      navigate("/home", { replace: true });
+    }
+  }, [loading, isAuthenticated, navigate]);
+
   const onSubmit = async (formData) => {
+    if (submitLockRef.current || isLoading || isGoogleLoading) {
+      return;
+    }
+
+    submitLockRef.current = true;
     setIsLoading(true);
 
     try {
@@ -63,6 +75,7 @@ function Login() {
       showError(errorMessage);
     } finally {
       setIsLoading(false);
+      submitLockRef.current = false;
     }
   };
 
