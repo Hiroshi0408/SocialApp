@@ -19,7 +19,7 @@ function Login() {
   const [isGoogleLoading, setIsGoogleLoading] = useState(false);
   const [isWalletLoading, setIsWalletLoading] = useState(false);
   const [showPassword, setShowPassword] = useState(false);
-  const { connectWallet, walletAddress, signer } = useWeb3();
+  const { connectWallet } = useWeb3();
   const { getNonce, walletLogin } = web3Service;
   const submitLockRef = useRef(false);
 

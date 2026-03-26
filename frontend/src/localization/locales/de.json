@@ -203,6 +203,12 @@
     "confirmNewPasswordPlaceholder": "Neues Passwort bestätigen",
     "changing": "Wird geändert...",
     "changePasswordButton": "Passwort ändern",
+    "connectMetamask": "MetaMask verbinden",
+    "linkingMetamask": "MetaMask wird verbunden...",
+    "metamaskLinked": "MetaMask verbunden",
+    "walletConnectionFailed": "Verbindung zur Wallet fehlgeschlagen",
+    "walletLinkedSuccess": "Wallet erfolgreich verbunden!",
+    "walletLinkFailed": "Wallet konnte nicht verbunden werden",
     "logout": "Abmelden"
   },
   "notificationsPage": {
