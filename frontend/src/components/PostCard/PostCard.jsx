@@ -26,12 +26,19 @@ import PostModal from "../PostModal/PostModal";
 function PostCard({ post, onPostDeleted }) {
   const { t } = useTranslation();
   const { user: currentUser } = useAuth();
+  const normalizeCount = (value) => {
+    if (Array.isArray(value)) return value.length;
+    const parsed = Number(value);
+    return Number.isFinite(parsed) ? parsed : 0;
+  };
   const [isLiked, setIsLiked] = useState(post.isLiked);
   const [isSaved, setIsSaved] = useState(post.isSaved);
-  const [likes, setLikes] = useState(post.likes);
+  const [likes, setLikes] = useState(normalizeCount(post.likes));
   const [showComments, setShowComments] = useState(false);
   const [comments, setComments] = useState(post.commentsList || []);
-  const [commentsCount, setCommentsCount] = useState(post.comments);
+  const [commentsCount, setCommentsCount] = useState(
+    normalizeCount(post.comments),
+  );
   const [newComment, setNewComment] = useState("");
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [isLoadingComments, setIsLoadingComments] = useState(false);
@@ -67,20 +74,25 @@ function PostCard({ post, onPostDeleted }) {
     () => formatTimestamp(post.createdAt || post.timestamp),
     [post.createdAt, post.timestamp],
   );
+  const likesCount = useMemo(() => normalizeCount(likes), [likes]);
+  const totalCommentsCount = useMemo(
+    () => normalizeCount(commentsCount),
+    [commentsCount],
+  );
 
   // Sync props to state when post changes
   useEffect(() => {
     setIsLiked(post.isLiked);
-    setLikes(post.likes);
+    setLikes(normalizeCount(post.likes));
     setIsSaved(post.isSaved);
-    setCommentsCount(post.comments);
+    setCommentsCount(normalizeCount(post.comments));
   }, [post.isLiked, post.likes, post.isSaved, post.comments]);
 
   const handleLike = useCallback(async () => {
     if (isLiking) return;
 
     const prevIsLiked = isLiked;
-    const prevLikes = likes;
+    const prevLikes = likesCount;
 
     try {
       setIsLiking(true);
@@ -95,7 +107,7 @@ function PostCard({ post, onPostDeleted }) {
     } finally {
       setIsLiking(false);
     }
-  }, [isLiked, likes, postId, t]);
+  }, [isLiked, likesCount, postId, t, isLiking]);
 
   const handleDoubleClick = useCallback(
     (e) => {
@@ -421,7 +433,9 @@ function PostCard({ post, onPostDeleted }) {
         setCommentsCount((prev) => prev + 1);
         setNewComment("");
       } catch (error) {
-        showError(t("postCard.addCommentError"));
+        showError(
+          error.response?.data?.message || t("postCard.addCommentError"),
+        );
       } finally {
         setIsSubmitting(false);
       }
@@ -609,33 +623,32 @@ function PostCard({ post, onPostDeleted }) {
               <polygon points="22 2 15 22 11 13 2 9 22 2" />
             </svg>
           </button>
+          <button
+            className="action-btn comment-count-btn"
+            onClick={fetchAllComments}
+            disabled={isLoadingComments}
+            aria-label={
+              totalCommentsCount > 0
+                ? t("postCard.viewAllComments", { count: totalCommentsCount })
+                : t("postCard.noComments")
+            }
+          >
+            <svg
+              width="24"
+              height="24"
+              viewBox="0 0 24 24"
+              fill="none"
+              stroke="currentColor"
+              strokeWidth="2"
+              aria-hidden="true"
+            >
+              <path d="M21 11.5a8.38 8.38 0 0 1-.9 3.8 8.5 8.5 0 0 1-7.6 4.7 8.38 8.38 0 0 1-3.8-.9L3 21l1.9-5.7a8.38 8.38 0 0 1-.9-3.8 8.5 8.5 0 0 1 4.7-7.6 8.38 8.38 0 0 1 3.8-.9h.5a8.48 8.48 0 0 1 8 8v.5z" />
+            </svg>
+            <span className="comment-count">{totalCommentsCount}</span>
+          </button>
         </div>
 
         <div className="post-actions-right">
-          {commentsCount >= 0 && (
-            <button
-              className="action-btn comment-count-btn"
-              onClick={fetchAllComments}
-              disabled={isLoadingComments}
-              aria-label={t("postCard.viewAllComments", {
-                count: commentsCount,
-              })}
-            >
-              <svg
-                width="24"
-                height="24"
-                viewBox="0 0 24 24"
-                fill="none"
-                stroke="currentColor"
-                strokeWidth="2"
-                aria-hidden="true"
-              >
-                <path d="M21 11.5a8.38 8.38 0 0 1-.9 3.8 8.5 8.5 0 0 1-7.6 4.7 8.38 8.38 0 0 1-3.8-.9L3 21l1.9-5.7a8.38 8.38 0 0 1-.9-3.8 8.5 8.5 0 0 1 4.7-7.6 8.38 8.38 0 0 1 3.8-.9h.5a8.48 8.48 0 0 1 8 8v.5z" />
-              </svg>
-              <span className="comment-count">{commentsCount}</span>
-            </button>
-          )}
-
           <button
             className={`action-btn ${isSaved ? "saved" : ""}`}
             onClick={handleSave}
@@ -659,7 +672,7 @@ function PostCard({ post, onPostDeleted }) {
 
       <div className="post-info">
         <p className="post-likes">
-          <strong>{t("postCard.likes", { count: likes })}</strong>
+          <strong>{t("postCard.likes", { count: likesCount })}</strong>
         </p>
         <button
           className="view-comments"
@@ -668,8 +681,8 @@ function PostCard({ post, onPostDeleted }) {
           aria-label={
             showComments
               ? t("postCard.hideComments")
-              : commentsCount > 0
-                ? t("postCard.viewAllComments", { count: commentsCount })
+              : totalCommentsCount > 0
+                ? t("postCard.viewAllComments", { count: totalCommentsCount })
                 : t("postCard.noComments")
           }
         >
@@ -677,14 +690,14 @@ function PostCard({ post, onPostDeleted }) {
             ? t("postCard.loadingComments")
             : showComments
               ? t("postCard.hideComments")
-              : commentsCount > 0
-                ? t("postCard.viewAllComments", { count: commentsCount })
+              : totalCommentsCount > 0
+                ? t("postCard.viewAllComments", { count: totalCommentsCount })
                 : t("postCard.noComments")}
         </button>
 
         {showComments && (
           <>
-            {commentsCount > 0 && (
+            {totalCommentsCount > 0 && (
               <div className="comments-section">
                 {comments
                   .filter((comment) => comment.user)

@@ -48,13 +48,11 @@ const commentSchema = new mongoose.Schema(
   },
   {
     timestamps: true,
-  }
+  },
 );
 
 commentSchema.index({ postId: 1, createdAt: -1 });
 commentSchema.index({ postId: 1, deleted: 1, createdAt: -1 });
-commentSchema.index({ userId: 1 });
-commentSchema.index({ parentCommentId: 1 });
 
 commentSchema.methods.toJSON = function () {
   const comment = this.toObject();
