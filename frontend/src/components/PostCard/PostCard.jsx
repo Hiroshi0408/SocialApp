@@ -140,27 +140,12 @@ function PostCard({ post, onPostDeleted }) {
     const postUrl = `${window.location.origin}/post/${postId}`;
 
     try {
-      if (navigator.share) {
-        await navigator.share({
-          title: t("postCard.shareTitle", { username: post.user.username }),
-          text: post.caption || t("postCard.shareText"),
-          url: postUrl,
-        });
-      } else {
-        await navigator.clipboard.writeText(postUrl);
-        showSuccess(t("postCard.linkCopied"));
-      }
+      await navigator.clipboard.writeText(postUrl);
+      showSuccess(t("postCard.linkCopied"));
     } catch (error) {
-      if (error.name !== "AbortError") {
-        try {
-          await navigator.clipboard.writeText(postUrl);
-          showSuccess(t("postCard.linkCopied"));
-        } catch (clipboardError) {
-          showError(t("postCard.shareError"));
-        }
-      }
+      showError(t("postCard.shareError"));
     }
-  }, [postId, post.user.username, post.caption, t]);
+  }, [postId, t]);
 
   const isOwnPost = useMemo(() => {
     if (!currentUser || !post.user) return false;

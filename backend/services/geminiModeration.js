@@ -9,6 +9,26 @@
 
 const DEFAULT_MODEL = process.env.GEMINI_MODEL || "gemini-2.5-flash";
 
+function parseBool(v, def = false) {
+  if (v === undefined || v === null) return def;
+  if (typeof v === "boolean") return v;
+  const s = String(v).trim().toLowerCase();
+  if (["1", "true", "yes", "y", "on"].includes(s)) return true;
+  if (["0", "false", "no", "n", "off"].includes(s)) return false;
+  return def;
+}
+
+function allowResult(reason = "moderation_unavailable") {
+  return {
+    allowed: true,
+    verdict: "allow",
+    language: "unknown",
+    categories: [],
+    reasons: [reason],
+    suggested_clean_text: "",
+  };
+}
+
 function clampText(text, maxLen = 4000) {
   if (!text) return "";
   const t = String(text);
@@ -45,12 +65,16 @@ function buildSchema() {
  * @returns {Promise<{allowed:boolean, verdict:"allow"|"review"|"block", categories:any[], reasons:string[], suggested_clean_text?:string}>}
  */
 async function moderateText(text) {
-  if (process.env.ENABLE_GEMINI_MODERATION === "false") {
+  const geminiEnabled = parseBool(process.env.ENABLE_GEMINI_MODERATION, true);
+  const failOpen = parseBool(process.env.GEMINI_FAIL_OPEN, true);
+
+  if (!geminiEnabled) {
     return { allowed: true, verdict: "allow", categories: [], reasons: [] };
   }
 
   const apiKey = process.env.GEMINI_API_KEY;
   if (!apiKey) {
+    if (failOpen) return allowResult("missing_gemini_api_key");
     const err = new Error("Missing GEMINI_API_KEY in environment");
     err.code = "MISSING_GEMINI_API_KEY";
     throw err;
@@ -79,37 +103,44 @@ async function moderateText(text) {
     "USER_TEXT:\n" + content,
   ].join("\n");
 
-  const response = await ai.models.generateContent({
-    model: DEFAULT_MODEL,
-    contents: prompt,
-    config: {
-      temperature: 0,
-      responseMimeType: "application/json",
-      responseSchema: schema,
-    },
-  });
-
-  let parsed;
   try {
-    parsed = JSON.parse(response.text);
-  } catch (e) {
-    const err = new Error("Gemini moderation response was not valid JSON");
-    err.cause = e;
-    err.raw = response.text;
-    throw err;
+    const response = await ai.models.generateContent({
+      model: DEFAULT_MODEL,
+      contents: prompt,
+      config: {
+        temperature: 0,
+        responseMimeType: "application/json",
+        responseSchema: schema,
+      },
+    });
+
+    let parsed;
+    try {
+      parsed = JSON.parse(response.text);
+    } catch (e) {
+      const err = new Error("Gemini moderation response was not valid JSON");
+      err.cause = e;
+      err.raw = response.text;
+      throw err;
+    }
+
+    const verdict = (parsed.verdict || "review").toLowerCase();
+    const allowed = verdict === "allow";
+
+    return {
+      allowed,
+      verdict,
+      language: parsed.language,
+      categories: parsed.categories || [],
+      reasons: parsed.reasons || [],
+      suggested_clean_text: parsed.suggested_clean_text || "",
+    };
+  } catch (geminiError) {
+    if (failOpen) {
+      return allowResult("gemini_unavailable");
+    }
+    throw geminiError;
   }
-
-  const verdict = (parsed.verdict || "review").toLowerCase();
-  const allowed = verdict === "allow";
-
-  return {
-    allowed,
-    verdict,
-    language: parsed.language,
-    categories: parsed.categories || [],
-    reasons: parsed.reasons || [],
-    suggested_clean_text: parsed.suggested_clean_text || "",
-  };
 }
 
 module.exports = {
