@@ -15,7 +15,14 @@ const notificationSchema = new mongoose.Schema(
     },
     type: {
       type: String,
-      enum: ["like", "comment", "follow", "mention"],
+      enum: [
+        "like",
+        "comment",
+        "follow",
+        "mention",
+        "friend_request",
+        "friend_accept",
+      ],
       required: true,
     },
     targetType: {
@@ -38,17 +45,20 @@ const notificationSchema = new mongoose.Schema(
   },
   {
     timestamps: true,
-  }
+  },
 );
 
 notificationSchema.index({ recipientId: 1, createdAt: -1 });
 notificationSchema.index({ recipientId: 1, read: 1 });
-notificationSchema.index({ recipientId: 1, senderId: 1, targetId: 1, type: 1 }, { unique: true });
+notificationSchema.index(
+  { recipientId: 1, senderId: 1, targetId: 1, type: 1 },
+  { unique: true },
+);
 
 const Notification = mongoose.model(
   "Notification",
   notificationSchema,
-  "notifications"
+  "notifications",
 );
 
 module.exports = Notification;

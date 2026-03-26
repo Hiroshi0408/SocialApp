@@ -5,7 +5,6 @@ import { PostSkeleton } from "../Skeleton/Skeleton";
 import postService from "../../api/postService";
 import { normalizeArrayResponse, getId } from "../../utils";
 import "./Feed.css";
-import PostModal from "../PostModal/PostModal";
 
 function Feed() {
   const { t } = useTranslation();
@@ -13,7 +12,7 @@ function Feed() {
   const [loading, setLoading] = useState(true);
   const [loadingMore, setLoadingMore] = useState(false);
   const [error, setError] = useState(null);
-  const [feedType, setFeedType] = useState("following");
+  const [feedType, setFeedType] = useState("friends");
   const [page, setPage] = useState(1);
   const [hasMore, setHasMore] = useState(true);
   const observerTarget = useRef(null);
@@ -29,9 +28,9 @@ function Feed() {
         setError(null);
 
         const data =
-          feedType === "following"
-            ? await postService.getFeed(pageNum)
-            : await postService.getAllPosts(pageNum);
+          feedType === "all"
+            ? await postService.getAllPosts(pageNum)
+            : await postService.getFeed(pageNum, undefined, feedType);
 
         const newPosts = normalizeArrayResponse(data, "posts");
         const hasMoreData = data.pagination?.hasMore ?? newPosts.length > 0;
@@ -81,14 +80,15 @@ function Feed() {
       },
       { threshold: 0.5 },
     );
+    const observedNode = observerTarget.current;
 
-    if (observerTarget.current) {
-      observer.observe(observerTarget.current);
+    if (observedNode) {
+      observer.observe(observedNode);
     }
 
     return () => {
-      if (observerTarget.current) {
-        observer.unobserve(observerTarget.current);
+      if (observedNode) {
+        observer.unobserve(observedNode);
       }
     };
   }, [loadMore, hasMore, loadingMore, loading]);
@@ -106,6 +106,12 @@ function Feed() {
   return (
     <div className="feed-container">
       <div className="feed-tabs">
+        <button
+          className={`feed-tab ${feedType === "friends" ? "active" : ""}`}
+          onClick={() => handleFeedTypeChange("friends")}
+        >
+          {t("feed.friends")}
+        </button>
         <button
           className={`feed-tab ${feedType === "following" ? "active" : ""}`}
           onClick={() => handleFeedTypeChange("following")}
@@ -137,9 +143,11 @@ function Feed() {
         <div className="feed-empty">
           <h3>{t("feed.noPosts")}</h3>
           <p>
-            {feedType === "following"
-              ? t("feed.followPrompt")
-              : t("feed.noPostsAvailable")}
+            {feedType === "all"
+              ? t("feed.noPostsAvailable")
+              : feedType === "friends"
+                ? t("feed.noFriendsPosts")
+                : t("feed.noPostsAvailable")}
           </p>
         </div>
       ) : (

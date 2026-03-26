@@ -3,7 +3,7 @@ import { useNavigate, useLocation } from "react-router-dom";
 import { useTranslation } from "react-i18next";
 import CreatePostModal from "../CreatePostModal/CreatePostModal";
 import { useSocket } from "../../contexts/SocketContext";
-import { getUserAvatar, showInfo } from "../../utils";
+import { getUserAvatar } from "../../utils";
 import "./Sidebar.css";
 
 function Sidebar() {
@@ -70,6 +70,25 @@ function Sidebar() {
       label: t("sidebar.messages"),
       path: "/messages",
       badge: unreadMessages > 0 ? unreadMessages : null,
+    },
+    {
+      icon: (
+        <svg
+          width="24"
+          height="24"
+          viewBox="0 0 24 24"
+          fill="none"
+          stroke="currentColor"
+          strokeWidth="2"
+        >
+          <circle cx="9" cy="8" r="3" />
+          <circle cx="17" cy="10" r="3" />
+          <path d="M3 19c0-2.5 2.5-4 6-4" />
+          <path d="M11 19c0-2.5 2.5-4 6-4 1.7 0 3.2.4 4 1.2" />
+        </svg>
+      ),
+      label: t("sidebar.friends"),
+      path: "/friends",
     },
     {
       icon: (

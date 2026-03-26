@@ -14,7 +14,9 @@ import CallModal from "../../components/CallModal/CallModal";
 
 function Messages() {
   const { t } = useTranslation();
-  const [conversations, setConversations] = useState([]);
+  const [friendConversations, setFriendConversations] = useState([]);
+  const [pendingConversations, setPendingConversations] = useState([]);
+  const [activeTab, setActiveTab] = useState("friends");
   const [selectedConversation, setSelectedConversation] = useState(null);
   const [loading, setLoading] = useState(true);
   const { socket, setUnreadMessages } = useSocket();
@@ -45,7 +47,6 @@ function Messages() {
     }
   }, [remoteStream]);
 
-
   useEffect(() => {
     console.log("Call state changed:", callState);
   }, [callState]);
@@ -61,7 +62,8 @@ function Messages() {
       setLoading(true);
       const response = await chatService.getConversations();
       if (response.success) {
-        setConversations(response.conversations);
+        setFriendConversations(response.friendConversations || []);
+        setPendingConversations(response.pendingConversations || []);
       }
     } catch (error) {
       showError(t("messagesPage.loadConversationsError"));
@@ -84,24 +86,45 @@ function Messages() {
         return;
       }
 
-      setConversations((prevConversations) => {
+      let foundConversation = false;
+
+      setFriendConversations((prevConversations) => {
         const existingIndex = prevConversations.findIndex(
           (c) => c._id === conversationId,
         );
 
-        if (existingIndex !== -1) {
-          const updated = [...prevConversations];
-          const conv = { ...updated[existingIndex] };
-          conv.lastMessage = message;
-          conv.lastMessageAt = message.createdAt;
-          conv.unreadCount = (conv.unreadCount || 0) + 1;
-          updated.splice(existingIndex, 1);
-          return [conv, ...updated];
-        }
+        if (existingIndex === -1) return prevConversations;
 
-        fetchConversations();
-        return prevConversations;
+        foundConversation = true;
+        const updated = [...prevConversations];
+        const conv = { ...updated[existingIndex] };
+        conv.lastMessage = message;
+        conv.lastMessageAt = message.createdAt;
+        conv.unreadCount = (conv.unreadCount || 0) + 1;
+        updated.splice(existingIndex, 1);
+        return [conv, ...updated];
       });
+
+      setPendingConversations((prevConversations) => {
+        const existingIndex = prevConversations.findIndex(
+          (c) => c._id === conversationId,
+        );
+
+        if (existingIndex === -1) return prevConversations;
+
+        foundConversation = true;
+        const updated = [...prevConversations];
+        const conv = { ...updated[existingIndex] };
+        conv.lastMessage = message;
+        conv.lastMessageAt = message.createdAt;
+        conv.unreadCount = (conv.unreadCount || 0) + 1;
+        updated.splice(existingIndex, 1);
+        return [conv, ...updated];
+      });
+
+      if (!foundConversation) {
+        fetchConversations();
+      }
     };
 
     socket.on("message:new", handleIncomingMessage);
@@ -111,36 +134,62 @@ function Messages() {
     };
   }, [socket, selectedConversation, fetchConversations]);
 
+  const visibleConversations =
+    activeTab === "friends" ? friendConversations : pendingConversations;
+
+  useEffect(() => {
+    if (!selectedConversation) return;
+
+    const isVisible = visibleConversations.some(
+      (conversation) => conversation._id === selectedConversation._id,
+    );
+
+    if (!isVisible) {
+      setSelectedConversation(null);
+    }
+  }, [activeTab, visibleConversations, selectedConversation]);
+
   const handleSelectConversation = (conversation) => {
     setSelectedConversation(conversation);
     if (conversation.unreadCount > 0) {
-      setConversations((prevConversations) =>
+      const clearUnread = (prevConversations) =>
         prevConversations.map((conv) =>
-          conv._id === conversation._id
-            ? { ...conv, unreadCount: 0 }
-            : conv,
-        ),
-      );
+          conv._id === conversation._id ? { ...conv, unreadCount: 0 } : conv,
+        );
+
+      setFriendConversations(clearUnread);
+      setPendingConversations(clearUnread);
     }
   };
 
   const handleNewMessage = (updatedConversation) => {
-    setConversations((prevConversations) => {
+    const updateConversationList = (prevConversations) => {
+      const existingIndex = prevConversations.findIndex(
+        (conversation) => conversation._id === updatedConversation._id,
+      );
+
+      if (existingIndex === -1) {
+        return prevConversations;
+      }
+
       const filtered = prevConversations.filter(
-        (c) => c._id !== updatedConversation._id,
+        (conversation) => conversation._id !== updatedConversation._id,
       );
       return [updatedConversation, ...filtered];
-    });
+    };
+
+    setFriendConversations(updateConversationList);
+    setPendingConversations(updateConversationList);
   };
 
   const handleMarkAsRead = (conversationId) => {
-    setConversations((prevConversations) =>
+    const markRead = (prevConversations) =>
       prevConversations.map((conv) =>
-        conv._id === conversationId
-          ? { ...conv, unreadCount: 0 }
-          : conv,
-      ),
-    );
+        conv._id === conversationId ? { ...conv, unreadCount: 0 } : conv,
+      );
+
+    setFriendConversations(markRead);
+    setPendingConversations(markRead);
   };
 
   return (
@@ -154,19 +203,35 @@ function Messages() {
         conversation={selectedConversation}
       />
       {/* Audio elements for the call */}
-      {localStream && (
-        <audio ref={localAudioRef} autoPlay muted playsInline />
-      )}
-      {remoteStream && (
-        <audio ref={remoteAudioRef} autoPlay playsInline />
-      )}
+      {localStream && <audio ref={localAudioRef} autoPlay muted playsInline />}
+      {remoteStream && <audio ref={remoteAudioRef} autoPlay playsInline />}
       <Sidebar />
       <div className="messages-content-wrapper">
         <Header />
         <main className="messages-main">
           <div className="messages-container">
+            <div className="messages-tabs">
+              <button
+                className={`messages-tab-btn ${
+                  activeTab === "friends" ? "active" : ""
+                }`}
+                onClick={() => setActiveTab("friends")}
+                type="button"
+              >
+                {t("messagesPage.friendsTab")}
+              </button>
+              <button
+                className={`messages-tab-btn ${
+                  activeTab === "pending" ? "active" : ""
+                }`}
+                onClick={() => setActiveTab("pending")}
+                type="button"
+              >
+                {t("messagesPage.pendingTab")}
+              </button>
+            </div>
             <ConversationList
-              conversations={conversations}
+              conversations={visibleConversations}
               selectedConversation={selectedConversation}
               onSelectConversation={handleSelectConversation}
               loading={loading}
@@ -202,6 +267,5 @@ function Messages() {
     </div>
   );
 }
-
 
 export default Messages;

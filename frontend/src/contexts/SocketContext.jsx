@@ -1,5 +1,6 @@
 import React, { createContext, useContext, useEffect, useState } from "react";
 import { io } from "socket.io-client";
+import { useTranslation } from "react-i18next";
 import { useAuth } from "./AuthContext";
 
 const SocketContext = createContext();
@@ -13,6 +14,7 @@ export const useSocket = () => {
 };
 
 export const SocketProvider = ({ children }) => {
+  const { t } = useTranslation();
   const [socket, setSocket] = useState(null);
   const [isConnected, setIsConnected] = useState(false);
   const [onlineUsers, setOnlineUsers] = useState([]);
@@ -83,13 +85,17 @@ export const SocketProvider = ({ children }) => {
       setUnreadNotifications((prev) => prev + 1);
 
       if (window.Notification && Notification.permission === "granted") {
-        new window.Notification("New Notification", {
-          body: `${notification.sender?.username || "Someone"} ${
+        new window.Notification(t("notificationsPage.browserTitle"), {
+          body: `${notification.sender?.username || t("notificationsPage.someone")} ${
             notification.type === "like"
-              ? "liked your post"
+              ? t("notificationsPage.likedYourPost")
               : notification.type === "comment"
-                ? "commented on your post"
-                : "started following you"
+                ? t("notificationsPage.commentedOnYourPost")
+                : notification.type === "friend_request"
+                  ? t("notificationsPage.sentFriendRequest")
+                  : notification.type === "friend_accept"
+                    ? t("notificationsPage.acceptedFriendRequest")
+                    : t("notificationsPage.startedFollowingYou")
           }`,
           icon: notification.sender?.avatar || "/default-avatar.png",
         });
@@ -115,7 +121,7 @@ export const SocketProvider = ({ children }) => {
       setIsConnected(false);
       setOnlineUsers([]);
     };
-  }, [isAuthenticated, user?._id]);
+  }, [isAuthenticated, user?._id, t]);
 
   const value = {
     socket,

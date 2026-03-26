@@ -1,5 +1,6 @@
 const Conversation = require("../models/Conversation");
 const Message = require("../models/Message");
+const Friendship = require("../models/Friendship");
 const User = require("../models/User");
 const { getIO } = require("../config/socket");
 const logger = require("../utils/logger.js");
@@ -8,6 +9,20 @@ const logger = require("../utils/logger.js");
 exports.getConversations = async (req, res) => {
   try {
     const userId = req.user.id;
+
+    const friendships = await Friendship.find({
+      $or: [{ userA: userId }, { userB: userId }],
+    })
+      .select("userA userB")
+      .lean();
+
+    const friendIdSet = new Set(
+      friendships.map((friendship) => {
+        const first = friendship.userA.toString();
+        const second = friendship.userB.toString();
+        return first === userId.toString() ? second : first;
+      }),
+    );
 
     const conversations = await Conversation.find({
       participants: userId,
@@ -25,11 +40,19 @@ exports.getConversations = async (req, res) => {
         (p) => p._id.toString() !== userId.toString(),
       );
 
+      const isFriendConversation =
+        conv.type === "group" ||
+        (otherParticipant
+          ? friendIdSet.has(otherParticipant._id.toString())
+          : false);
+
       const unreadCount = conv.unreadCount?.[userId] || 0;
 
       return {
         _id: conv._id,
         participant: otherParticipant,
+        type: conv.type,
+        isFriendConversation,
         lastMessage: conv.lastMessage,
         lastMessageAt: conv.lastMessageAt,
         unreadCount,
@@ -38,9 +61,18 @@ exports.getConversations = async (req, res) => {
       };
     });
 
+    const friendConversations = formattedConversations.filter(
+      (conversation) => conversation.isFriendConversation,
+    );
+    const pendingConversations = formattedConversations.filter(
+      (conversation) => !conversation.isFriendConversation,
+    );
+
     res.json({
       success: true,
       conversations: formattedConversations,
+      friendConversations,
+      pendingConversations,
     });
   } catch (error) {
     logger.error("Get conversations error:", error);

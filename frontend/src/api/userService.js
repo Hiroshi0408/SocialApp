@@ -24,7 +24,7 @@ const userService = {
             JSON.stringify({
               ...user,
               ...response.data.user,
-            })
+            }),
           );
         }
       }
@@ -55,7 +55,7 @@ const userService = {
             JSON.stringify({
               ...user,
               ...response.data.user,
-            })
+            }),
           );
         }
       }
@@ -87,7 +87,7 @@ const userService = {
   getFollowers: async (
     userId,
     page = API_DEFAULTS.PAGINATION.DEFAULT_PAGE,
-    limit = API_DEFAULTS.PAGINATION.FOLLOWERS_PER_PAGE
+    limit = API_DEFAULTS.PAGINATION.FOLLOWERS_PER_PAGE,
   ) => {
     try {
       const response = await axios.get(`/users/${userId}/followers`, {
@@ -102,7 +102,7 @@ const userService = {
   getFollowing: async (
     userId,
     page = API_DEFAULTS.PAGINATION.DEFAULT_PAGE,
-    limit = API_DEFAULTS.PAGINATION.FOLLOWING_PER_PAGE
+    limit = API_DEFAULTS.PAGINATION.FOLLOWING_PER_PAGE,
   ) => {
     try {
       const response = await axios.get(`/users/${userId}/following`, {
@@ -114,7 +114,9 @@ const userService = {
     }
   },
 
-  getSuggestedUsers: async (limit = API_DEFAULTS.PAGINATION.SUGGESTIONS_LIMIT) => {
+  getSuggestedUsers: async (
+    limit = API_DEFAULTS.PAGINATION.SUGGESTIONS_LIMIT,
+  ) => {
     try {
       const response = await axios.get("/users/suggestions", {
         params: { limit },
@@ -128,7 +130,7 @@ const userService = {
   searchUsers: async (
     query,
     page = API_DEFAULTS.PAGINATION.DEFAULT_PAGE,
-    limit = API_DEFAULTS.PAGINATION.SEARCH_RESULTS_PER_PAGE
+    limit = API_DEFAULTS.PAGINATION.SEARCH_RESULTS_PER_PAGE,
   ) => {
     try {
       const response = await axios.get("/users/search", {
@@ -143,6 +145,102 @@ const userService = {
   checkFollowStatus: async (userId) => {
     try {
       const response = await axios.get(`/users/${userId}/follow-status`);
+      return response.data;
+    } catch (error) {
+      throw error;
+    }
+  },
+
+  sendFriendRequest: async (userId) => {
+    try {
+      const response = await axios.post(`/friends/requests/${userId}`);
+      return response.data;
+    } catch (error) {
+      throw error;
+    }
+  },
+
+  cancelFriendRequest: async (userId) => {
+    try {
+      const response = await axios.delete(`/friends/requests/${userId}`);
+      return response.data;
+    } catch (error) {
+      throw error;
+    }
+  },
+
+  acceptFriendRequest: async (userId) => {
+    try {
+      const response = await axios.post(`/friends/requests/${userId}/accept`);
+      return response.data;
+    } catch (error) {
+      throw error;
+    }
+  },
+
+  rejectFriendRequest: async (userId) => {
+    try {
+      const response = await axios.post(`/friends/requests/${userId}/reject`);
+      return response.data;
+    } catch (error) {
+      throw error;
+    }
+  },
+
+  getFriendshipStatus: async (userId) => {
+    try {
+      const response = await axios.get(`/friends/${userId}/status`);
+      return response.data;
+    } catch (error) {
+      throw error;
+    }
+  },
+
+  getFriends: async (
+    page = API_DEFAULTS.PAGINATION.DEFAULT_PAGE,
+    limit = API_DEFAULTS.PAGINATION.FOLLOWING_PER_PAGE,
+  ) => {
+    try {
+      const response = await axios.get("/friends", {
+        params: { page, limit },
+      });
+      return response.data;
+    } catch (error) {
+      throw error;
+    }
+  },
+
+  getIncomingFriendRequests: async (
+    page = API_DEFAULTS.PAGINATION.DEFAULT_PAGE,
+    limit = API_DEFAULTS.PAGINATION.FOLLOWERS_PER_PAGE,
+  ) => {
+    try {
+      const response = await axios.get("/friends/requests/incoming", {
+        params: { page, limit },
+      });
+      return response.data;
+    } catch (error) {
+      throw error;
+    }
+  },
+
+  getOutgoingFriendRequests: async (
+    page = API_DEFAULTS.PAGINATION.DEFAULT_PAGE,
+    limit = API_DEFAULTS.PAGINATION.FOLLOWERS_PER_PAGE,
+  ) => {
+    try {
+      const response = await axios.get("/friends/requests/outgoing", {
+        params: { page, limit },
+      });
+      return response.data;
+    } catch (error) {
+      throw error;
+    }
+  },
+
+  unfriendUser: async (userId) => {
+    try {
+      const response = await axios.delete(`/friends/${userId}`);
       return response.data;
     } catch (error) {
       throw error;

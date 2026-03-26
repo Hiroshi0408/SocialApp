@@ -22,6 +22,7 @@
     "home": "Startseite",
     "create": "Erstellen",
     "messages": "Nachrichten",
+    "friends": "Freunde",
     "notifications": "Benachrichtigungen",
     "explore": "Entdecken",
     "profile": "Profil",
@@ -41,12 +42,14 @@
     "yourStory": "Deine Story"
   },
   "feed": {
+    "friends": "Freunde",
     "following": "Abonniert",
     "explore": "Entdecken",
     "loadError": "Fehler beim Laden der Beiträge: {{error}}",
     "retry": "Erneut versuchen",
     "noPosts": "Noch keine Beiträge",
     "followPrompt": "Folgen Sie Personen, um ihre Beiträge in Ihrem Feed zu sehen",
+    "noFriendsPosts": "Deine Freunde haben noch keine Beiträge.",
     "noPostsAvailable": "Keine Beiträge verfügbar",
     "endOfFeed": "Du hast das Ende erreicht"
   },
@@ -152,6 +155,7 @@
     "followButton": "Folgen",
     "messageButton": "Nachricht",
     "posts": "Beiträge",
+    "friends": "Freunde",
     "followers": "Abonnenten",
     "following": "Abonniert",
     "postsTab": "BEITRÄGE",
@@ -217,9 +221,13 @@
     "markAllAsReadError": "Fehler beim Markieren aller als gelesen",
     "deleteError": "Fehler beim Löschen der Benachrichtigung",
     "someone": "Jemand",
+    "browserTitle": "Neue Benachrichtigung",
     "likedYourPost": "hat deinen Beitrag geliked",
+    "commentedOnYourPost": "hat deinen Beitrag kommentiert",
     "commented": "hat kommentiert: {{text}}",
     "startedFollowingYou": "folgt dir jetzt",
+    "sentFriendRequest": "hat dir eine Freundschaftsanfrage gesendet",
+    "acceptedFriendRequest": "hat deine Freundschaftsanfrage angenommen",
     "mentionedYou": "hat dich erwähnt: {{text}}",
     "interactedWithYourContent": "hat mit deinem Inhalt interagiert",
     "title": "Benachrichtigungen",
@@ -233,6 +241,8 @@
     "loadConversationsError": "Fehler beim Laden der Konversationen",
     "yourMessagesTitle": "Deine Nachrichten",
     "yourMessagesDescription": "Sende private Nachrichten an einen Freund",
+    "friendsTab": "Freunde",
+    "pendingTab": "Ausstehend",
     "messagesListTitle": "Nachrichten",
     "loadingConversations": "Konversationen werden geladen...",
     "noConversations": "Noch keine Konversationen",
@@ -263,6 +273,39 @@
     "noSuggestedUsers": "Keine vorgeschlagenen Benutzer",
     "followersCount_one": "{{count}} Abonnent",
     "followersCount_other": "{{count}} Abonnenten"
+  },
+  "friends": {
+    "title": "Freunde",
+    "empty": "Keine Benutzer in diesem Bereich.",
+    "tabs": {
+      "incoming": "Eingehend ({{count}})",
+      "sent": "Gesendet ({{count}})",
+      "friends": "Freunde ({{count}})"
+    },
+    "actions": {
+      "add": "Freund hinzufügen",
+      "sent": "Anfrage gesendet",
+      "sentShort": "Gesendet",
+      "accept": "Annehmen",
+      "reject": "Ablehnen",
+      "cancel": "Abbrechen",
+      "unfriend": "Freund entfernen",
+      "friends": "Freunde"
+    },
+    "toast": {
+      "sent": "Freundschaftsanfrage gesendet",
+      "accepted": "Freundschaftsanfrage angenommen",
+      "rejected": "Freundschaftsanfrage abgelehnt",
+      "canceled": "Freundschaftsanfrage abgebrochen",
+      "unfriended": "Freund entfernt"
+    },
+    "errors": {
+      "loadData": "Freundesdaten konnten nicht geladen werden",
+      "accept": "Anfrage konnte nicht angenommen werden",
+      "reject": "Anfrage konnte nicht abgelehnt werden",
+      "cancel": "Anfrage konnte nicht abgebrochen werden",
+      "unfriend": "Freund konnte nicht entfernt werden"
+    }
   },
   "post": {
     "notFoundError": "Beitrag nicht gefunden",

@@ -22,6 +22,7 @@
     "home": "Accueil",
     "create": "Créer",
     "messages": "Messages",
+    "friends": "Amis",
     "notifications": "Notifications",
     "explore": "Explorer",
     "profile": "Profil",
@@ -41,12 +42,14 @@
     "yourStory": "Votre story"
   },
   "feed": {
+    "friends": "Amis",
     "following": "Abonnements",
     "explore": "Explorer",
     "loadError": "Échec du chargement des publications : {{error}}",
     "retry": "Réessayer",
     "noPosts": "Aucune publication pour le moment",
     "followPrompt": "Suivez des personnes pour voir leurs publications dans votre fil",
+    "noFriendsPosts": "Vos amis n'ont pas encore publié.",
     "noPostsAvailable": "Aucune publication disponible",
     "endOfFeed": "Vous avez atteint la fin"
   },
@@ -152,6 +155,7 @@
     "followButton": "Suivre",
     "messageButton": "Message",
     "posts": "publications",
+    "friends": "amis",
     "followers": "abonnés",
     "following": "abonnements",
     "postsTab": "PUBLICATIONS",
@@ -217,9 +221,13 @@
     "markAllAsReadError": "Échec du marquage de tout comme lu",
     "deleteError": "Échec de la suppression de la notification",
     "someone": "Quelqu'un",
+    "browserTitle": "Nouvelle notification",
     "likedYourPost": "a aimé votre publication",
+    "commentedOnYourPost": "a commenté votre publication",
     "commented": "a commenté : {{text}}",
     "startedFollowingYou": "a commencé à vous suivre",
+    "sentFriendRequest": "vous a envoyé une demande d'ami",
+    "acceptedFriendRequest": "a accepté votre demande d'ami",
     "mentionedYou": "vous a mentionné : {{text}}",
     "interactedWithYourContent": "a interagi avec votre contenu",
     "title": "Notifications",
@@ -233,6 +241,8 @@
     "loadConversationsError": "Échec du chargement des conversations",
     "yourMessagesTitle": "Vos messages",
     "yourMessagesDescription": "Envoyez des messages privés à un ami",
+    "friendsTab": "Amis",
+    "pendingTab": "En attente",
     "messagesListTitle": "Messages",
     "loadingConversations": "Chargement des conversations...",
     "noConversations": "Aucune conversation",
@@ -263,6 +273,39 @@
     "noSuggestedUsers": "Aucun utilisateur suggéré",
     "followersCount_one": "{{count}} abonné",
     "followersCount_other": "{{count}} abonnés"
+  },
+  "friends": {
+    "title": "Amis",
+    "empty": "Aucun utilisateur dans cette section.",
+    "tabs": {
+      "incoming": "Reçues ({{count}})",
+      "sent": "Envoyées ({{count}})",
+      "friends": "Amis ({{count}})"
+    },
+    "actions": {
+      "add": "Ajouter",
+      "sent": "Demande envoyée",
+      "sentShort": "Envoyée",
+      "accept": "Accepter",
+      "reject": "Refuser",
+      "cancel": "Annuler",
+      "unfriend": "Retirer",
+      "friends": "Amis"
+    },
+    "toast": {
+      "sent": "Demande d'ami envoyée",
+      "accepted": "Demande d'ami acceptée",
+      "rejected": "Demande d'ami refusée",
+      "canceled": "Demande d'ami annulée",
+      "unfriended": "Ami retiré"
+    },
+    "errors": {
+      "loadData": "Échec du chargement des données d'amis",
+      "accept": "Échec de l'acceptation de la demande",
+      "reject": "Échec du refus de la demande",
+      "cancel": "Échec de l'annulation de la demande",
+      "unfriend": "Échec de la suppression de l'ami"
+    }
   },
   "post": {
     "notFoundError": "Publication introuvable",

@@ -19,6 +19,7 @@ const ResetPassword = lazy(() => import("./pages/ResetPassword/ResetPassword"));
 const Home = lazy(() => import("./pages/Home/Home"));
 const Profile = lazy(() => import("./pages/Profile/Profile"));
 const Search = lazy(() => import("./pages/Search/Search"));
+const Friends = lazy(() => import("./pages/Friends/Friends"));
 const Notifications = lazy(() => import("./pages/Notifications/Notifications"));
 const Messages = lazy(() => import("./pages/Messages/Messages"));
 const Post = lazy(() => import("./pages/Post/Post"));
@@ -89,6 +90,14 @@ function App() {
                     element={
                       <PrivateRoute>
                         <Search />
+                      </PrivateRoute>
+                    }
+                  />
+                  <Route
+                    path="/friends"
+                    element={
+                      <PrivateRoute>
+                        <Friends />
                       </PrivateRoute>
                     }
                   />

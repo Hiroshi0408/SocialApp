@@ -15,6 +15,7 @@ const {
 } = require("../constants");
 const { extractMentions, validateMentions } = require("../utils/mentionHelper");
 const Follow = require("../models/Follow");
+const Friendship = require("../models/Friendship");
 const { moderateText } = require("../services/geminiModeration");
 const { formatPostsWithMetadata } = require("../helpers/postHelper");
 const logger = require("../utils/logger.js");
@@ -29,21 +30,35 @@ exports.getFeed = async (req, res) => {
     );
     const skip = (page - 1) * limit;
     const userId = req.user.id;
+    const scope = req.query.scope === "friends" ? "friends" : "following";
 
-    logger.info(` Get feed - User: ${req.user.username}, Page: ${page}`);
-
-    // Get list of users that current user follows
-    const following = await Follow.find({ follower: userId }).select(
-      "following",
+    logger.info(
+      ` Get feed - User: ${req.user.username}, Page: ${page}, Scope: ${scope}`,
     );
-    const followingIds = following.map((f) => f.following);
+
+    let targetUserIds = [];
+
+    if (scope === "friends") {
+      const friendships = await Friendship.find({
+        $or: [{ userA: userId }, { userB: userId }],
+      }).select("userA userB");
+
+      targetUserIds = friendships.map((relation) =>
+        relation.userA.toString() === userId ? relation.userB : relation.userA,
+      );
+    } else {
+      const following = await Follow.find({ follower: userId }).select(
+        "following",
+      );
+      targetUserIds = following.map((f) => f.following);
+    }
 
     // Include own posts in feed
-    followingIds.push(userId);
+    targetUserIds.push(userId);
 
-    // Get posts from followed users + self
+    // Get posts from selected relationship scope + self
     const posts = await Post.find({
-      userId: { $in: followingIds },
+      userId: { $in: targetUserIds },
       deleted: false,
     })
       .populate("userId", "username fullName avatar")
@@ -76,12 +91,12 @@ exports.getFeed = async (req, res) => {
     );
 
     const total = await Post.countDocuments({
-      userId: { $in: followingIds },
+      userId: { $in: targetUserIds },
       deleted: false,
     });
 
     logger.info(
-      ` Feed: ${formattedPosts.length} posts from ${followingIds.length} users`,
+      ` Feed: ${formattedPosts.length} posts from ${targetUserIds.length} users`,
     );
 
     res.json({
