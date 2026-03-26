@@ -79,6 +79,10 @@ const userSchema = new mongoose.Schema(
       type: Number,
       default: 0,
     },
+    friendsCount: {
+      type: Number,
+      default: 0,
+    },
     postsCount: {
       type: Number,
       default: 0,

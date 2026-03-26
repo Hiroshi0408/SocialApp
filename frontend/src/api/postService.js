@@ -15,9 +15,10 @@ const postService = {
   getFeed: async (
     page = API_DEFAULTS.PAGINATION.DEFAULT_PAGE,
     limit = API_DEFAULTS.PAGINATION.POSTS_PER_PAGE,
+    scope = "following",
   ) => {
     const response = await axios.get(`/posts/feed`, {
-      params: { page, limit },
+      params: { page, limit, scope },
     });
     return response.data;
   },

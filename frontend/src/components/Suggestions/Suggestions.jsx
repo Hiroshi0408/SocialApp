@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useCallback, useMemo, memo } from "react";
+import React, { useState, useEffect, useCallback, memo } from "react";
 import { useTranslation } from "react-i18next";
 import { useAuth } from "../../contexts/AuthContext";
 import userService from "../../api/userService";
@@ -12,47 +12,81 @@ function Suggestions() {
   const { t } = useTranslation();
   const { user: currentUser } = useAuth();
   const [users, setUsers] = useState([]);
+  const [friendshipStatuses, setFriendshipStatuses] = useState({});
   const [loading, setLoading] = useState(true);
   const { handleAvatarError, getAvatarSrc } = useAvatarError();
   const navigate = useNavigate();
-
-  const currentUserAvatar = useMemo(
-    () => getUserAvatar(currentUser),
-    [currentUser],
-  );
 
   const fetchSuggestions = useCallback(async () => {
     try {
       setLoading(true);
       const data = await userService.getSuggestedUsers();
-      setUsers(normalizeArrayResponse(data, "users"));
+      const normalizedUsers = normalizeArrayResponse(data, "users");
+      setUsers(normalizedUsers);
+
+      const statuses = {};
+      await Promise.all(
+        normalizedUsers.map(async (user) => {
+          const userId = getId(user);
+          if (!userId || userId === currentUser?._id) {
+            statuses[userId] = "self";
+            return;
+          }
+
+          try {
+            const statusRes = await userService.getFriendshipStatus(userId);
+            statuses[userId] = statusRes.status || "none";
+          } catch {
+            statuses[userId] = "none";
+          }
+        }),
+      );
+
+      setFriendshipStatuses(statuses);
     } catch (error) {
       showError(t("suggestions.loadError"));
     } finally {
       setLoading(false);
     }
-  }, [t]);
+  }, [t, currentUser?._id]);
 
   useEffect(() => {
     fetchSuggestions();
   }, [fetchSuggestions]);
 
-  const handleFollow = useCallback(
+  const getFriendActionLabel = (status) => {
+    if (status === "friends") return t("friends.actions.friends");
+    if (status === "outgoing_request") return t("friends.actions.sentShort");
+    if (status === "incoming_request") return t("friends.actions.accept");
+    return t("friends.actions.add");
+  };
+
+  const handleFriendAction = useCallback(
     async (userId) => {
       try {
-        await userService.followUser(userId);
-        setUsers((prev) =>
-          prev.map((user) =>
-            getId(user) === userId
-              ? { ...user, isFollowing: !user.isFollowing }
-              : user,
-          ),
-        );
+        const status = friendshipStatuses[userId] || "none";
+
+        if (status === "friends") {
+          await userService.unfriendUser(userId);
+          setFriendshipStatuses((prev) => ({ ...prev, [userId]: "none" }));
+        } else if (status === "outgoing_request") {
+          await userService.cancelFriendRequest(userId);
+          setFriendshipStatuses((prev) => ({ ...prev, [userId]: "none" }));
+        } else if (status === "incoming_request") {
+          await userService.acceptFriendRequest(userId);
+          setFriendshipStatuses((prev) => ({ ...prev, [userId]: "friends" }));
+        } else {
+          await userService.sendFriendRequest(userId);
+          setFriendshipStatuses((prev) => ({
+            ...prev,
+            [userId]: "outgoing_request",
+          }));
+        }
       } catch (error) {
         showError(t("suggestions.followError"));
       }
     },
-    [t],
+    [t, friendshipStatuses],
   );
 
   const handleUserClick = (username) => {
@@ -106,14 +140,19 @@ function Suggestions() {
                 <span className="suggestion-username">{user.username}</span>
                 <span className="suggestion-subtitle">{user.subtitle}</span>
               </div>
-              <button
-                className={`follow-btn ${user.isFollowing ? "following" : ""}`}
-                onClick={() => handleFollow(getId(user))}
-              >
-                {user.isFollowing
-                  ? t("suggestions.following")
-                  : t("suggestions.follow")}
-              </button>
+              {friendshipStatuses[getId(user)] !== "self" && (
+                <button
+                  className={`follow-btn ${
+                    friendshipStatuses[getId(user)] === "friends" ||
+                    friendshipStatuses[getId(user)] === "outgoing_request"
+                      ? "following"
+                      : ""
+                  }`}
+                  onClick={() => handleFriendAction(getId(user))}
+                >
+                  {getFriendActionLabel(friendshipStatuses[getId(user)])}
+                </button>
+              )}
             </div>
           ))
         )}

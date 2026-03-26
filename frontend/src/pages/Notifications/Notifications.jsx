@@ -49,9 +49,7 @@ function Notifications() {
         setNotifications(response.notifications);
       }
     } catch (err) {
-      setError(
-        err.response?.data?.message || t("notificationsPage.loadError"),
-      );
+      setError(err.response?.data?.message || t("notificationsPage.loadError"));
     } finally {
       setLoading(false);
     }
@@ -96,7 +94,8 @@ function Notifications() {
   };
 
   const getNotificationMessage = (notification) => {
-    const sender = notification.sender?.username || t("notificationsPage.someone");
+    const sender =
+      notification.sender?.username || t("notificationsPage.someone");
     switch (notification.type) {
       case "like":
         return `${sender} ${t("notificationsPage.likedYourPost")}`;
@@ -110,6 +109,10 @@ function Notifications() {
         return `${sender} ${t("notificationsPage.mentionedYou", {
           text: notification.text,
         })}`;
+      case "friend_request":
+        return `${sender} ${t("notificationsPage.sentFriendRequest")}`;
+      case "friend_accept":
+        return `${sender} ${t("notificationsPage.acceptedFriendRequest")}`;
       default:
         return `${sender} ${t("notificationsPage.interactedWithYourContent")}`;
     }
@@ -129,6 +132,8 @@ function Notifications() {
         }
         break;
       case "follow":
+      case "friend_request":
+      case "friend_accept":
         if (notification.sender?.username) {
           navigate(`/profile/${notification.sender.username}`);
         }
@@ -162,10 +167,7 @@ function Notifications() {
             <div className="notifications-header">
               <h2>{t("notificationsPage.title")}</h2>
               {notifications.some((n) => !n.read) && (
-                <button
-                  onClick={handleMarkAllAsRead}
-                  className="mark-all-btn"
-                >
+                <button onClick={handleMarkAllAsRead} className="mark-all-btn">
                   {t("notificationsPage.markAllAsReadButton")}
                 </button>
               )}

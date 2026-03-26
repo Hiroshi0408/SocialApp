@@ -22,6 +22,7 @@
     "home": "ホーム",
     "create": "作成",
     "messages": "メッセージ",
+    "friends": "友達",
     "notifications": "通知",
     "explore": "探索",
     "profile": "プロフィール",
@@ -41,12 +42,14 @@
     "yourStory": "あなたのストーリー"
   },
   "feed": {
+    "friends": "友達",
     "following": "フォロー中",
     "explore": "探索",
     "loadError": "投稿の読み込みに失敗しました：{{error}}",
     "retry": "再試行",
     "noPosts": "投稿がありません",
     "followPrompt": "人をフォローして、フィードに投稿を表示しましょう",
+    "noFriendsPosts": "友達の投稿はまだありません。",
     "noPostsAvailable": "利用可能な投稿はありません",
     "endOfFeed": "最後まで表示しました"
   },
@@ -152,6 +155,7 @@
     "followButton": "フォロー",
     "messageButton": "メッセージ",
     "posts": "投稿",
+    "friends": "友達",
     "followers": "フォロワー",
     "following": "フォロー中",
     "postsTab": "投稿",
@@ -217,9 +221,13 @@
     "markAllAsReadError": "すべてを既読にできませんでした",
     "deleteError": "通知の削除に失敗しました",
     "someone": "誰か",
+    "browserTitle": "新しい通知",
     "likedYourPost": "があなたの投稿にいいねしました",
+    "commentedOnYourPost": "があなたの投稿にコメントしました",
     "commented": "がコメントしました：{{text}}",
     "startedFollowingYou": "があなたをフォローしました",
+    "sentFriendRequest": "があなたに友達申請を送りました",
+    "acceptedFriendRequest": "があなたの友達申請を承認しました",
     "mentionedYou": "があなたをメンションしました：{{text}}",
     "interactedWithYourContent": "があなたのコンテンツに反応しました",
     "title": "通知",
@@ -233,6 +241,8 @@
     "loadConversationsError": "会話の読み込みに失敗しました",
     "yourMessagesTitle": "メッセージ",
     "yourMessagesDescription": "友達にプライベートメッセージを送信",
+    "friendsTab": "友達",
+    "pendingTab": "保留中",
     "messagesListTitle": "メッセージ",
     "loadingConversations": "会話を読み込み中...",
     "noConversations": "会話がありません",
@@ -263,6 +273,39 @@
     "noSuggestedUsers": "おすすめユーザーがいません",
     "followersCount_one": "{{count}}人のフォロワー",
     "followersCount_other": "{{count}}人のフォロワー"
+  },
+  "friends": {
+    "title": "友達",
+    "empty": "このセクションにはユーザーがいません。",
+    "tabs": {
+      "incoming": "受信 ({{count}})",
+      "sent": "送信済み ({{count}})",
+      "friends": "友達 ({{count}})"
+    },
+    "actions": {
+      "add": "友達追加",
+      "sent": "申請送信済み",
+      "sentShort": "送信済み",
+      "accept": "承認",
+      "reject": "拒否",
+      "cancel": "取り消し",
+      "unfriend": "友達解除",
+      "friends": "友達"
+    },
+    "toast": {
+      "sent": "友達申請を送信しました",
+      "accepted": "友達申請を承認しました",
+      "rejected": "友達申請を拒否しました",
+      "canceled": "友達申請を取り消しました",
+      "unfriended": "友達を解除しました"
+    },
+    "errors": {
+      "loadData": "友達データの読み込みに失敗しました",
+      "accept": "申請の承認に失敗しました",
+      "reject": "申請の拒否に失敗しました",
+      "cancel": "申請の取り消しに失敗しました",
+      "unfriend": "友達解除に失敗しました"
+    }
   },
   "post": {
     "notFoundError": "投稿が見つかりません",

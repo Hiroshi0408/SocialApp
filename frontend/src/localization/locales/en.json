@@ -22,6 +22,7 @@
     "home": "Home",
     "create": "Create",
     "messages": "Messages",
+    "friends": "Friends",
     "notifications": "Notifications",
     "explore": "Explore",
     "profile": "Profile",
@@ -41,12 +42,14 @@
     "yourStory": "Your story"
   },
   "feed": {
+    "friends": "Friends",
     "following": "Following",
     "explore": "Explore",
     "loadError": "Failed to load posts: {{error}}",
     "retry": "Retry",
     "noPosts": "No posts yet",
     "followPrompt": "Follow people to see their posts in your feed",
+    "noFriendsPosts": "No posts from your friends yet.",
     "noPostsAvailable": "No posts available",
     "endOfFeed": "You've reached the end"
   },
@@ -152,6 +155,7 @@
     "followButton": "Follow",
     "messageButton": "Message",
     "posts": "posts",
+    "friends": "friends",
     "followers": "followers",
     "following": "following",
     "postsTab": "POSTS",
@@ -217,9 +221,13 @@
     "markAllAsReadError": "Failed to mark all as read",
     "deleteError": "Failed to delete notification",
     "someone": "Someone",
+    "browserTitle": "New Notification",
     "likedYourPost": "liked your post",
+    "commentedOnYourPost": "commented on your post",
     "commented": "commented: {{text}}",
     "startedFollowingYou": "started following you",
+    "sentFriendRequest": "sent you a friend request",
+    "acceptedFriendRequest": "accepted your friend request",
     "mentionedYou": "mentioned you: {{text}}",
     "interactedWithYourContent": "interacted with your content",
     "title": "Notifications",
@@ -233,6 +241,8 @@
     "loadConversationsError": "Failed to load conversations",
     "yourMessagesTitle": "Your Messages",
     "yourMessagesDescription": "Send private messages to a friend",
+    "friendsTab": "Friends",
+    "pendingTab": "Pending",
     "messagesListTitle": "Messages",
     "loadingConversations": "Loading conversations...",
     "noConversations": "No conversations yet",
@@ -263,6 +273,39 @@
     "noSuggestedUsers": "No suggested users",
     "followersCount_one": "{{count}} follower",
     "followersCount_other": "{{count}} followers"
+  },
+  "friends": {
+    "title": "Friends",
+    "empty": "No users in this section.",
+    "tabs": {
+      "incoming": "Incoming ({{count}})",
+      "sent": "Sent ({{count}})",
+      "friends": "Friends ({{count}})"
+    },
+    "actions": {
+      "add": "Add friend",
+      "sent": "Request sent",
+      "sentShort": "Sent",
+      "accept": "Accept",
+      "reject": "Reject",
+      "cancel": "Cancel",
+      "unfriend": "Unfriend",
+      "friends": "Friends"
+    },
+    "toast": {
+      "sent": "Friend request sent",
+      "accepted": "Friend request accepted",
+      "rejected": "Friend request rejected",
+      "canceled": "Friend request canceled",
+      "unfriended": "Friend removed"
+    },
+    "errors": {
+      "loadData": "Failed to load friend data",
+      "accept": "Failed to accept request",
+      "reject": "Failed to reject request",
+      "cancel": "Failed to cancel request",
+      "unfriend": "Failed to remove friend"
+    }
   },
   "post": {
     "notFoundError": "Post not found",

@@ -34,8 +34,8 @@ function Profile() {
   const [selectedPost, setSelectedPost] = useState(null);
   const [activeTab, setActiveTab] = useState("posts");
   const [followListModal, setFollowListModal] = useState(null);
-  const [isFollowing, setIsFollowing] = useState(false);
-  const [followLoading, setFollowLoading] = useState(false);
+  const [friendshipStatus, setFriendshipStatus] = useState("none");
+  const [friendActionLoading, setFriendActionLoading] = useState(false);
 
   const targetUsername = usernameParam || currentUser?.username;
   const isOwnProfile =
@@ -74,7 +74,7 @@ function Profile() {
         }
 
         setUserProfile(normalizedProfile);
-        setIsFollowing(normalizedProfile.isFollowing || false);
+        setFriendshipStatus(normalizedProfile.friendship?.status || "none");
 
         const userId = normalizedProfile._id || normalizedProfile.id;
         if (userId) {
@@ -131,34 +131,55 @@ function Profile() {
     }
   }, [activeTab, loadTaggedPosts]);
 
-  const handleFollowToggle = async () => {
-    if (!userProfile || followLoading) return;
+  const getFriendButtonLabel = () => {
+    switch (friendshipStatus) {
+      case "friends":
+        return t("friends.actions.friends");
+      case "outgoing_request":
+        return t("friends.actions.sent");
+      case "incoming_request":
+        return t("friends.actions.accept");
+      default:
+        return t("friends.actions.add");
+    }
+  };
+
+  const handleFriendAction = async () => {
+    if (!userProfile || friendActionLoading) return;
 
     const userId = userProfile._id || userProfile.id;
-    setFollowLoading(true);
+    setFriendActionLoading(true);
 
     try {
-      if (isFollowing) {
-        await userService.unfollowUser(userId);
-        setIsFollowing(false);
+      if (friendshipStatus === "friends") {
+        await userService.unfriendUser(userId);
+        setFriendshipStatus("none");
         setUserProfile((prev) => ({
           ...prev,
-          followersCount: Math.max(0, (prev.followersCount || 0) - 1),
+          friendsCount: Math.max(0, (prev.friendsCount || 0) - 1),
         }));
-        showSuccess(t("profile.unfollowedSuccess"));
+        showSuccess(t("friends.toast.unfriended"));
+      } else if (friendshipStatus === "outgoing_request") {
+        await userService.cancelFriendRequest(userId);
+        setFriendshipStatus("none");
+        showSuccess(t("friends.toast.canceled"));
+      } else if (friendshipStatus === "incoming_request") {
+        await userService.acceptFriendRequest(userId);
+        setFriendshipStatus("friends");
+        setUserProfile((prev) => ({
+          ...prev,
+          friendsCount: (prev.friendsCount || 0) + 1,
+        }));
+        showSuccess(t("friends.toast.accepted"));
       } else {
-        await userService.followUser(userId);
-        setIsFollowing(true);
-        setUserProfile((prev) => ({
-          ...prev,
-          followersCount: (prev.followersCount || 0) + 1,
-        }));
-        showSuccess(t("profile.followedSuccess"));
+        await userService.sendFriendRequest(userId);
+        setFriendshipStatus("outgoing_request");
+        showSuccess(t("friends.toast.sent"));
       }
     } catch (error) {
       showError(error.response?.data?.message || t("profile.actionFailed"));
     } finally {
-      setFollowLoading(false);
+      setFriendActionLoading(false);
     }
   };
 
@@ -278,16 +299,14 @@ function Profile() {
                     <>
                       <button
                         className={`profile-follow-btn ${
-                          isFollowing ? "following" : ""
+                          friendshipStatus === "friends" ? "following" : ""
                         }`}
-                        onClick={handleFollowToggle}
-                        disabled={followLoading}
+                        onClick={handleFriendAction}
+                        disabled={friendActionLoading}
                       >
-                        {followLoading
+                        {friendActionLoading
                           ? t("profile.loadingButton")
-                          : isFollowing
-                          ? t("profile.followingButton")
-                          : t("profile.followButton")}
+                          : getFriendButtonLabel()}
                       </button>
                       <button
                         className="profile-message-btn"
@@ -303,6 +322,12 @@ function Profile() {
                   <div className="stat-item">
                     <span className="stat-number">{userPosts.length}</span>
                     <span className="stat-label">{t("profile.posts")}</span>
+                  </div>
+                  <div className="stat-item">
+                    <span className="stat-number">
+                      {(userProfile.friendsCount || 0).toLocaleString()}
+                    </span>
+                    <span className="stat-label">{t("profile.friends")}</span>
                   </div>
                   <button
                     className="stat-item stat-button"

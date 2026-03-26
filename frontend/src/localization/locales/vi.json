@@ -22,6 +22,7 @@
     "home": "Trang chủ",
     "create": "Tạo",
     "messages": "Tin nhắn",
+    "friends": "Bạn bè",
     "notifications": "Thông báo",
     "explore": "Khám phá",
     "profile": "Trang cá nhân",
@@ -41,12 +42,14 @@
     "yourStory": "Tin của bạn"
   },
   "feed": {
+    "friends": "Bạn bè",
     "following": "Đang theo dõi",
     "explore": "Khám phá",
     "loadError": "Tải bài viết thất bại: {{error}}",
     "retry": "Thử lại",
     "noPosts": "Chưa có bài viết nào",
     "followPrompt": "Theo dõi mọi người để xem bài viết của họ trong bảng tin của bạn",
+    "noFriendsPosts": "Bạn bè của bạn chưa có bài viết nào.",
     "noPostsAvailable": "Không có bài viết nào",
     "endOfFeed": "Bạn đã xem hết bài viết"
   },
@@ -152,6 +155,7 @@
     "followButton": "Theo dõi",
     "messageButton": "Nhắn tin",
     "posts": "bài viết",
+    "friends": "bạn bè",
     "followers": "người theo dõi",
     "following": "đang theo dõi",
     "postsTab": "BÀI VIẾT",
@@ -217,9 +221,13 @@
     "markAllAsReadError": "Đánh dấu tất cả đã đọc thất bại",
     "deleteError": "Xóa thông báo thất bại",
     "someone": "Ai đó",
+    "browserTitle": "Thông báo mới",
     "likedYourPost": "đã thích bài viết của bạn",
+    "commentedOnYourPost": "đã bình luận vào bài viết của bạn",
     "commented": "đã bình luận: {{text}}",
     "startedFollowingYou": "đã bắt đầu theo dõi bạn",
+    "sentFriendRequest": "đã gửi lời mời kết bạn cho bạn",
+    "acceptedFriendRequest": "đã chấp nhận lời mời kết bạn của bạn",
     "mentionedYou": "đã nhắc đến bạn: {{text}}",
     "interactedWithYourContent": "đã tương tác với nội dung của bạn",
     "title": "Thông báo",
@@ -233,6 +241,8 @@
     "loadConversationsError": "Tải cuộc trò chuyện thất bại",
     "yourMessagesTitle": "Tin nhắn của bạn",
     "yourMessagesDescription": "Gửi tin nhắn riêng tư cho bạn bè",
+    "friendsTab": "Bạn bè",
+    "pendingTab": "Đang chờ",
     "messagesListTitle": "Tin nhắn",
     "loadingConversations": "Đang tải cuộc trò chuyện...",
     "noConversations": "Chưa có cuộc trò chuyện nào",
@@ -263,6 +273,39 @@
     "noSuggestedUsers": "Không có người dùng được gợi ý",
     "followersCount_one": "{{count}} người theo dõi",
     "followersCount_other": "{{count}} người theo dõi"
+  },
+  "friends": {
+    "title": "Bạn bè",
+    "empty": "Không có người dùng nào trong mục này.",
+    "tabs": {
+      "incoming": "Lời mời đến ({{count}})",
+      "sent": "Đã gửi ({{count}})",
+      "friends": "Bạn bè ({{count}})"
+    },
+    "actions": {
+      "add": "Kết bạn",
+      "sent": "Đã gửi lời mời",
+      "sentShort": "Đã gửi",
+      "accept": "Chấp nhận",
+      "reject": "Từ chối",
+      "cancel": "Hủy",
+      "unfriend": "Hủy kết bạn",
+      "friends": "Bạn bè"
+    },
+    "toast": {
+      "sent": "Đã gửi lời mời kết bạn",
+      "accepted": "Đã chấp nhận lời mời kết bạn",
+      "rejected": "Đã từ chối lời mời kết bạn",
+      "canceled": "Đã hủy lời mời kết bạn",
+      "unfriended": "Đã hủy kết bạn"
+    },
+    "errors": {
+      "loadData": "Tải dữ liệu bạn bè thất bại",
+      "accept": "Chấp nhận lời mời thất bại",
+      "reject": "Từ chối lời mời thất bại",
+      "cancel": "Hủy lời mời thất bại",
+      "unfriend": "Hủy kết bạn thất bại"
+    }
   },
   "post": {
     "notFoundError": "Không tìm thấy bài viết",

@@ -1,6 +1,7 @@
 const User = require("../models/User");
 const Post = require("../models/Post");
 const Follow = require("../models/Follow");
+const { resolveFriendshipStatus } = require("./friendController");
 const Like = require("../models/Like");
 const Save = require("../models/Save");
 const { getTimeAgo } = require("../utils/timeHelper");
@@ -36,16 +37,20 @@ exports.getUserProfile = async (req, res) => {
       });
     }
 
-    const isFollowing = await Follow.findOne({
-      follower: currentUserId,
-      following: user._id,
-    });
+    const [isFollowing, friendship] = await Promise.all([
+      Follow.findOne({
+        follower: currentUserId,
+        following: user._id,
+      }),
+      resolveFriendshipStatus(currentUserId, user._id),
+    ]);
 
     res.json({
       success: true,
       user: {
         ...user.toJSON(),
         isFollowing: !!isFollowing,
+        friendship,
         isOwnProfile: user._id.toString() === currentUserId,
       },
     });

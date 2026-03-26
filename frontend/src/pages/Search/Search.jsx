@@ -23,7 +23,7 @@ function Search() {
   const [suggestedUsers, setSuggestedUsers] = useState([]);
   const [loadingSuggested, setLoadingSuggested] = useState(false);
   const [searched, setSearched] = useState(false);
-  const [followingUsers, setFollowingUsers] = useState({});
+  const [friendshipStatuses, setFriendshipStatuses] = useState({});
   const { handleAvatarError, getAvatarSrc } = useAvatarError();
 
   const location = useLocation();
@@ -59,24 +59,26 @@ function Search() {
           setPosts([]);
 
           const currentUser = JSON.parse(localStorage.getItem("user") || "{}");
-          const followStatuses = {};
+          const relationStatuses = {};
 
           await Promise.all(
             response.users.map(async (user) => {
               if (user._id === currentUser._id) {
-                followStatuses[user._id] = null;
+                relationStatuses[user._id] = "self";
                 return;
               }
               try {
-                const statusRes = await userService.checkFollowStatus(user._id);
-                followStatuses[user._id] = statusRes.isFollowing;
+                const statusRes = await userService.getFriendshipStatus(
+                  user._id,
+                );
+                relationStatuses[user._id] = statusRes.status || "none";
               } catch {
-                followStatuses[user._id] = false;
+                relationStatuses[user._id] = "none";
               }
             }),
           );
 
-          setFollowingUsers(followStatuses);
+          setFriendshipStatuses(relationStatuses);
         }
       } else {
         const response = await postService.searchByHashtag(q);
@@ -102,22 +104,22 @@ function Search() {
         setSuggestedUsers(response.users);
         // Set follow statuses
         const currentUser = JSON.parse(localStorage.getItem("user") || "{}");
-        const followStatuses = {};
+        const relationStatuses = {};
         await Promise.all(
           response.users.map(async (user) => {
             if (user._id === currentUser._id) {
-              followStatuses[user._id] = null;
+              relationStatuses[user._id] = "self";
               return;
             }
             try {
-              const statusRes = await userService.checkFollowStatus(user._id);
-              followStatuses[user._id] = statusRes.isFollowing;
+              const statusRes = await userService.getFriendshipStatus(user._id);
+              relationStatuses[user._id] = statusRes.status || "none";
             } catch {
-              followStatuses[user._id] = false;
+              relationStatuses[user._id] = "none";
             }
           }),
         );
-        setFollowingUsers(followStatuses);
+        setFriendshipStatuses(relationStatuses);
       }
     } catch (err) {
       console.error("Failed to load suggested users", err);
@@ -131,18 +133,36 @@ function Search() {
     runSearch(query, searchType);
   };
 
-  const handleFollowToggle = async (userId) => {
-    try {
-      const isFollowing = followingUsers[userId];
+  const getFriendActionLabel = (status) => {
+    if (status === "friends") return t("friends.actions.friends");
+    if (status === "outgoing_request") return t("friends.actions.sent");
+    if (status === "incoming_request") return t("friends.actions.accept");
+    return t("friends.actions.add");
+  };
 
-      if (isFollowing) {
-        await userService.unfollowUser(userId);
-        setFollowingUsers((prev) => ({ ...prev, [userId]: false }));
-        showSuccess(t("profile.unfollowedSuccess"));
+  const handleFriendAction = async (userId) => {
+    try {
+      const status = friendshipStatuses[userId] || "none";
+
+      if (status === "friends") {
+        await userService.unfriendUser(userId);
+        setFriendshipStatuses((prev) => ({ ...prev, [userId]: "none" }));
+        showSuccess(t("friends.toast.unfriended"));
+      } else if (status === "outgoing_request") {
+        await userService.cancelFriendRequest(userId);
+        setFriendshipStatuses((prev) => ({ ...prev, [userId]: "none" }));
+        showSuccess(t("friends.toast.canceled"));
+      } else if (status === "incoming_request") {
+        await userService.acceptFriendRequest(userId);
+        setFriendshipStatuses((prev) => ({ ...prev, [userId]: "friends" }));
+        showSuccess(t("friends.toast.accepted"));
       } else {
-        await userService.followUser(userId);
-        setFollowingUsers((prev) => ({ ...prev, [userId]: true }));
-        showSuccess(t("profile.followedSuccess"));
+        await userService.sendFriendRequest(userId);
+        setFriendshipStatuses((prev) => ({
+          ...prev,
+          [userId]: "outgoing_request",
+        }));
+        showSuccess(t("friends.toast.sent"));
       }
     } catch (error) {
       showError(error.response?.data?.message || t("profile.actionFailed"));
@@ -235,16 +255,18 @@ function Search() {
                             </span>
                           </div>
                         </div>
-                        {followingUsers[user._id] !== null && (
+                        {friendshipStatuses[user._id] !== "self" && (
                           <button
                             className={`follow-btn ${
-                              followingUsers[user._id] ? "following" : ""
+                              friendshipStatuses[user._id] === "friends" ||
+                              friendshipStatuses[user._id] ===
+                                "outgoing_request"
+                                ? "following"
+                                : ""
                             }`}
-                            onClick={() => handleFollowToggle(user._id)}
+                            onClick={() => handleFriendAction(user._id)}
                           >
-                            {followingUsers[user._id]
-                              ? t("profile.followingButton")
-                              : t("profile.followButton")}
+                            {getFriendActionLabel(friendshipStatuses[user._id])}
                           </button>
                         )}
                       </div>
@@ -281,16 +303,18 @@ function Search() {
                             </span>
                           </div>
                         </div>
-                        {followingUsers[user._id] !== null && (
+                        {friendshipStatuses[user._id] !== "self" && (
                           <button
                             className={`follow-btn ${
-                              followingUsers[user._id] ? "following" : ""
+                              friendshipStatuses[user._id] === "friends" ||
+                              friendshipStatuses[user._id] ===
+                                "outgoing_request"
+                                ? "following"
+                                : ""
                             }`}
-                            onClick={() => handleFollowToggle(user._id)}
+                            onClick={() => handleFriendAction(user._id)}
                           >
-                            {followingUsers[user._id]
-                              ? t("profile.followingButton")
-                              : t("profile.followButton")}
+                            {getFriendActionLabel(friendshipStatuses[user._id])}
                           </button>
                         )}
                       </div>
