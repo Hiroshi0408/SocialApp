@@ -9,6 +9,7 @@ const {
   MAX_COMMENT_LENGTH,
   MAX_FULLNAME_LENGTH,
 } = require("../constants");
+const { ethers } = require("ethers");
 
 // Middleware to handle validation errors
 const handleValidationErrors = (req, res, next) => {
@@ -254,6 +255,17 @@ const searchUsersValidation = [
   handleValidationErrors,
 ];
 
+const walletLoginValidation = [
+  body("walletAddress")
+    .notEmpty()
+    .custom((value) => {
+      if (!ethers.isAddress(value)) throw new Error("Invalid wallet address");
+      return true;
+    }),
+  body("signature").notEmpty().withMessage("Signature is required"),
+  body("message").notEmpty().withMessage("Message is required"),
+  handleValidationErrors,
+];
 // PARAM VALIDATIONS
 
 const mongoIdValidation = [
@@ -286,6 +298,7 @@ module.exports = {
   registerValidation,
   loginValidation,
   googleLoginValidation,
+  walletLoginValidation,
 
   // Post
   createPostValidation,
