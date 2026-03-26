@@ -203,6 +203,12 @@
     "confirmNewPasswordPlaceholder": "Xác nhận mật khẩu mới",
     "changing": "Đang đổi...",
     "changePasswordButton": "Đổi mật khẩu",
+    "connectMetamask": "Kết nối MetaMask",
+    "linkingMetamask": "Đang liên kết MetaMask...",
+    "metamaskLinked": "Đã liên kết MetaMask",
+    "walletConnectionFailed": "Kết nối ví thất bại",
+    "walletLinkedSuccess": "Liên kết ví thành công!",
+    "walletLinkFailed": "Liên kết ví thất bại",
     "logout": "Đăng xuất"
   },
   "notificationsPage": {

@@ -203,6 +203,12 @@
     "confirmNewPasswordPlaceholder": "新しいパスワードを確認",
     "changing": "変更中...",
     "changePasswordButton": "パスワードを変更",
+    "connectMetamask": "MetaMaskに接続",
+    "linkingMetamask": "MetaMaskを接続中...",
+    "metamaskLinked": "MetaMask接続済み",
+    "walletConnectionFailed": "ウォレット接続に失敗しました",
+    "walletLinkedSuccess": "ウォレットの接続に成功しました！",
+    "walletLinkFailed": "ウォレットの接続に失敗しました",
     "logout": "ログアウト"
   },
   "notificationsPage": {

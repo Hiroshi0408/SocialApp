@@ -8,6 +8,8 @@ import userService from "../../api/userService";
 import authService from "../../api/authService";
 import { getUserAvatar, showError, showSuccess } from "../../utils";
 import "./Settings.css";
+import { useWeb3 } from "../../contexts/Web3Context";
+import web3Service from "../../api/web3Service";
 
 function Settings() {
   const { t } = useTranslation();
@@ -24,6 +26,9 @@ function Settings() {
   const [isUploading, setIsUploading] = useState(false);
   const [isSaving, setIsSaving] = useState(false);
   const [hasChanges, setHasChanges] = useState(false);
+  const [isWalletLoading, setIsWalletLoading] = useState(false);
+  const { connectWallet } = useWeb3();
+  const { getNonce, linkWallet } = web3Service;
 
   const [passwordData, setPasswordData] = useState({
     currentPassword: "",
@@ -146,6 +151,32 @@ function Settings() {
     }
   };
 
+  const handleWalletLink = async () => {
+    setIsWalletLoading(true);
+    try {
+      const result = await connectWallet();
+      if (!result) {
+        showError(t("settings.walletConnectionFailed"));
+        return;
+      }
+      const { address, signer } = result;
+      const data = await getNonce(address);
+      const message = data.message;
+      const signature = await signer.signMessage(message);
+      const response = await linkWallet(address, signature, message);
+      if (response.success) {
+        updateUser(response.user);
+        showSuccess(t("settings.walletLinkedSuccess"));
+      } else {
+        showError(response.message || t("settings.walletLinkFailed"));
+      }
+    } catch (error) {
+      console.error("Wallet link error:", error);
+      showError(t("settings.walletLinkFailed"));
+    } finally {
+      setIsWalletLoading(false);
+    }
+  };
   const handleLogout = () => {
     logout();
     navigate("/");
@@ -207,7 +238,9 @@ function Settings() {
 
               <form onSubmit={handleSubmit} className="settings-form">
                 <div className="form-group">
-                  <label htmlFor="username">{t("settings.usernameLabel")}</label>
+                  <label htmlFor="username">
+                    {t("settings.usernameLabel")}
+                  </label>
                   <input
                     type="text"
                     id="username"
@@ -237,7 +270,61 @@ function Settings() {
                 </div>
 
                 <div className="form-group">
-                  <label htmlFor="fullName">{t("settings.fullNameLabel")}</label>
+                  <label htmlFor="Wallet">Wallet</label>
+                  {user?.walletAddress ? (
+                    <div className="wallet-connected">
+                      <span className="wallet-connected-label">
+                        {t("settings.metamaskLinked")}
+                      </span>
+                      <span className="wallet-address">
+                        {user.walletAddress.slice(0, 6)}...
+                        {user.walletAddress.slice(-4)}
+                      </span>
+                    </div>
+                  ) : (
+                    <button
+                      type="button"
+                      className="wallet-login-button"
+                      onClick={handleWalletLink}
+                      disabled={isWalletLoading}
+                    >
+                      <svg
+                        className="wallet-icon"
+                        viewBox="0 0 24 24"
+                        width="18"
+                        height="18"
+                        fill="none"
+                        aria-hidden="true"
+                      >
+                        <rect
+                          x="1.5"
+                          y="4"
+                          width="21"
+                          height="16"
+                          rx="4"
+                          stroke="currentColor"
+                          strokeWidth="1.8"
+                        />
+                        <path
+                          d="M1.5 9.5H22.5"
+                          stroke="currentColor"
+                          strokeWidth="1.8"
+                        />
+                        <circle cx="17.2" cy="14" r="1.6" fill="currentColor" />
+                      </svg>
+                      <span>
+                        {isWalletLoading
+                          ? t("settings.linkingMetamask")
+                          : t("settings.connectMetamask")}
+                      </span>
+                    </button>
+                  )}
+                </div>
+
+                <div className="form-group">
+                  <label htmlFor="fullName">
+                    {t("settings.fullNameLabel")}
+                  </label>
                   <input
                     type="text"
                     id="fullName"
@@ -258,9 +345,7 @@ function Settings() {
                     maxLength={150}
                     rows={4}
                   />
-                  <span className="char-count">
-                    {formData.bio.length}/150
-                  </span>
+                  <span className="char-count">{formData.bio.length}/150</span>
                 </div>
 
                 <div className="form-group">
