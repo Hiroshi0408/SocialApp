@@ -9,6 +9,7 @@
     "@testing-library/user-event": "^13.5.0",
     "axios": "^1.12.2",
     "crypto-js": "^4.2.0",
+    "ethers": "^6.16.0",
     "firebase": "^12.8.0",
     "i18next": "^25.7.4",
     "react": "^19.2.0",

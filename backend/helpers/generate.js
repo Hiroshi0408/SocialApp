@@ -1,4 +1,6 @@
 // Generate random string (for tokens)
+const jwt = require("jsonwebtoken");
+
 const generateRandomString = (length) => {
   const characters =
     "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789";
@@ -18,7 +20,15 @@ const generateRandomNumber = (length) => {
   return Math.floor(Math.random() * (max - min + 1)) + min;
 };
 
+// Generate JWT token
+const generateToken = (userId, username) => {
+  return jwt.sign({ id: userId, username: username }, process.env.JWT_SECRET, {
+    expiresIn: process.env.JWT_EXPIRE || JWT_EXPIRATION,
+  });
+};
+
 module.exports = {
   generateRandomString,
   generateRandomNumber,
+  generateToken,
 };

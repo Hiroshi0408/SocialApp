@@ -79,7 +79,7 @@ app.use("/api/notifications", require("./routes/notification.route"));
 app.use("/api/chat", require("./routes/chat.route"));
 app.use("/api/stories", require("./routes/story.route"));
 app.use("/api/admin", require("./routes/admin.route"));
-
+app.use("/api/web3", require("./routes/web3.route"));
 // Health check
 app.get("/api/health", (req, res) => {
   res.json({

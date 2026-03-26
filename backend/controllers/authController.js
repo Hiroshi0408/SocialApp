@@ -9,13 +9,7 @@ const {
   sendVerificationEmail,
   sendPasswordResetEmail,
 } = require("../utils/emailService");
-
-const generateToken = (userId, username) => {
-  return jwt.sign({ id: userId, username: username }, process.env.JWT_SECRET, {
-    expiresIn: process.env.JWT_EXPIRE || JWT_EXPIRATION,
-  });
-};
-
+const { generateToken } = require("../helpers/generate");
 //[POST] /api/auth/register
 exports.register = async (req, res) => {
   try {

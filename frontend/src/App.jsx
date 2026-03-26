@@ -7,6 +7,7 @@ import PrivateRoute from "./components/PrivateRoute/PrivateRoute";
 import AdminRoute from "./components/AdminRoute/AdminRoute";
 import Loading from "./components/Loading/Loading";
 import "./App.css";
+import { Web3Provider } from "./contexts/Web3Context";
 
 const Login = lazy(() => import("./pages/Login/Login"));
 const Register = lazy(() => import("./pages/Register/Register"));
@@ -31,119 +32,121 @@ function App() {
   return (
     <AuthProvider>
       <SocketProvider>
-        <BrowserRouter>
-          <Toaster
-            position="top-right"
-            toastOptions={{
-              duration: 3000,
-              style: {
-                background: "var(--card-bg)",
-                color: "var(--text-primary)",
-                border: "1px solid var(--border-color)",
-              },
-              success: {
-                iconTheme: {
-                  primary: "var(--primary-color)",
-                  secondary: "white",
+        <Web3Provider>
+          <BrowserRouter>
+            <Toaster
+              position="top-right"
+              toastOptions={{
+                duration: 3000,
+                style: {
+                  background: "var(--card-bg)",
+                  color: "var(--text-primary)",
+                  border: "1px solid var(--border-color)",
                 },
-              },
-            }}
-          />
-          <div className="App">
-            <Suspense fallback={<Loading />}>
-              <Routes>
-                <Route path="/" element={<Login />} />
-                <Route path="/register" element={<Register />} />
-                <Route path="/verify-email" element={<VerifyEmail />} />
-                <Route path="/forgot-password" element={<ForgotPassword />} />
-                <Route path="/reset-password" element={<ResetPassword />} />
+                success: {
+                  iconTheme: {
+                    primary: "var(--primary-color)",
+                    secondary: "white",
+                  },
+                },
+              }}
+            />
+            <div className="App">
+              <Suspense fallback={<Loading />}>
+                <Routes>
+                  <Route path="/" element={<Login />} />
+                  <Route path="/register" element={<Register />} />
+                  <Route path="/verify-email" element={<VerifyEmail />} />
+                  <Route path="/forgot-password" element={<ForgotPassword />} />
+                  <Route path="/reset-password" element={<ResetPassword />} />
 
-                <Route
-                  path="/home"
-                  element={
-                    <PrivateRoute>
-                      <Home />
-                    </PrivateRoute>
-                  }
-                />
-                <Route
-                  path="/profile"
-                  element={
-                    <PrivateRoute>
-                      <Profile />
-                    </PrivateRoute>
-                  }
-                />
-                <Route
-                  path="/profile/:username"
-                  element={
-                    <PrivateRoute>
-                      <Profile />
-                    </PrivateRoute>
-                  }
-                />
-                <Route
-                  path="/search"
-                  element={
-                    <PrivateRoute>
-                      <Search />
-                    </PrivateRoute>
-                  }
-                />
-                <Route
-                  path="/notifications"
-                  element={
-                    <PrivateRoute>
-                      <Notifications />
-                    </PrivateRoute>
-                  }
-                />
-                <Route
-                  path="/messages"
-                  element={
-                    <PrivateRoute>
-                      <Messages />
-                    </PrivateRoute>
-                  }
-                />
-                <Route
-                  path="/post/:postId"
-                  element={
-                    <PrivateRoute>
-                      <Post />
-                    </PrivateRoute>
-                  }
-                />
-                <Route
-                  path="/settings"
-                  element={
-                    <PrivateRoute>
-                      <Settings />
-                    </PrivateRoute>
-                  }
-                />
-                <Route
-                  path="/groups"
-                  element={
-                    <PrivateRoute>
-                      <Group />
-                    </PrivateRoute>
-                  }
-                />
+                  <Route
+                    path="/home"
+                    element={
+                      <PrivateRoute>
+                        <Home />
+                      </PrivateRoute>
+                    }
+                  />
+                  <Route
+                    path="/profile"
+                    element={
+                      <PrivateRoute>
+                        <Profile />
+                      </PrivateRoute>
+                    }
+                  />
+                  <Route
+                    path="/profile/:username"
+                    element={
+                      <PrivateRoute>
+                        <Profile />
+                      </PrivateRoute>
+                    }
+                  />
+                  <Route
+                    path="/search"
+                    element={
+                      <PrivateRoute>
+                        <Search />
+                      </PrivateRoute>
+                    }
+                  />
+                  <Route
+                    path="/notifications"
+                    element={
+                      <PrivateRoute>
+                        <Notifications />
+                      </PrivateRoute>
+                    }
+                  />
+                  <Route
+                    path="/messages"
+                    element={
+                      <PrivateRoute>
+                        <Messages />
+                      </PrivateRoute>
+                    }
+                  />
+                  <Route
+                    path="/post/:postId"
+                    element={
+                      <PrivateRoute>
+                        <Post />
+                      </PrivateRoute>
+                    }
+                  />
+                  <Route
+                    path="/settings"
+                    element={
+                      <PrivateRoute>
+                        <Settings />
+                      </PrivateRoute>
+                    }
+                  />
+                  <Route
+                    path="/groups"
+                    element={
+                      <PrivateRoute>
+                        <Group />
+                      </PrivateRoute>
+                    }
+                  />
 
-                <Route
-                  path="/admin"
-                  element={
-                    <PrivateRoute>
-                      <AdminDashboard />
-                    </PrivateRoute>
-                  }
-                />
-                <Route path="*" element={<Navigate to="/" />} />
-              </Routes>
-            </Suspense>
-          </div>
-        </BrowserRouter>
+                  <Route
+                    path="/admin"
+                    element={
+                      <PrivateRoute>
+                        <AdminDashboard />
+                      </PrivateRoute>
+                    }
+                  />
+                  <Route path="*" element={<Navigate to="/" />} />
+                </Routes>
+              </Suspense>
+            </div>
+          </BrowserRouter>
+        </Web3Provider>
       </SocketProvider>
     </AuthProvider>
   );

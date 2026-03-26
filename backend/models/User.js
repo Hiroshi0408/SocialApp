@@ -55,7 +55,12 @@ const userSchema = new mongoose.Schema(
       type: String,
       default: "",
     },
-
+    walletAddress: {
+      type: String,
+      unique: true,
+      sparse: true,
+      lowercase: true,
+    },
     firebaseUid: {
       type: String,
       sparse: true,
@@ -134,13 +139,9 @@ userSchema.index({ createdAt: -1 });
 
 // Encrypt password whenever password is modified and non-empty
 userSchema.pre("save", async function (next) {
-  // Skip only when password is unchanged or empty.
-  // This allows Google-linked accounts to set/reset a password safely.
   if (!this.isModified("password") || !this.password) {
     return next();
   }
-
-  // If password is already a bcrypt hash, avoid hashing again.
   if (/^\$2[aby]\$\d{2}\$/.test(this.password)) {
     return next();
   }
