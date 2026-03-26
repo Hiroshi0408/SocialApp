@@ -149,13 +149,19 @@
   display: flex;
   align-items: center;
   justify-content: space-between;
-  padding: 8px 16px;
+  padding: 8px 16px 4px;
+}
+
+.post-actions-left {
+  display: flex;
+  align-items: center;
+  gap: 10px;
 }
 
 .post-actions-right {
   display: flex;
   align-items: center;
-  gap: 16px;
+  gap: 0;
 }
 
 .action-btn {
@@ -163,7 +169,10 @@
   border: none;
   cursor: pointer;
   color: var(--text-primary);
+  min-width: 40px;
+  min-height: 40px;
   padding: 8px;
+  border-radius: 999px;
   transition: all 0.2s;
 }
 
@@ -171,6 +180,7 @@
   display: flex;
   align-items: center;
   gap: 6px;
+  padding-right: 10px;
 }
 
 .comment-count {
@@ -488,7 +498,7 @@
 }
 
 .reply-item::before {
-  content: '';
+  content: "";
   position: absolute;
   left: -16px;
   top: 16px;
@@ -653,5 +663,13 @@
     border-left: none;
     border-right: none;
     margin-bottom: 8px;
+  }
+
+  .post-actions-left {
+    gap: 6px;
+  }
+
+  .comment-count-btn {
+    padding-right: 8px;
   }
 }
