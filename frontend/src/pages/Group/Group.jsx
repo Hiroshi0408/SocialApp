@@ -2,55 +2,68 @@ import { useState, useEffect } from "react";
 import Header from "../../components/Header/Header";
 import Sidebar from "../../components/Sidebar/Sidebar";
 import CreateGroupModal from "../../components/CreateGroupModal/CreateGroupModal";
-import PostCard from "../../components/PostCard/PostCard";
-import {
-  joinedGroups,
-  suggestedGroups,
-  groupPosts,
-} from "../../data/mock-data";
-import axios from "axios";
+import { groupService } from "../../api";
+import { showError, showSuccess } from "../../utils/toast";
 import "./Group.css";
 
 function Group() {
-  const [myGroups, setMyGroups] = useState(joinedGroups || []);
-  const [suggested, setSuggested] = useState(suggestedGroups || []);
-  const [posts, setPosts] = useState(groupPosts || []);
+  const [myGroups, setMyGroups] = useState([]);
+  const [suggested, setSuggested] = useState([]);
+  const [loading, setLoading] = useState(true);
+  const [joiningGroupId, setJoiningGroupId] = useState(null);
   const [isModalOpen, setIsModalOpen] = useState(false);
 
   useEffect(() => {
     let mounted = true;
+
     async function fetchGroupsData() {
       try {
-        const [groupsRes, postsRes] = await Promise.all([
-          axios.get("/api/groups/joined"),
-          axios.get("/api/groups/posts"),
+        setLoading(true);
+        const [joinedRes, suggestedRes] = await Promise.all([
+          groupService.getJoinedGroups(),
+          groupService.getSuggestedGroups(),
         ]);
+
         if (mounted) {
-          if (Array.isArray(groupsRes.data)) setMyGroups(groupsRes.data);
-          if (Array.isArray(postsRes.data)) setPosts(postsRes.data);
+          if (joinedRes?.success) setMyGroups(joinedRes.groups || []);
+          if (suggestedRes?.success) setSuggested(suggestedRes.groups || []);
         }
       } catch (err) {
-        // ignore, keep mock-data as fallback
+        showError("Failed to load groups");
+      } finally {
+        if (mounted) {
+          setLoading(false);
+        }
       }
     }
+
     fetchGroupsData();
     return () => (mounted = false);
   }, []);
 
   function handleGroupCreated(newGroup) {
+    if (!newGroup) return;
     setMyGroups((prev) => [newGroup, ...prev]);
+    setSuggested((prev) => prev.filter((group) => group.id !== newGroup.id));
   }
 
   async function handleJoinGroup(groupId) {
     try {
-      await axios.post(`/api/groups/${groupId}/join`);
-      const groupToJoin = suggested.find((g) => g.id === groupId);
-      if (groupToJoin) {
-        setMyGroups((prev) => [groupToJoin, ...prev]);
-        setSuggested((prev) => prev.filter((g) => g.id !== groupId));
+      setJoiningGroupId(groupId);
+      const response = await groupService.joinGroup(groupId);
+      if (response?.success && response.group) {
+        const joinedGroup = response.group;
+        setMyGroups((prev) => {
+          const exists = prev.some((group) => group.id === joinedGroup.id);
+          return exists ? prev : [joinedGroup, ...prev];
+        });
+        setSuggested((prev) => prev.filter((group) => group.id !== groupId));
+        showSuccess("Joined group successfully");
       }
     } catch (err) {
-      console.error("Failed to join group:", err);
+      showError("Failed to join group");
+    } finally {
+      setJoiningGroupId(null);
     }
   }
 
@@ -72,16 +85,17 @@ function Group() {
           </section>
 
           <div className="group-container">
-            {/* Cột trái: Các group đã tham gia + Bài viết */}
+            {/* Cột trái: Các group đã tham gia */}
             <div className="group-left">
               {/* Các group đã tham gia */}
               <section className="my-groups">
                 <h2>My Groups ({myGroups.length})</h2>
                 <div className="groups-list">
+                  {loading && <p className="empty-state">Loading groups...</p>}
                   {myGroups.map((group) => (
                     <div key={group.id} className="group-item">
                       <img
-                        src={group.image}
+                        src={group.image || "/images/default-avatar.jpg"}
                         alt={group.name}
                         className="group-item-img"
                       />
@@ -101,21 +115,6 @@ function Group() {
                   )}
                 </div>
               </section>
-
-              {/* Bài viết từ các group đã tham gia */}
-              <section className="group-posts">
-                <h2>Posts from Your Groups</h2>
-                <div className="posts-list">
-                  {posts.map((post) => (
-                    <PostCard key={post.id} post={post} />
-                  ))}
-                  {posts.length === 0 && (
-                    <p className="empty-state">
-                      No posts yet from your groups.
-                    </p>
-                  )}
-                </div>
-              </section>
             </div>
 
             {/* Cột phải: Gợi ý các group */}
@@ -126,7 +125,7 @@ function Group() {
                   {suggested.map((group) => (
                     <div key={group.id} className="suggested-item">
                       <img
-                        src={group.image}
+                        src={group.image || "/images/default-avatar.jpg"}
                         alt={group.name}
                         className="suggested-img"
                       />
@@ -139,8 +138,9 @@ function Group() {
                         <button
                           className="btn-join"
                           onClick={() => handleJoinGroup(group.id)}
+                          disabled={joiningGroupId === group.id}
                         >
-                          Join
+                          {joiningGroupId === group.id ? "Joining..." : "Join"}
                         </button>
                       </div>
                     </div>

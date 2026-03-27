@@ -7,3 +7,4 @@ export { default as notificationService } from "./notificationService";
 export { default as saveService } from "./saveService";
 export { default as uploadService } from "./uploadService";
 export { default as chatService } from "./chatService";
+export { default as groupService } from "./groupService";

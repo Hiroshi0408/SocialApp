@@ -77,6 +77,7 @@ app.use("/api/upload", require("./routes/upload.route"));
 app.use("/api/saves", require("./routes/save.route"));
 app.use("/api/notifications", require("./routes/notification.route"));
 app.use("/api/chat", require("./routes/chat.route"));
+app.use("/api/groups", require("./routes/group.route"));
 app.use("/api/stories", require("./routes/story.route"));
 app.use("/api/admin", require("./routes/admin.route"));
 app.use("/api/web3", require("./routes/web3.route"));
