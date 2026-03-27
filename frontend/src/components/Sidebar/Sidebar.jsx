@@ -160,7 +160,6 @@ function Sidebar() {
       ),
       label: t("sidebar.groups"),
       path: "/groups",
-      badge: 4,
     },
   ];
 
