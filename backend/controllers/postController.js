@@ -16,7 +16,7 @@ const {
 const { extractMentions, validateMentions } = require("../utils/mentionHelper");
 const Follow = require("../models/Follow");
 const Friendship = require("../models/Friendship");
-const { moderateText } = require("../services/geminiModeration");
+const { moderateText } = require("../utils/geminiModeration.js");
 const { formatPostsWithMetadata } = require("../helpers/postHelper");
 const logger = require("../utils/logger.js");
 
@@ -376,8 +376,8 @@ exports.createPost = async (req, res) => {
           fullName: post.userId.fullName,
           avatar: post.userId.avatar,
         },
-        likes: post.likesCount, // Map likesCount -> likes
-        comments: post.commentsCount, // Map commentsCount -> comments
+        likes: post.likesCount,
+        comments: post.commentsCount,
         isLiked: false,
         isSaved: false,
         timestamp: "Just now",
