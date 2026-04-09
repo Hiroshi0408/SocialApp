@@ -1,32 +1,18 @@
-const User = require("../models/User");
-const jwt = require("jsonwebtoken");
-const crypto = require("crypto");
-const bcrypt = require("bcryptjs");
+const userDAO = require("../dao/userDAO");
 const admin = require("../config/firebaseAdmin");
-const { JWT_EXPIRATION } = require("../constants");
 const logger = require("../utils/logger.js");
 const {
   sendVerificationEmail,
   sendPasswordResetEmail,
 } = require("../utils/emailService");
-const { generateToken } = require("../helpers/generate");
+const { generateToken, generateRawToken } = require("../helpers/generate");
+
 //[POST] /api/auth/register
 exports.register = async (req, res) => {
   try {
     const { fullName, username, email, password } = req.body;
-
     logger.info("Register attempt:", { username, email });
-
-    // Validate required fields
-    if (!fullName || !username || !email || !password) {
-      return res.status(400).json({
-        success: false,
-        message: "Please provide all required fields",
-      });
-    }
-
-    // Check if user already exists
-    const existingUser = await User.findOne({
+    const existingUser = await userDAO.findOne({
       $or: [{ username }, { email }],
     });
 
@@ -45,20 +31,16 @@ exports.register = async (req, res) => {
       });
     }
 
-    // Create user
-    const user = new User({
+    const user = await userDAO.createUser({
       fullName,
       username,
       email,
       password,
     });
-
-    await user.save();
-
     logger.info("User registered successfully:", user.username);
 
-    const verificationToken = user.generateEmailVerificationToken();
-    await user.save({ validateBeforeSave: false });
+    const verificationToken = generateRawToken();
+    await userDAO.saveVerificationToken(user._id, verificationToken);
 
     try {
       await sendVerificationEmail(user.email, user.username, verificationToken);
@@ -69,40 +51,34 @@ exports.register = async (req, res) => {
 
     const token = generateToken(user._id, user.username);
 
-    res.status(201).json({
+    return res.status(201).json({
       success: true,
       message:
         "Registration successful. Please check your email to verify your account.",
       token,
-      user: user.toJSON(),
+      user,
     });
   } catch (error) {
     logger.error("Register error:", error);
 
-    // Mongoose validation errors
     if (error.name === "ValidationError") {
       const errors = {};
       Object.keys(error.errors).forEach((key) => {
         errors[key] = error.errors[key].message;
       });
-
-      return res.status(400).json({
-        success: false,
-        message: "Validation failed",
-        errors,
-      });
+      return res
+        .status(400)
+        .json({ success: false, message: "Validation failed", errors });
     }
 
-    // Duplicate key error
     if (error.code === 11000) {
       const field = Object.keys(error.keyPattern)[0];
-      return res.status(400).json({
-        success: false,
-        message: `${field} already exists`,
-      });
+      return res
+        .status(400)
+        .json({ success: false, message: `${field} already exists` });
     }
 
-    res.status(500).json({
+    return res.status(500).json({
       success: false,
       message: "Registration failed",
       error: process.env.NODE_ENV === "development" ? error.message : undefined,
@@ -114,10 +90,8 @@ exports.register = async (req, res) => {
 exports.login = async (req, res) => {
   try {
     const { username, password } = req.body;
-
     logger.info("Login attempt:", username);
 
-    // Validate input
     if (!username || !password) {
       return res.status(400).json({
         success: false,
@@ -125,35 +99,27 @@ exports.login = async (req, res) => {
       });
     }
 
-    // Find user (include password for comparison)
-    const user = await User.findOne({
-      $or: [{ username }, { email: username }],
-      deleted: false,
-      status: "active",
-    }).select("+password");
+    // findByUsernameOrEmail đã select +password và filter deleted/status
+    const user = await userDAO.findByUsernameOrEmail(username);
 
     if (!user) {
-      return res.status(401).json({
-        success: false,
-        message: "Invalid credentials",
-      });
+      return res
+        .status(401)
+        .json({ success: false, message: "Invalid credentials" });
     }
 
-    // Check password
     const isMatch = await user.comparePassword(password);
-
     if (!isMatch) {
-      return res.status(401).json({
-        success: false,
-        message: "Invalid credentials",
-      });
+      return res
+        .status(401)
+        .json({ success: false, message: "Invalid credentials" });
     }
 
     logger.info("Login successful:", user.username);
 
     const token = generateToken(user._id, user.username);
 
-    res.json({
+    return res.json({
       success: true,
       message: "Login successful",
       token,
@@ -161,7 +127,7 @@ exports.login = async (req, res) => {
     });
   } catch (error) {
     logger.error("Login error:", error);
-    res.status(500).json({
+    return res.status(500).json({
       success: false,
       message: "Login failed",
       error: process.env.NODE_ENV === "development" ? error.message : undefined,
@@ -169,68 +135,58 @@ exports.login = async (req, res) => {
   }
 };
 
-//[POST] /api/auth/google-login - METHOD MỚI
+//[POST] /api/auth/google-login
 exports.googleLogin = async (req, res) => {
   try {
     const { googleToken, email, displayName, photoURL } = req.body;
-
     logger.info("Google login attempt:", email);
 
+    // Verify Firebase token
     let decodedToken;
     try {
       decodedToken = await admin.auth().verifyIdToken(googleToken);
     } catch (error) {
       logger.error("Firebase token verification failed:", error);
 
-      if (error.code === "auth/id-token-expired") {
-        return res.status(401).json({
-          success: false,
-          message: "Token expired. Please login again",
-        });
-      }
-
-      if (error.code === "auth/argument-error") {
-        return res.status(401).json({
-          success: false,
-          message: "Invalid token format",
-        });
-      }
+      const errorMap = {
+        "auth/id-token-expired": "Token expired. Please login again",
+        "auth/argument-error": "Invalid token format",
+      };
 
       return res.status(401).json({
         success: false,
-        message: "Invalid Google token",
+        message: errorMap[error.code] || "Invalid Google token",
       });
     }
 
     const tokenEmail = decodedToken.email?.toLowerCase();
+
     if (!tokenEmail) {
-      return res.status(401).json({
-        success: false,
-        message: "Google account has no email",
-      });
+      return res
+        .status(401)
+        .json({ success: false, message: "Google account has no email" });
     }
 
     if (!decodedToken.email_verified) {
-      return res.status(401).json({
-        success: false,
-        message: "Google email is not verified",
-      });
+      return res
+        .status(401)
+        .json({ success: false, message: "Google email is not verified" });
     }
 
     if (email && tokenEmail !== email.toLowerCase()) {
       logger.error("Email mismatch - Token:", tokenEmail, "Request:", email);
-      return res.status(401).json({
-        success: false,
-        message: "Email verification failed",
-      });
+      return res
+        .status(401)
+        .json({ success: false, message: "Email verification failed" });
     }
-
-    let user = await User.findOne({ email: tokenEmail });
 
     const tokenDisplayName = decodedToken.name || displayName;
     const tokenPhotoURL = decodedToken.picture || photoURL;
 
+    let user = await userDAO.findByEmail(tokenEmail);
+
     if (!user) {
+      // Tạo username unique từ email
       let baseUsername = tokenEmail
         .split("@")[0]
         .toLowerCase()
@@ -238,13 +194,11 @@ exports.googleLogin = async (req, res) => {
 
       let username = baseUsername;
       let counter = 1;
-
-      while (await User.findOne({ username })) {
-        username = `${baseUsername}${counter}`;
-        counter++;
+      while (await userDAO.existsByUsername(username)) {
+        username = `${baseUsername}${counter++}`;
       }
 
-      user = new User({
+      user = await userDAO.createUser({
         email: tokenEmail,
         fullName: tokenDisplayName || tokenEmail.split("@")[0],
         username,
@@ -254,52 +208,45 @@ exports.googleLogin = async (req, res) => {
         isEmailVerified: true,
       });
 
-      await user.save({ validateBeforeSave: false });
-
       logger.info("New Google user created:", {
         username: user.username,
         email: user.email,
       });
     } else {
-      let updated = false;
-
+      // Kiểm tra Firebase UID conflict
       if (user.firebaseUid && user.firebaseUid !== decodedToken.uid) {
         logger.error("Firebase UID mismatch for email:", tokenEmail);
-        return res.status(401).json({
-          success: false,
-          message: "Google account mismatch",
-        });
+        return res
+          .status(401)
+          .json({ success: false, message: "Google account mismatch" });
       }
 
-      if (!user.firebaseUid && !user.password) {
-        user.firebaseUid = decodedToken.uid;
-        user.isGoogleAccount = true;
-        updated = true;
-      } else if (!user.firebaseUid && user.password) {
-        user.firebaseUid = decodedToken.uid;
-        user.isGoogleAccount = true;
-        updated = true;
+      // Build update payload chỉ với các field cần thay đổi
+      const updates = {};
+      if (!user.firebaseUid) {
+        updates.firebaseUid = decodedToken.uid;
+        updates.isGoogleAccount = true;
       }
       if (!user.isEmailVerified && decodedToken.email_verified) {
-        user.isEmailVerified = true;
-        updated = true;
+        updates.isEmailVerified = true;
       }
       if (tokenPhotoURL && !user.avatar) {
-        user.avatar = tokenPhotoURL;
-        updated = true;
+        updates.avatar = tokenPhotoURL;
       }
       if (tokenDisplayName && !user.fullName) {
-        user.fullName = tokenDisplayName;
-        updated = true;
+        updates.fullName = tokenDisplayName;
       }
-      if (updated) {
-        await user.save({ validateBeforeSave: false });
+
+      if (Object.keys(updates).length > 0) {
+        user = await userDAO.updateById(user._id, updates);
       }
 
       logger.info("Existing user logged in with Google:", user.username);
     }
+
     const token = generateToken(user._id, user.username);
-    res.json({
+
+    return res.json({
       success: true,
       message: "Login successful",
       token,
@@ -307,8 +254,7 @@ exports.googleLogin = async (req, res) => {
     });
   } catch (error) {
     logger.error("Google login error:", error);
-
-    res.status(500).json({
+    return res.status(500).json({
       success: false,
       message: "Google login failed",
       error: process.env.NODE_ENV === "development" ? error.message : undefined,
@@ -319,22 +265,18 @@ exports.googleLogin = async (req, res) => {
 //[GET] /api/auth/me
 exports.getCurrentUser = async (req, res) => {
   try {
-    const user = await User.findById(req.user.id);
+    const user = await userDAO.findById(req.user.id);
 
     if (!user) {
-      return res.status(404).json({
-        success: false,
-        message: "User not found",
-      });
+      return res
+        .status(404)
+        .json({ success: false, message: "User not found" });
     }
 
-    res.json({
-      success: true,
-      user: user.toJSON(),
-    });
+    return res.json({ success: true, user: user.toJSON() });
   } catch (error) {
     logger.error("Get current user error:", error);
-    res.status(500).json({
+    return res.status(500).json({
       success: false,
       message: "Failed to get user",
       error: process.env.NODE_ENV === "development" ? error.message : undefined,
@@ -344,31 +286,20 @@ exports.getCurrentUser = async (req, res) => {
 
 //[POST] /api/auth/logout
 exports.logout = async (req, res) => {
-  try {
-    res.json({
-      success: true,
-      message: "Logout successful",
-    });
-  } catch (error) {
-    logger.error("Logout error:", error);
-    res.status(500).json({
-      success: false,
-      message: "Logout failed",
-    });
-  }
+  // JWT là stateless — client tự xóa token ở phía frontend.
+  // Nếu cần blacklist token, implement Redis token store ở đây.
+  return res.json({ success: true, message: "Logout successful" });
 };
+
+// ==================== EMAIL VERIFICATION ====================
 
 //[POST] /api/auth/verify-email/:token
 exports.verifyEmail = async (req, res) => {
   try {
     const { token } = req.params;
 
-    const hashedToken = crypto.createHash("sha256").update(token).digest("hex");
-
-    const user = await User.findOne({
-      emailVerificationToken: hashedToken,
-      emailVerificationExpires: { $gt: Date.now() },
-    }).select("+emailVerificationToken +emailVerificationExpires");
+    // findByVerificationToken tự hash token bên trong DAO
+    const user = await userDAO.findByVerificationToken(token);
 
     if (!user) {
       return res.status(400).json({
@@ -377,21 +308,21 @@ exports.verifyEmail = async (req, res) => {
       });
     }
 
-    user.isEmailVerified = true;
-    user.emailVerificationToken = undefined;
-    user.emailVerificationExpires = undefined;
-    await user.save({ validateBeforeSave: false });
-
+    // Clear token và đánh dấu verified trong 1 lần update
+    await userDAO.clearVerificationToken(user._id);
     logger.info("Email verified for user:", user.username);
 
-    res.json({
+    // Lấy lại user sau khi update để trả về data mới nhất
+    const updatedUser = await userDAO.findById(user._id);
+
+    return res.json({
       success: true,
       message: "Email verified successfully",
-      user: user.toJSON(),
+      user: updatedUser.toJSON(),
     });
   } catch (error) {
     logger.error("Email verification error:", error);
-    res.status(500).json({
+    return res.status(500).json({
       success: false,
       message: "Email verification failed",
       error: process.env.NODE_ENV === "development" ? error.message : undefined,
@@ -402,45 +333,40 @@ exports.verifyEmail = async (req, res) => {
 //[POST] /api/auth/resend-verification
 exports.resendVerification = async (req, res) => {
   try {
-    const userId = req.user.id;
-
-    const user = await User.findById(userId);
+    const user = await userDAO.findById(req.user.id);
 
     if (!user) {
-      return res.status(404).json({
-        success: false,
-        message: "User not found",
-      });
+      return res
+        .status(404)
+        .json({ success: false, message: "User not found" });
     }
 
     if (user.isEmailVerified) {
-      return res.status(400).json({
-        success: false,
-        message: "Email is already verified",
-      });
+      return res
+        .status(400)
+        .json({ success: false, message: "Email is already verified" });
     }
 
-    const verificationToken = user.generateEmailVerificationToken();
-    await user.save({ validateBeforeSave: false });
+    const verificationToken = generateRawToken();
+    await userDAO.saveVerificationToken(user._id, verificationToken);
 
     try {
       await sendVerificationEmail(user.email, user.username, verificationToken);
       logger.info("Verification email resent to:", user.email);
     } catch (emailError) {
       logger.error("Failed to resend verification email:", emailError.message);
-      return res.status(500).json({
-        success: false,
-        message: "Failed to send verification email",
-      });
+      return res
+        .status(500)
+        .json({ success: false, message: "Failed to send verification email" });
     }
 
-    res.json({
+    return res.json({
       success: true,
       message: "Verification email sent. Please check your inbox.",
     });
   } catch (error) {
     logger.error("Resend verification error:", error);
-    res.status(500).json({
+    return res.status(500).json({
       success: false,
       message: "Failed to resend verification email",
       error: process.env.NODE_ENV === "development" ? error.message : undefined,
@@ -448,54 +374,50 @@ exports.resendVerification = async (req, res) => {
   }
 };
 
+// ==================== PASSWORD ====================
+
 //[POST] /api/auth/forgot-password
 exports.forgotPassword = async (req, res) => {
+  // Response luôn là 200 để tránh user enumeration
+  const genericResponse = {
+    success: true,
+    message:
+      "If an account exists with that email, a password reset link has been sent.",
+  };
+
   try {
     const { email } = req.body;
 
     if (!email) {
-      return res.status(400).json({
-        success: false,
-        message: "Please provide your email",
-      });
+      return res
+        .status(400)
+        .json({ success: false, message: "Please provide your email" });
     }
 
-    const user = await User.findOne({ email: email.toLowerCase() });
-
+    const user = await userDAO.findByEmail(email);
     if (!user) {
-      return res.json({
-        success: true,
-        message:
-          "If an account exists with that email, a password reset link has been sent.",
-      });
+      return res.json(genericResponse);
     }
 
-    const resetToken = user.generatePasswordResetToken();
-    await user.save({ validateBeforeSave: false });
+    const resetToken = generateRawToken();
+    await userDAO.savePasswordResetToken(user._id, resetToken);
 
     try {
       await sendPasswordResetEmail(user.email, user.username, resetToken);
       logger.info("Password reset email sent to:", user.email);
     } catch (emailError) {
       logger.error("Failed to send password reset email:", emailError.message);
-      user.passwordResetToken = undefined;
-      user.passwordResetExpires = undefined;
-      await user.save({ validateBeforeSave: false });
-
+      await userDAO.clearPasswordResetToken(user._id);
       return res.status(500).json({
         success: false,
         message: "Failed to send password reset email",
       });
     }
 
-    res.json({
-      success: true,
-      message:
-        "If an account exists with that email, a password reset link has been sent.",
-    });
+    return res.json(genericResponse);
   } catch (error) {
     logger.error("Forgot password error:", error);
-    res.status(500).json({
+    return res.status(500).json({
       success: false,
       message: "Password reset request failed",
       error: process.env.NODE_ENV === "development" ? error.message : undefined,
@@ -509,7 +431,6 @@ exports.resetPassword = async (req, res) => {
     const { token } = req.params;
     const { password } = req.body;
 
-    logger.info("Reset password attempt with token:", token);
     if (!password || password.length < 6) {
       return res.status(400).json({
         success: false,
@@ -517,12 +438,7 @@ exports.resetPassword = async (req, res) => {
       });
     }
 
-    const hashedToken = crypto.createHash("sha256").update(token).digest("hex");
-
-    const user = await User.findOne({
-      passwordResetToken: hashedToken,
-      passwordResetExpires: { $gt: Date.now() },
-    }).select("+password +passwordResetToken +passwordResetExpires");
+    const user = await userDAO.findByResetToken(token);
 
     if (!user) {
       return res.status(400).json({
@@ -531,7 +447,7 @@ exports.resetPassword = async (req, res) => {
       });
     }
 
-    user.password = await bcrypt.hash(password, 10);
+    user.password = password;
     user.passwordResetToken = undefined;
     user.passwordResetExpires = undefined;
     await user.save();
@@ -540,7 +456,7 @@ exports.resetPassword = async (req, res) => {
 
     const authToken = generateToken(user._id, user.username);
 
-    res.json({
+    return res.json({
       success: true,
       message: "Password reset successful",
       token: authToken,
@@ -548,7 +464,7 @@ exports.resetPassword = async (req, res) => {
     });
   } catch (error) {
     logger.error("Reset password error:", error);
-    res.status(500).json({
+    return res.status(500).json({
       success: false,
       message: "Password reset failed",
       error: process.env.NODE_ENV === "development" ? error.message : undefined,
@@ -559,7 +475,6 @@ exports.resetPassword = async (req, res) => {
 //[POST] /api/auth/change-password
 exports.changePassword = async (req, res) => {
   try {
-    const userId = req.user.id;
     const { currentPassword, newPassword } = req.body;
 
     if (!currentPassword || !newPassword) {
@@ -576,36 +491,33 @@ exports.changePassword = async (req, res) => {
       });
     }
 
-    const user = await User.findById(userId).select("+password");
+    const user = await userDAO.findByIdWithPassword(req.user.id);
 
     if (!user) {
-      return res.status(404).json({
-        success: false,
-        message: "User not found",
-      });
+      return res
+        .status(404)
+        .json({ success: false, message: "User not found" });
     }
 
     const isMatch = await user.comparePassword(currentPassword);
-
     if (!isMatch) {
-      return res.status(401).json({
-        success: false,
-        message: "Current password is incorrect",
-      });
+      return res
+        .status(401)
+        .json({ success: false, message: "Current password is incorrect" });
     }
 
-    user.password = await bcrypt.hash(newPassword, 10);
+    user.password = newPassword;
     await user.save();
 
     logger.info("Password changed successfully for user:", user.username);
 
-    res.json({
+    return res.json({
       success: true,
       message: "Password changed successfully",
     });
   } catch (error) {
     logger.error("Change password error:", error);
-    res.status(500).json({
+    return res.status(500).json({
       success: false,
       message: "Failed to change password",
       error: process.env.NODE_ENV === "development" ? error.message : undefined,
