@@ -224,10 +224,29 @@ class UserDAO {
   }
 
   async decrementFollowCounters(followerId, followingId) {
+    // Dùng $max để đảm bảo counter không bao giờ xuống dưới 0
     await Promise.all([
-      User.findByIdAndUpdate(followerId, { $inc: { followingCount: -1 } }),
-      User.findByIdAndUpdate(followingId, { $inc: { followersCount: -1 } }),
+      User.findByIdAndUpdate(followerId, [
+        {
+          $set: {
+            followingCount: { $max: [0, { $subtract: ["$followingCount", 1] }] },
+          },
+        },
+      ]),
+      User.findByIdAndUpdate(followingId, [
+        {
+          $set: {
+            followersCount: { $max: [0, { $subtract: ["$followersCount", 1] }] },
+          },
+        },
+      ]),
     ]);
+  }
+
+  // ==================== COUNT ====================
+
+  async count(filter) {
+    return await User.countDocuments(filter);
   }
 }
 
