@@ -243,6 +243,21 @@ class UserDAO {
     ]);
   }
 
+  async incrementFriendsCount(userId, session = null) {
+    const update = { $inc: { friendsCount: 1 } };
+    const opts = { new: true, ...(session ? { session } : {}) };
+    return await User.findByIdAndUpdate(userId, update, opts).exec();
+  }
+
+  async decrementFriendsCount(userId, session = null) {
+    // Dùng $max để đảm bảo counter không bao giờ xuống dưới 0
+    const update = [
+      { $set: { friendsCount: { $max: [0, { $subtract: ["$friendsCount", 1] }] } } },
+    ];
+    const opts = { new: true, ...(session ? { session } : {}) };
+    return await User.findByIdAndUpdate(userId, update, opts).exec();
+  }
+
   // ==================== COUNT ====================
 
   async count(filter) {

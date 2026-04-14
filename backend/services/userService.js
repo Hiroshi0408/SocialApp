@@ -2,21 +2,12 @@ const userDAO = require("../dao/userDAO");
 const followDAO = require("../dao/followDAO");
 const AppError = require("../utils/AppError");
 const logger = require("../utils/logger");
-const { formatPostsWithMetadata } = require("../helpers/postHelper");
-
-// TODO: Khi có postDAO thì thay thế 3 import Model trực tiếp này
-const Post = require("../models/Post");
-const Like = require("../models/Like");
-const Save = require("../models/Save");
-
-// TODO: Khi friendController và notificationController được tách thành service
-// thì thay đường dẫn import tương ứng
-const { resolveFriendshipStatus } = require("../controllers/friendController");
-const { createNotification } = require("../controllers/notificationController");
+const friendService = require("./friendService");
+const notificationService = require("./notificationService");
+const postService = require("./postService");
 
 const {
   DEFAULT_POST_LIMIT,
-  MAX_POST_LIMIT,
   DEFAULT_USER_LIMIT,
   MAX_USER_LIMIT,
   DEFAULT_SUGGESTED_USERS_LIMIT,
@@ -38,7 +29,7 @@ class UserService {
 
     const [followDoc, friendship] = await Promise.all([
       followDAO.findOne(currentUserId, user._id),
-      resolveFriendshipStatus(currentUserId, user._id),
+      friendService.resolveFriendshipStatus(currentUserId, user._id),
     ]);
 
     return {
@@ -98,47 +89,8 @@ class UserService {
 
   // ==================== POSTS ====================
 
-  async getUserPosts(userId, currentUserId, { page = 1, limit = DEFAULT_POST_LIMIT }) {
-    limit = Math.min(Number(limit), MAX_POST_LIMIT);
-    const skip = (page - 1) * limit;
-
-    // TODO: Thay bằng postDAO khi có
-    const posts = await Post.find({ userId, deleted: false })
-      .populate("userId", "username fullName avatar")
-      .sort({ createdAt: -1 })
-      .skip(skip)
-      .limit(limit)
-      .lean();
-
-    const postIds = posts.map((p) => p._id);
-
-    const [likes, saves] = await Promise.all([
-      Like.find({
-        userId: currentUserId,
-        targetId: { $in: postIds },
-        targetType: "post",
-      }).select("targetId"),
-      Save.find({
-        userId: currentUserId,
-        postId: { $in: postIds },
-      }).select("postId"),
-    ]);
-
-    const likedPostIds = new Set(likes.map((l) => l.targetId.toString()));
-    const savedPostIds = new Set(saves.map((s) => s.postId.toString()));
-    const formattedPosts = formatPostsWithMetadata(posts, likedPostIds, savedPostIds);
-
-    const total = await Post.countDocuments({ userId, deleted: false });
-
-    return {
-      posts: formattedPosts,
-      pagination: {
-        page,
-        limit,
-        total,
-        hasMore: skip + formattedPosts.length < total,
-      },
-    };
+  async getUserPosts(userId, currentUserId, query = {}) {
+    return await postService.getUserPosts(userId, currentUserId, query);
   }
 
   // ==================== FOLLOW ====================
@@ -183,7 +135,7 @@ class UserService {
 
     // Notification fail không block response
     try {
-      await createNotification({
+      await notificationService.createNotification({
         recipientId: targetUserId,
         senderId: currentUserId,
         type: "follow",
