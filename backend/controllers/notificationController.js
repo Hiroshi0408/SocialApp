@@ -1,224 +1,53 @@
-const Notification = require("../models/Notification");
-const { getTimeAgo } = require("../utils/timeHelper");
-const { DEFAULT_PAGE_SIZE, MAX_PAGE_SIZE } = require("../constants");
-const { getIO } = require("../config/socket");
-const logger = require("../utils/logger.js");
+const notificationService = require("../services/notificationService");
+const logger = require("../utils/logger");
 
-// [GET] /api/notifications - Get user notifications
-exports.getNotifications = async (req, res) => {
+// [GET] /api/notifications
+exports.getNotifications = async (req, res, next) => {
   try {
-    const userId = req.user.id;
-    const page = parseInt(req.query.page) || 1;
-    const limit = Math.min(
-      parseInt(req.query.limit) || DEFAULT_PAGE_SIZE,
-      MAX_PAGE_SIZE
-    );
-    const skip = (page - 1) * limit;
-
     logger.info(`Get notifications - User: ${req.user.username}`);
-
-    const notifications = await Notification.find({ recipientId: userId })
-      .populate("senderId", "username fullName avatar")
-      .populate({
-        path: "targetId",
-        select: "image caption username fullName",
-      })
-      .sort({ createdAt: -1 })
-      .skip(skip)
-      .limit(limit)
-      .lean();
-
-    const formattedNotifications = notifications.map((notification) => ({
-      ...notification,
-      sender: notification.senderId,
-      timestamp: getTimeAgo(notification.createdAt),
-    }));
-
-    const total = await Notification.countDocuments({ recipientId: userId });
-    const unreadCount = await Notification.countDocuments({
-      recipientId: userId,
-      read: false,
-    });
-
-    res.json({
-      success: true,
-      notifications: formattedNotifications,
-      unreadCount,
-      pagination: {
-        page,
-        limit,
-        total,
-        hasMore: skip + formattedNotifications.length < total,
-      },
-    });
+    const result = await notificationService.getNotifications(req.user.id, req.query);
+    res.json({ success: true, ...result });
   } catch (error) {
-    logger.error("Get notifications error:", error);
-    res.status(500).json({
-      success: false,
-      message: "Failed to get notifications",
-      error: process.env.NODE_ENV === "development" ? error.message : undefined,
-    });
+    next(error);
   }
 };
 
-// [PUT] /api/notifications/:id/read - Mark notification as read
-exports.markAsRead = async (req, res) => {
+// [GET] /api/notifications/unread-count
+exports.getUnreadCount = async (req, res, next) => {
   try {
-    const { id } = req.params;
-    const userId = req.user.id;
-
-    const notification = await Notification.findOneAndUpdate(
-      { _id: id, recipientId: userId },
-      { read: true },
-      { new: true }
-    );
-
-    if (!notification) {
-      return res.status(404).json({
-        success: false,
-        message: "Notification not found",
-      });
-    }
-
-    res.json({
-      success: true,
-      message: "Notification marked as read",
-    });
+    const count = await notificationService.getUnreadCount(req.user.id);
+    res.json({ success: true, count });
   } catch (error) {
-    logger.error("Mark notification as read error:", error);
-    res.status(500).json({
-      success: false,
-      message: "Failed to mark notification as read",
-      error: process.env.NODE_ENV === "development" ? error.message : undefined,
-    });
+    next(error);
   }
 };
 
-// [PUT] /api/notifications/read-all - Mark all as read
-exports.markAllAsRead = async (req, res) => {
+// [PUT] /api/notifications/read-all
+exports.markAllAsRead = async (req, res, next) => {
   try {
-    const userId = req.user.id;
-
-    await Notification.updateMany({ recipientId: userId, read: false }, { read: true });
-
-    res.json({
-      success: true,
-      message: "All notifications marked as read",
-    });
+    await notificationService.markAllAsRead(req.user.id);
+    res.json({ success: true, message: "All notifications marked as read" });
   } catch (error) {
-    logger.error("Mark all as read error:", error);
-    res.status(500).json({
-      success: false,
-      message: "Failed to mark all as read",
-      error: process.env.NODE_ENV === "development" ? error.message : undefined,
-    });
+    next(error);
   }
 };
 
-// [DELETE] /api/notifications/:id - Delete notification
-exports.deleteNotification = async (req, res) => {
+// [PUT] /api/notifications/:id/read
+exports.markAsRead = async (req, res, next) => {
   try {
-    const { id } = req.params;
-    const userId = req.user.id;
-
-    const notification = await Notification.findOneAndDelete({
-      _id: id,
-      recipientId: userId,
-    });
-
-    if (!notification) {
-      return res.status(404).json({
-        success: false,
-        message: "Notification not found",
-      });
-    }
-
-    res.json({
-      success: true,
-      message: "Notification deleted",
-    });
+    await notificationService.markAsRead(req.params.id, req.user.id);
+    res.json({ success: true, message: "Notification marked as read" });
   } catch (error) {
-    logger.error("Delete notification error:", error);
-    res.status(500).json({
-      success: false,
-      message: "Failed to delete notification",
-      error: process.env.NODE_ENV === "development" ? error.message : undefined,
-    });
+    next(error);
   }
 };
 
-// [GET] /api/notifications/unread-count - Get unread count
-exports.getUnreadCount = async (req, res) => {
+// [DELETE] /api/notifications/:id
+exports.deleteNotification = async (req, res, next) => {
   try {
-    const userId = req.user.id;
-
-    const count = await Notification.countDocuments({
-      recipientId: userId,
-      read: false,
-    });
-
-    res.json({
-      success: true,
-      count,
-    });
+    await notificationService.deleteNotification(req.params.id, req.user.id);
+    res.json({ success: true, message: "Notification deleted" });
   } catch (error) {
-    logger.error("Get unread count error:", error);
-    res.status(500).json({
-      success: false,
-      message: "Failed to get unread count",
-      error: process.env.NODE_ENV === "development" ? error.message : undefined,
-    });
-  }
-};
-
-// Helper function to create notification
-exports.createNotification = async (data) => {
-  try {
-    const { recipientId, senderId, type, targetType, targetId, text } = data;
-
-    if (recipientId.toString() === senderId.toString()) {
-      return;
-    }
-
-    const notification = new Notification({
-      recipientId,
-      senderId,
-      type,
-      targetType,
-      targetId,
-      text: text || "",
-    });
-
-    await notification.save();
-
-    await notification.populate("senderId", "username fullName avatar");
-    await notification.populate({
-      path: "targetId",
-      select: "image caption username fullName",
-    });
-
-    const formattedNotification = {
-      ...notification.toObject(),
-      sender: notification.senderId,
-      timestamp: getTimeAgo(notification.createdAt),
-    };
-
-    try {
-      const io = getIO();
-      io.to(`user:${recipientId}`).emit("notification:new", {
-        notification: formattedNotification,
-      });
-      logger.info(`Notification sent - Type: ${type}, Recipient: ${recipientId}`);
-    } catch (socketError) {
-      logger.error("Socket emit error:", socketError.message);
-    }
-
-    logger.info(`Notification created - Type: ${type}, Recipient: ${recipientId}`);
-  } catch (error) {
-    if (error.code === 11000) {
-      logger.info("Duplicate notification ignored");
-      return;
-    }
-    logger.error("Create notification error:", error);
+    next(error);
   }
 };
