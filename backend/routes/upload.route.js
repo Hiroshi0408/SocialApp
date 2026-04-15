@@ -15,7 +15,13 @@ const imageUpload = multer({
     fileSize: 10 * 1024 * 1024, // 10MB limit for images
   },
   fileFilter: (req, file, cb) => {
-    const allowedTypes = ["image/jpeg", "image/jpg", "image/png", "image/gif", "image/webp"];
+    const allowedTypes = [
+      "image/jpeg",
+      "image/jpg",
+      "image/png",
+      "image/gif",
+      "image/webp",
+    ];
     if (allowedTypes.includes(file.mimetype)) {
       cb(null, true);
     } else {
@@ -31,7 +37,12 @@ const videoUpload = multer({
     fileSize: 100 * 1024 * 1024, // 100MB limit for videos
   },
   fileFilter: (req, file, cb) => {
-    const allowedTypes = ["video/mp4", "video/webm", "video/quicktime", "video/x-msvideo"];
+    const allowedTypes = [
+      "video/mp4",
+      "video/webm",
+      "video/quicktime",
+      "video/x-msvideo",
+    ];
     if (allowedTypes.includes(file.mimetype)) {
       cb(null, true);
     } else {
@@ -47,13 +58,32 @@ const mediaUpload = multer({
     fileSize: 100 * 1024 * 1024, // 100MB for video, images will be smaller
   },
   fileFilter: (req, file, cb) => {
-    const allowedImageTypes = ["image/jpeg", "image/jpg", "image/png", "image/gif", "image/webp"];
-    const allowedVideoTypes = ["video/mp4", "video/webm", "video/quicktime", "video/x-msvideo"];
+    const allowedImageTypes = [
+      "image/jpeg",
+      "image/jpg",
+      "image/png",
+      "image/gif",
+      "image/webp",
+    ];
+    const allowedVideoTypes = [
+      "video/mp4",
+      "video/webm",
+      "video/quicktime",
+      "video/x-msvideo",
+    ];
 
-    if (allowedImageTypes.includes(file.mimetype) || allowedVideoTypes.includes(file.mimetype)) {
+    if (
+      allowedImageTypes.includes(file.mimetype) ||
+      allowedVideoTypes.includes(file.mimetype)
+    ) {
       cb(null, true);
     } else {
-      cb(new Error("Only images (JPEG, PNG, GIF, WebP) and videos (MP4, WebM, MOV, AVI) are allowed"), false);
+      cb(
+        new Error(
+          "Only images (JPEG, PNG, GIF, WebP) and videos (MP4, WebM, MOV, AVI) are allowed",
+        ),
+        false,
+      );
     }
   },
 });
@@ -66,7 +96,7 @@ router.post(
   "/image",
   uploadLimiter,
   imageUpload.single("image"),
-  uploadController.uploadImageToCloudinary
+  uploadController.uploadImageToCloudinary,
 );
 
 // Upload video for posts
@@ -74,7 +104,7 @@ router.post(
   "/video",
   uploadLimiter,
   videoUpload.single("video"),
-  uploadController.uploadVideoToCloudinary
+  uploadController.uploadVideoToCloudinary,
 );
 
 // Upload media (auto-detect image or video)
@@ -82,7 +112,7 @@ router.post(
   "/media",
   uploadLimiter,
   mediaUpload.single("media"),
-  uploadController.uploadMediaToCloudinary
+  uploadController.uploadMediaToCloudinary,
 );
 
 // Upload avatar
@@ -90,7 +120,7 @@ router.post(
   "/avatar",
   uploadLimiter,
   imageUpload.single("image"),
-  uploadController.uploadAvatar
+  uploadController.uploadAvatar,
 );
 
 module.exports = router;

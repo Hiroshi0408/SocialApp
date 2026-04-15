@@ -26,25 +26,30 @@ router.get(
   "/search/hashtag",
   searchLimiter,
   searchUsersValidation,
-  postController.searchByHashtag
+  postController.searchByHashtag,
 );
 router.get("/:id", mongoIdValidation, postController.getPostById);
 router.post(
   "/",
   createPostLimiter,
   createPostValidation,
-  postController.createPost
+  postController.createPost,
 );
 router.put("/:id", updatePostValidation, postController.updatePost);
 router.delete("/:id", mongoIdValidation, postController.deletePost);
 
 // Interactions
-router.post("/:id/like", likeLimiter, mongoIdValidation, postController.toggleLike);
+router.post(
+  "/:id/like",
+  likeLimiter,
+  mongoIdValidation,
+  postController.toggleLike,
+);
 router.post(
   "/:id/comments",
   commentLimiter,
   addCommentValidation,
-  postController.addComment
+  postController.addComment,
 );
 router.get("/:id/comments", mongoIdValidation, postController.getComments);
 

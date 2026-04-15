@@ -48,19 +48,19 @@ const commentSchema = new mongoose.Schema(
   },
   {
     timestamps: true,
+    toJSON: {
+      transform: (doc, ret) => {
+        delete ret.deleted;
+        delete ret.deletedAt;
+        delete ret.__v;
+        return ret;
+      },
+    },
   },
 );
 
 commentSchema.index({ postId: 1, createdAt: -1 });
 commentSchema.index({ postId: 1, deleted: 1, createdAt: -1 });
-
-commentSchema.methods.toJSON = function () {
-  const comment = this.toObject();
-  delete comment.deleted;
-  delete comment.deletedAt;
-  delete comment.__v;
-  return comment;
-};
 
 const Comment = mongoose.model("Comment", commentSchema, "comments");
 

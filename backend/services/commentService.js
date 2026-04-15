@@ -10,8 +10,6 @@ const { extractMentions, validateMentions } = require("../utils/mentionHelper");
 const { moderateText } = require("../utils/geminiModeration");
 const { DEFAULT_COMMENT_LIMIT, MAX_COMMENT_LIMIT, MAX_COMMENT_DEPTH } = require("../constants");
 
-// TODO: Thay bằng userDAO khi cần query user
-const User = require("../models/User");
 
 class CommentService {
   async addComment(userId, postId, data) {
@@ -78,7 +76,7 @@ class CommentService {
 
     // Notification: mentions trong comment
     if (mentions.length > 0) {
-      const mentionedUsers = await validateMentions(mentions, User);
+      const mentionedUsers = await validateMentions(mentions);
       for (const mentionedUser of mentionedUsers) {
         if (
           mentionedUser._id.toString() !== userId.toString() &&
@@ -169,7 +167,7 @@ class CommentService {
     const comment = await commentDAO.findById(commentId);
     if (!comment) throw new AppError("Comment not found", 404);
 
-    const existingLike = await likeDAO.findOne(userId, commentId, "comment");
+    const existingLike = await likeDAO.findOne({ userId, targetId: commentId, targetType: "comment" });
 
     if (existingLike) {
       await likeDAO.deleteById(existingLike._id);
@@ -179,7 +177,7 @@ class CommentService {
       return { isLiked: false, likesCount: Math.max(0, comment.likesCount - 1) };
     } else {
       try {
-        await likeDAO.create(userId, commentId, "comment");
+        await likeDAO.create({ userId, targetId: commentId, targetType: "comment" });
       } catch (error) {
         if (error.code === 11000) {
           return { isLiked: true, likesCount: comment.likesCount };

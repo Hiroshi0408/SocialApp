@@ -2,17 +2,17 @@ const mongoose = require("mongoose");
 const Save = require("../models/Save");
 
 class SaveDAO {
-  async findOne(userId, postId) {
-    return await Save.findOne({ userId, postId });
+  async findOne(filter) {
+    return await Save.findOne(filter);
   }
 
-  async create(userId, postId) {
-    const save = new Save({ userId, postId });
+  async create(data) {
+    const save = new Save(data);
     return await save.save();
   }
 
-  async deleteOne(userId, postId) {
-    return await Save.findOneAndDelete({ userId, postId });
+  async deleteOne(filter) {
+    return await Save.findOneAndDelete(filter);
   }
 
   // Bulk check: user đã save những post nào trong danh sách

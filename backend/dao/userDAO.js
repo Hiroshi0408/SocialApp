@@ -263,6 +263,10 @@ class UserDAO {
   async count(filter) {
     return await User.countDocuments(filter);
   }
+
+  async aggregate(pipeline) {
+    return await User.aggregate(pipeline);
+  }
 }
 
 module.exports = new UserDAO();

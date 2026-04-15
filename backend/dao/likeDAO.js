@@ -1,17 +1,17 @@
 const Like = require("../models/Like");
 
 class LikeDAO {
-  async findOne(userId, targetId, targetType) {
-    return await Like.findOne({ userId, targetId, targetType });
+  async findOne(filter) {
+    return await Like.findOne(filter);
   }
 
-  async create(userId, targetId, targetType) {
-    const like = new Like({ userId, targetType, targetId });
+  async create(data) {
+    const like = new Like(data);
     return await like.save();
   }
 
-  async deleteOne(userId, targetId, targetType) {
-    return await Like.findOneAndDelete({ userId, targetId, targetType });
+  async deleteOne(filter) {
+    return await Like.findOneAndDelete(filter);
   }
 
   async deleteById(id) {
@@ -34,6 +34,26 @@ class LikeDAO {
       targetId: { $in: targetIds },
       targetType,
     }).select("targetId");
+  }
+
+  // ========== STATS (dùng cho adminService) ==========
+
+  async countByTargetType(targetType) {
+    return await Like.countDocuments({ targetType });
+  }
+
+  async distinctUsersByPeriod(from) {
+    return await Like.distinct("userId", { createdAt: { $gte: from } });
+  }
+
+  // Trả về top targets (post/comment) theo số lượt like
+  async topTargets(targetType, limit = 5) {
+    return await Like.aggregate([
+      { $match: { targetType } },
+      { $group: { _id: "$targetId", likes: { $sum: 1 } } },
+      { $sort: { likes: -1 } },
+      { $limit: limit },
+    ]);
   }
 }
 

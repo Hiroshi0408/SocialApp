@@ -2,6 +2,9 @@ const postDAO = require("../dao/postDAO");
 const likeDAO = require("../dao/likeDAO");
 const saveDAO = require("../dao/saveDAO");
 const userDAO = require("../dao/userDAO");
+const commentDAO = require("../dao/commentDAO");
+const followDAO = require("../dao/followDAO");
+const friendDAO = require("../dao/friendDAO");
 const notificationDAO = require("../dao/notificationDAO");
 const notificationService = require("./notificationService");
 const AppError = require("../utils/AppError");
@@ -16,12 +19,6 @@ const {
   DEFAULT_COMMENT_LIMIT,
 } = require("../constants");
 
-// TODO: Thay bằng commentDAO, followDAO, friendDAO khi cần dọn tiếp
-const Comment = require("../models/Comment");
-const Follow = require("../models/Follow");
-const Friendship = require("../models/Friendship");
-const User = require("../models/User");
-
 class PostService {
   // ========== FEED ==========
 
@@ -34,16 +31,9 @@ class PostService {
     let targetUserIds = [];
 
     if (scope === "friends") {
-      const friendships = await Friendship.find({
-        $or: [{ userA: userId }, { userB: userId }],
-      }).select("userA userB");
-
-      targetUserIds = friendships.map((rel) =>
-        rel.userA.toString() === userId.toString() ? rel.userB : rel.userA
-      );
+      targetUserIds = await friendDAO.findFriendIds(userId);
     } else {
-      const following = await Follow.find({ follower: userId }).select("following");
-      targetUserIds = following.map((f) => f.following);
+      targetUserIds = await followDAO.findFollowingIds(userId);
     }
 
     // Bao gồm bài của chính mình
@@ -145,13 +135,9 @@ class PostService {
     }
 
     const [like, save, commentsData] = await Promise.all([
-      likeDAO.findOne(currentUserId, postId, "post"),
-      saveDAO.findOne(currentUserId, postId),
-      Comment.find({ postId, deleted: false, parentCommentId: null })
-        .populate("userId", "username fullName avatar")
-        .sort({ createdAt: -1 })
-        .limit(DEFAULT_COMMENT_LIMIT)
-        .lean(),
+      likeDAO.findOne({ userId: currentUserId, targetId: postId, targetType: "post" }),
+      saveDAO.findOne({ userId: currentUserId, postId }),
+      commentDAO.findByPost(postId, { limit: DEFAULT_COMMENT_LIMIT }),
     ]);
 
     const formattedComments = commentsData.map((c) => ({
@@ -209,7 +195,7 @@ class PostService {
 
     // Mention notifications (fire-and-forget)
     if (post.mentions && post.mentions.length > 0) {
-      const mentionedUsers = await validateMentions(post.mentions, User);
+      const mentionedUsers = await validateMentions(post.mentions);
       for (const mentionedUser of mentionedUsers) {
         if (mentionedUser._id.toString() !== userId.toString()) {
           notificationService.createNotification({
@@ -286,10 +272,8 @@ class PostService {
 
     await postDAO.softDeleteById(postId);
 
-    const deletedAt = new Date();
-    // TODO: Thay Comment/Save bằng commentDAO/saveDAO khi có
     await Promise.all([
-      Comment.updateMany({ postId, deleted: false }, { $set: { deleted: true, deletedAt } }),
+      commentDAO.softDeleteMany({ postId, deleted: false }),
       likeDAO.deleteManyByTarget(postId, "post"),
       saveDAO.deleteByPostId(postId),
       notificationDAO.deleteMany({ targetId: postId, targetType: "post" }),
@@ -306,7 +290,7 @@ class PostService {
       throw new AppError("Post not found", 404);
     }
 
-    const existingLike = await likeDAO.findOne(userId, postId, "post");
+    const existingLike = await likeDAO.findOne({ userId, targetId: postId, targetType: "post" });
 
     if (existingLike) {
       await likeDAO.deleteById(existingLike._id);
@@ -317,7 +301,7 @@ class PostService {
       return { isLiked: false, likesCount: Math.max(0, post.likesCount - 1) };
     } else {
       try {
-        await likeDAO.create(userId, postId, "post");
+        await likeDAO.create({ userId, targetId: postId, targetType: "post" });
       } catch (error) {
         if (error.code === 11000) {
           return { isLiked: true, likesCount: post.likesCount };

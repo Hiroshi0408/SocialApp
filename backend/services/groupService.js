@@ -62,9 +62,10 @@ class GroupService {
       return { group: formatGroup(populated), alreadyMember: true };
     }
 
-    group.members.push(userId);
-    group.membersCount = group.members.length;
-    await groupDAO.save(group);
+    await groupDAO.updateById(groupId, {
+      $push: { members: userId },
+      $inc: { membersCount: 1 },
+    });
 
     const populated = await groupDAO.findWithCreator(groupId);
     return { group: formatGroup(populated), alreadyMember: false };
@@ -74,15 +75,17 @@ class GroupService {
     const group = await groupDAO.findById(groupId);
     if (!group) throw new AppError("Group not found", 404);
 
-    group.members = group.members.filter((id) => id.toString() !== userId.toString());
+    const remaining = group.members.filter((id) => id.toString() !== userId.toString());
 
-    if (group.members.length === 0) {
+    if (remaining.length === 0) {
       await groupDAO.deleteById(groupId);
       return { deleted: true };
     }
 
-    group.membersCount = group.members.length;
-    await groupDAO.save(group);
+    await groupDAO.updateById(groupId, {
+      $pull: { members: userId },
+      $set: { membersCount: remaining.length },
+    });
     return { deleted: false };
   }
 }

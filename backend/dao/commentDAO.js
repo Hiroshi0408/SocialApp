@@ -2,8 +2,14 @@ const mongoose = require("mongoose");
 const Comment = require("../models/Comment");
 
 class CommentDAO {
-  async findById(id) {
-    return await Comment.findOne({ _id: id, deleted: false });
+  async findById(id, options = {}) {
+    const { select = "", populate = "", lean = false, includeDeleted = false } = options;
+    const filter = includeDeleted ? { _id: id } : { _id: id, deleted: false };
+    let query = Comment.findOne(filter);
+    if (select) query = query.select(select);
+    if (populate) query = query.populate(populate);
+    if (lean) query = query.lean();
+    return await query;
   }
 
   async findByPost(postId, options = {}) {
@@ -46,6 +52,10 @@ class CommentDAO {
     return await comment.save();
   }
 
+  async updateById(id, data) {
+    return await Comment.findByIdAndUpdate(id, data, { new: true });
+  }
+
   async softDeleteById(id) {
     return await Comment.findByIdAndUpdate(
       id,
@@ -58,25 +68,20 @@ class CommentDAO {
     return await Comment.updateMany(filter, { $set: { deleted: true, deletedAt: new Date() } });
   }
 
-  async count(filter) {
-    return await Comment.countDocuments({ ...filter, deleted: false });
-  }
-
-  // Dùng cho admin — không bị force deleted: false
-  async adminCount(filter) {
-    return await Comment.countDocuments(filter);
-  }
-
-  async adminFindMany(filter, options = {}) {
-    const { sort = { createdAt: -1 }, skip = 0, limit = 20, select = "", populate = "" } = options;
-    let query = Comment.find(filter).sort(sort).skip(skip).limit(limit);
+  async findMany(filter, options = {}) {
+    const { sort = { createdAt: -1 }, skip = 0, limit = 20, select = "", populate = "", lean = true, includeDeleted = false } = options;
+    const baseFilter = includeDeleted ? filter : { ...filter, deleted: false };
+    let query = Comment.find(baseFilter).sort(sort).skip(skip).limit(limit);
     if (select) query = query.select(select);
     if (populate) query = query.populate(populate);
-    return await query.lean();
+    if (lean) query = query.lean();
+    return await query;
   }
 
-  async adminFindById(id) {
-    return await Comment.findById(id);
+  async count(filter, options = {}) {
+    const { includeDeleted = false } = options;
+    const baseFilter = includeDeleted ? filter : { ...filter, deleted: false };
+    return await Comment.countDocuments(baseFilter);
   }
 
   async incrementLikesCount(id) {
@@ -101,6 +106,16 @@ class CommentDAO {
       [{ $set: { repliesCount: { $max: [0, { $subtract: ["$repliesCount", 1] }] } } }],
       { new: true }
     );
+  }
+
+  // ========== STATS (dùng cho adminService) ==========
+
+  async distinctUsersByPeriod(from) {
+    return await Comment.distinct("userId", { createdAt: { $gte: from } });
+  }
+
+  async countByPost(postId) {
+    return await Comment.countDocuments({ postId, deleted: false });
   }
 }
 

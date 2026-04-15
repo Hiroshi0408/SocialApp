@@ -49,6 +49,16 @@ const messageSchema = new mongoose.Schema(
   },
   {
     timestamps: true,
+    toJSON: {
+      transform: (doc, ret) => {
+        delete ret.__v;
+        if (ret.deleted) {
+          ret.content = "[Message deleted]";
+          delete ret.mediaUrl;
+        }
+        return ret;
+      },
+    },
   },
 );
 
@@ -56,25 +66,6 @@ messageSchema.index({ conversationId: 1, createdAt: -1 });
 messageSchema.index({ conversationId: 1, read: 1 });
 messageSchema.index({ sender: 1, createdAt: -1 });
 messageSchema.index({ createdAt: -1 });
-
-// Method to mark message as read
-messageSchema.methods.markAsRead = async function () {
-  if (!this.read) {
-    this.read = true;
-    this.readAt = new Date();
-    await this.save();
-  }
-};
-
-messageSchema.methods.toJSON = function () {
-  const message = this.toObject();
-  delete message.__v;
-  if (message.deleted) {
-    message.content = "[Message deleted]";
-    delete message.mediaUrl;
-  }
-  return message;
-};
 
 const Message = mongoose.model("Message", messageSchema, "messages");
 

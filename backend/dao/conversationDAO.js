@@ -5,9 +5,14 @@ class ConversationDAO {
     return await Conversation.findOne({ _id: id, participants: userId });
   }
 
-  // Tìm conversation 1-1 giữa 2 user (dùng static method của model)
+  // Tìm conversation 1-1 giữa 2 user
   async findBetweenUsers(userId1, userId2) {
-    return await Conversation.findBetweenUsers(userId1, userId2);
+    return await Conversation.findOne({
+      type: "direct",
+      participants: { $all: [userId1, userId2] },
+    })
+      .populate("participants", "username avatar fullName")
+      .populate({ path: "lastMessage", select: "content sender createdAt read" });
   }
 
   async create(data) {
@@ -40,23 +45,18 @@ class ConversationDAO {
     );
   }
 
-  // Tăng unreadCount cho participant
-  async incrementUnread(conversation, recipientId) {
-    if (!conversation.unreadCount) {
-      conversation.unreadCount = new Map();
-    }
-    const current = conversation.unreadCount.get(recipientId.toString()) || 0;
-    conversation.unreadCount.set(recipientId.toString(), current + 1);
-    return await conversation.save();
+  // Tăng unreadCount cho recipient — atomic, tránh race condition
+  async incrementUnread(conversationId, recipientId) {
+    return await Conversation.findByIdAndUpdate(conversationId, {
+      $inc: { [`unreadCount.${recipientId}`]: 1 },
+    });
   }
 
-  // Reset unreadCount về 0 cho userId khi mark as read
-  async resetUnread(conversation, userId) {
-    if (!conversation.unreadCount) {
-      conversation.unreadCount = new Map();
-    }
-    conversation.unreadCount.set(userId.toString(), 0);
-    return await conversation.save();
+  // Reset unreadCount về 0 cho userId khi mark as read — atomic
+  async resetUnread(conversationId, userId) {
+    return await Conversation.findByIdAndUpdate(conversationId, {
+      $set: { [`unreadCount.${userId}`]: 0 },
+    });
   }
 }
 

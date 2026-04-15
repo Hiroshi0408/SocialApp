@@ -1,15 +1,10 @@
 const userDAO = require("../dao/userDAO");
 const postDAO = require("../dao/postDAO");
 const commentDAO = require("../dao/commentDAO");
+const likeDAO = require("../dao/likeDAO");
 const AppError = require("../utils/AppError");
 const logger = require("../utils/logger");
 const { logAdminAction } = require("../utils/auditLog");
-
-// TODO: Thay bằng likeDAO aggregation khi có
-const Like = require("../models/Like");
-const Post = require("../models/Post");
-const Comment = require("../models/Comment");
-const User = require("../models/User");
 
 // ====== Helpers nội bộ ======
 
@@ -185,12 +180,13 @@ class AdminService {
     }
 
     const [total, posts] = await Promise.all([
-      postDAO.adminCount(filter),
-      postDAO.adminFindMany(filter, {
+      postDAO.count(filter, { includeDeleted: true }),
+      postDAO.findMany(filter, {
         skip,
         limit,
         populate: { path: "userId", select: "username fullName avatar" },
-        select: "_id userId caption mediaType image video location deleted deletedAt createdAt",
+        includeDeleted: true,
+        lean: true,
       }),
     ]);
 
@@ -198,12 +194,10 @@ class AdminService {
   }
 
   async adminDeletePost(postId, actorInfo) {
-    const post = await postDAO.adminFindById(postId);
+    const post = await postDAO.findById(postId, { includeDeleted: true });
     if (!post) throw new AppError("Post not found", 404);
 
-    post.deleted = true;
-    post.deletedAt = new Date();
-    await post.save();
+    await postDAO.updateById(postId, { $set: { deleted: true, deletedAt: new Date() } });
 
     await logAdminAction({
       actorId: actorInfo.id,
@@ -218,12 +212,10 @@ class AdminService {
   }
 
   async restorePost(postId, actorInfo) {
-    const post = await postDAO.adminFindById(postId);
+    const post = await postDAO.findById(postId, { includeDeleted: true });
     if (!post) throw new AppError("Post not found", 404);
 
-    post.deleted = false;
-    post.deletedAt = undefined;
-    await post.save();
+    await postDAO.updateById(postId, { $set: { deleted: false }, $unset: { deletedAt: 1 } });
 
     await logAdminAction({
       actorId: actorInfo.id,
@@ -253,12 +245,13 @@ class AdminService {
     if (q) filter.$or = [{ content: { $regex: q, $options: "i" } }];
 
     const [total, comments] = await Promise.all([
-      commentDAO.adminCount(filter),
-      commentDAO.adminFindMany(filter, {
+      commentDAO.count(filter, { includeDeleted: true }),
+      commentDAO.findMany(filter, {
         skip,
         limit,
         populate: { path: "userId", select: "username fullName avatar" },
         select: "_id postId userId content deleted deletedAt createdAt",
+        includeDeleted: true,
       }),
     ]);
 
@@ -266,12 +259,10 @@ class AdminService {
   }
 
   async adminDeleteComment(commentId, actorInfo) {
-    const comment = await commentDAO.adminFindById(commentId);
+    const comment = await commentDAO.findById(commentId, { includeDeleted: true });
     if (!comment) throw new AppError("Comment not found", 404);
 
-    comment.deleted = true;
-    comment.deletedAt = new Date();
-    await comment.save();
+    await commentDAO.softDeleteById(commentId);
 
     await logAdminAction({
       actorId: actorInfo.id,
@@ -286,12 +277,10 @@ class AdminService {
   }
 
   async restoreComment(commentId, actorInfo) {
-    const comment = await commentDAO.adminFindById(commentId);
+    const comment = await commentDAO.findById(commentId, { includeDeleted: true });
     if (!comment) throw new AppError("Comment not found", 404);
 
-    comment.deleted = false;
-    comment.deletedAt = undefined;
-    await comment.save();
+    await commentDAO.updateById(commentId, { $set: { deleted: false }, $unset: { deletedAt: 1 } });
 
     await logAdminAction({
       actorId: actorInfo.id,
@@ -313,47 +302,42 @@ class AdminService {
     const from7 = startOfDay(daysAgo(6));
 
     const [totalUsers, newUsers7, totalPosts, totalComments, totalLikes] = await Promise.all([
-      User.countDocuments({ deleted: { $ne: true } }),
-      User.countDocuments({ deleted: { $ne: true }, createdAt: { $gte: from7 } }),
-      Post.countDocuments({ deleted: { $ne: true } }),
-      Comment.countDocuments({ deleted: { $ne: true } }),
-      Like.countDocuments({ targetType: "post" }),
+      userDAO.count({ deleted: { $ne: true } }),
+      userDAO.count({ deleted: { $ne: true }, createdAt: { $gte: from7 } }),
+      postDAO.count({ deleted: { $ne: true } }),
+      commentDAO.count({ deleted: false }),
+      likeDAO.countByTargetType("post"),
     ]);
 
     const [postUsers, commentUsers, likeUsers] = await Promise.all([
-      Post.distinct("userId", { createdAt: { $gte: from } }),
-      Comment.distinct("userId", { createdAt: { $gte: from } }),
-      Like.distinct("userId", { createdAt: { $gte: from } }),
+      postDAO.distinctUsersByPeriod(from),
+      commentDAO.distinctUsersByPeriod(from),
+      likeDAO.distinctUsersByPeriod(from),
     ]);
 
     const activeUsers = new Set([...postUsers, ...commentUsers, ...likeUsers]).size;
 
     // Top posts by likes
-    const topLikeAgg = await Like.aggregate([
-      { $match: { targetType: "post" } },
-      { $group: { _id: "$targetId", likes: { $sum: 1 } } },
-      { $sort: { likes: -1 } },
-      { $limit: 5 },
-    ]);
-
+    const topLikeAgg = await likeDAO.topTargets("post", 5);
     const topPostIds = topLikeAgg.map((x) => x._id);
-    const posts = await Post.find({ _id: { $in: topPostIds } })
-      .select("_id caption image video mediaType createdAt userId")
-      .populate("userId", "username fullName avatar")
-      .lean();
+    const posts = await postDAO.findByIds(topPostIds, {
+      select: "_id caption image video mediaType createdAt userId",
+      populate: { path: "userId", select: "username fullName avatar" },
+      lean: true,
+    });
 
     const postMap = new Map(posts.map((p) => [String(p._id), p]));
     const topPosts = await Promise.all(
       topLikeAgg.map(async (x) => {
         const p = postMap.get(String(x._id));
-        const commentsCount = await Comment.countDocuments({ postId: x._id, deleted: false });
+        const commentsCount = await commentDAO.countByPost(x._id);
         return { postId: x._id, likes: x.likes, comments: commentsCount, post: p || null };
       })
     );
 
     const [usersSeries, postsSeries] = await Promise.all([
-      buildDailySeries({ model: User, match: { deleted: { $ne: true } }, days, label: "users" }),
-      buildDailySeries({ model: Post, match: { deleted: { $ne: true } }, days, label: "posts" }),
+      buildDailySeries({ model: userDAO, match: { deleted: { $ne: true } }, days, label: "users" }),
+      buildDailySeries({ model: postDAO, match: { deleted: { $ne: true } }, days, label: "posts" }),
     ]);
 
     return {
