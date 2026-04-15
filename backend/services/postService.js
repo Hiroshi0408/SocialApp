@@ -12,7 +12,7 @@ const logger = require("../utils/logger");
 const { getTimeAgo } = require("../utils/timeHelper");
 const { validateMentions } = require("../utils/mentionHelper");
 const { formatPostsWithMetadata } = require("../helpers/postHelper");
-const { moderateText } = require("../utils/geminiModeration");
+const { moderateText } = require("./geminiModeration");
 const {
   DEFAULT_POST_LIMIT,
   MAX_POST_LIMIT,
@@ -24,7 +24,10 @@ class PostService {
 
   async getFeed(userId, query = {}) {
     const page = parseInt(query.page) || 1;
-    const limit = Math.min(parseInt(query.limit) || DEFAULT_POST_LIMIT, MAX_POST_LIMIT);
+    const limit = Math.min(
+      parseInt(query.limit) || DEFAULT_POST_LIMIT,
+      MAX_POST_LIMIT,
+    );
     const skip = (page - 1) * limit;
     const scope = query.scope === "friends" ? "friends" : "following";
 
@@ -59,7 +62,9 @@ class PostService {
     return {
       posts: formatPostsWithMetadata(posts, likedSet, savedSet),
       pagination: {
-        page, limit, total,
+        page,
+        limit,
+        total,
         totalPages: Math.ceil(total / limit),
         hasMore: skip + posts.length < total,
       },
@@ -68,7 +73,10 @@ class PostService {
 
   async getAllPosts(userId, query = {}) {
     const page = parseInt(query.page) || 1;
-    const limit = Math.min(parseInt(query.limit) || DEFAULT_POST_LIMIT, MAX_POST_LIMIT);
+    const limit = Math.min(
+      parseInt(query.limit) || DEFAULT_POST_LIMIT,
+      MAX_POST_LIMIT,
+    );
     const skip = (page - 1) * limit;
     const populate = { path: "userId", select: "username fullName avatar" };
 
@@ -89,7 +97,9 @@ class PostService {
     return {
       posts: formatPostsWithMetadata(posts, likedSet, savedSet),
       pagination: {
-        page, limit, total,
+        page,
+        limit,
+        total,
         totalPages: Math.ceil(total / limit),
         hasMore: skip + posts.length < total,
       },
@@ -98,7 +108,10 @@ class PostService {
 
   async getUserPosts(userId, currentUserId, query = {}) {
     const page = parseInt(query.page) || 1;
-    const limit = Math.min(parseInt(query.limit) || DEFAULT_POST_LIMIT, MAX_POST_LIMIT);
+    const limit = Math.min(
+      parseInt(query.limit) || DEFAULT_POST_LIMIT,
+      MAX_POST_LIMIT,
+    );
     const skip = (page - 1) * limit;
     const populate = { path: "userId", select: "username fullName avatar" };
 
@@ -135,7 +148,11 @@ class PostService {
     }
 
     const [like, save, commentsData] = await Promise.all([
-      likeDAO.findOne({ userId: currentUserId, targetId: postId, targetType: "post" }),
+      likeDAO.findOne({
+        userId: currentUserId,
+        targetId: postId,
+        targetType: "post",
+      }),
       saveDAO.findOne({ userId: currentUserId, postId }),
       commentDAO.findByPost(postId, { limit: DEFAULT_COMMENT_LIMIT }),
     ]);
@@ -161,7 +178,15 @@ class PostService {
   // ========== CRUD ==========
 
   async createPost(userId, data) {
-    const { image, video, mediaType, videoDuration, caption, location, taggedUsers } = data;
+    const {
+      image,
+      video,
+      mediaType,
+      videoDuration,
+      caption,
+      location,
+      taggedUsers,
+    } = data;
 
     if (!image && !video) {
       throw new AppError("Image or video is required", 400);
@@ -171,7 +196,11 @@ class PostService {
       const moderation = await moderateText(caption);
       if (!moderation.allowed) {
         throw new AppError("Caption violates community guidelines", 400, {
-          moderation: { verdict: moderation.verdict, reasons: moderation.reasons, categories: moderation.categories },
+          moderation: {
+            verdict: moderation.verdict,
+            reasons: moderation.reasons,
+            categories: moderation.categories,
+          },
         });
       }
     }
@@ -196,14 +225,18 @@ class PostService {
       const mentionedUsers = await validateMentions(post.mentions);
       for (const mentionedUser of mentionedUsers) {
         if (mentionedUser._id.toString() !== userId.toString()) {
-          notificationService.createNotification({
-            recipientId: mentionedUser._id,
-            senderId: userId,
-            type: "mention",
-            targetType: "post",
-            targetId: post._id,
-            text: (caption || "").substring(0, 100),
-          }).catch((err) => logger.error("Mention notification failed:", err.message));
+          notificationService
+            .createNotification({
+              recipientId: mentionedUser._id,
+              senderId: userId,
+              type: "mention",
+              targetType: "post",
+              targetId: post._id,
+              text: (caption || "").substring(0, 100),
+            })
+            .catch((err) =>
+              logger.error("Mention notification failed:", err.message),
+            );
         }
       }
     }
@@ -211,13 +244,17 @@ class PostService {
     if (post.taggedUsers && post.taggedUsers.length > 0) {
       for (const taggedUserId of post.taggedUsers) {
         if (taggedUserId.toString() !== userId.toString()) {
-          notificationService.createNotification({
-            recipientId: taggedUserId,
-            senderId: userId,
-            type: "mention",
-            targetType: "post",
-            targetId: post._id,
-          }).catch((err) => logger.error("Tag notification failed:", err.message));
+          notificationService
+            .createNotification({
+              recipientId: taggedUserId,
+              senderId: userId,
+              type: "mention",
+              targetType: "post",
+              targetId: post._id,
+            })
+            .catch((err) =>
+              logger.error("Tag notification failed:", err.message),
+            );
         }
       }
     }
@@ -242,7 +279,11 @@ class PostService {
       const moderation = await moderateText(caption);
       if (!moderation.allowed) {
         throw new AppError("Caption violates community guidelines", 400, {
-          moderation: { verdict: moderation.verdict, reasons: moderation.reasons, categories: moderation.categories },
+          moderation: {
+            verdict: moderation.verdict,
+            reasons: moderation.reasons,
+            categories: moderation.categories,
+          },
         });
       }
     }
@@ -288,13 +329,21 @@ class PostService {
       throw new AppError("Post not found", 404);
     }
 
-    const existingLike = await likeDAO.findOne({ userId, targetId: postId, targetType: "post" });
+    const existingLike = await likeDAO.findOne({
+      userId,
+      targetId: postId,
+      targetType: "post",
+    });
 
     if (existingLike) {
       await likeDAO.deleteById(existingLike._id);
       await postDAO.decrementLikesCount(postId);
       // Xóa notification like
-      await notificationDAO.deleteOne({ senderId: userId, targetId: postId, type: "like" });
+      await notificationDAO.deleteOne({
+        senderId: userId,
+        targetId: postId,
+        type: "like",
+      });
 
       return { isLiked: false, likesCount: Math.max(0, post.likesCount - 1) };
     } else {
@@ -309,13 +358,15 @@ class PostService {
 
       await postDAO.incrementLikesCount(postId);
 
-      notificationService.createNotification({
-        recipientId: post.userId,
-        senderId: userId,
-        type: "like",
-        targetType: "post",
-        targetId: postId,
-      }).catch((err) => logger.error("Like notification failed:", err.message));
+      notificationService
+        .createNotification({
+          recipientId: post.userId,
+          senderId: userId,
+          type: "like",
+          targetType: "post",
+          targetId: postId,
+        })
+        .catch((err) => logger.error("Like notification failed:", err.message));
 
       return { isLiked: true, likesCount: post.likesCount + 1 };
     }
@@ -331,7 +382,10 @@ class PostService {
     }
 
     const page = parseInt(query.page) || 1;
-    const limit = Math.min(parseInt(query.limit) || DEFAULT_POST_LIMIT, MAX_POST_LIMIT);
+    const limit = Math.min(
+      parseInt(query.limit) || DEFAULT_POST_LIMIT,
+      MAX_POST_LIMIT,
+    );
     const skip = (page - 1) * limit;
 
     let searchTag = q.trim().toLowerCase();
@@ -363,7 +417,10 @@ class PostService {
 
   async getTaggedPosts(targetUserId, currentUserId, query = {}) {
     const page = parseInt(query.page) || 1;
-    const limit = Math.min(parseInt(query.limit) || DEFAULT_POST_LIMIT, MAX_POST_LIMIT);
+    const limit = Math.min(
+      parseInt(query.limit) || DEFAULT_POST_LIMIT,
+      MAX_POST_LIMIT,
+    );
     const skip = (page - 1) * limit;
 
     const filter = { taggedUsers: targetUserId };
@@ -389,7 +446,9 @@ class PostService {
     return {
       posts: formatPostsWithMetadata(posts, likedSet, savedSet),
       pagination: {
-        page, limit, total,
+        page,
+        limit,
+        total,
         totalPages: Math.ceil(total / limit),
         hasMore: skip + posts.length < total,
       },
