@@ -1,6 +1,7 @@
 const express = require("express");
 const router = express.Router();
 const postController = require("../controllers/postController");
+const commentController = require("../controllers/commentController");
 const authMiddleware = require("../middlewares/auth.middleware");
 const {
   createPostLimiter,
@@ -49,8 +50,8 @@ router.post(
   "/:id/comments",
   commentLimiter,
   addCommentValidation,
-  postController.addComment,
+  commentController.addComment,
 );
-router.get("/:id/comments", mongoIdValidation, postController.getComments);
+router.get("/:id/comments", mongoIdValidation, commentController.getComments);
 
 module.exports = router;

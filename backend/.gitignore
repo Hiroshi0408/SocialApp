@@ -11,3 +11,4 @@ firebase-service-account.json
 *-firebase-adminsdk-*.json
 
 SocialApp.pem
+coverage/

@@ -7,7 +7,12 @@ exports.register = async (req, res, next) => {
     const { fullName, username, email, password } = req.body;
     logger.info("Register attempt:", { username, email });
 
-    const result = await authService.register({ fullName, username, email, password });
+    const result = await authService.register({
+      fullName,
+      username,
+      email,
+      password,
+    });
 
     return res.status(201).json({ success: true, ...result });
   } catch (err) {
@@ -93,13 +98,6 @@ exports.resendVerification = async (req, res, next) => {
 exports.forgotPassword = async (req, res, next) => {
   try {
     const { email } = req.body;
-
-    if (!email) {
-      return res
-        .status(400)
-        .json({ success: false, message: "Please provide your email" });
-    }
-
     const result = await authService.forgotPassword(email);
     return res.json({ success: true, ...result });
   } catch (err) {
@@ -112,7 +110,7 @@ exports.resetPassword = async (req, res, next) => {
   try {
     const result = await authService.resetPassword(
       req.params.token,
-      req.body.password
+      req.body.password,
     );
     return res.json({ success: true, ...result });
   } catch (err) {
@@ -127,7 +125,7 @@ exports.changePassword = async (req, res, next) => {
     const result = await authService.changePassword(
       req.user.id,
       currentPassword,
-      newPassword
+      newPassword,
     );
     return res.json({ success: true, ...result });
   } catch (err) {

@@ -31,7 +31,7 @@ const MAX_FULLNAME_LENGTH = 50;
 const MAX_COMMENT_DEPTH = 3;
 
 // ==================== FILE UPLOAD ====================
-const MAX_FILE_SIZE = 15 * 1024 * 1024; // 5MB
+const MAX_FILE_SIZE = 5 * 1024 * 1024;
 const ALLOWED_IMAGE_TYPES = [
   "image/jpeg",
   "image/jpg",

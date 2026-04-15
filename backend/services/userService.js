@@ -116,13 +116,19 @@ class UserService {
       throw new AppError("User not found", 404);
     }
 
-    const existing = await followDAO.findOne({ follower: currentUserId, following: targetUserId });
+    const existing = await followDAO.findOne({
+      follower: currentUserId,
+      following: targetUserId,
+    });
     if (existing) {
       throw new AppError("Already following this user", 400);
     }
 
     try {
-      await followDAO.create({ follower: currentUserId, following: targetUserId });
+      await followDAO.create({
+        follower: currentUserId,
+        following: targetUserId,
+      });
     } catch (err) {
       // Bẫy race condition: 2 request follow cùng lúc
       if (err.code === 11000) {
@@ -150,7 +156,10 @@ class UserService {
   }
 
   async unfollowUser(currentUserId, targetUserId) {
-    const follow = await followDAO.deleteOne({ follower: currentUserId, following: targetUserId });
+    const follow = await followDAO.deleteOne({
+      follower: currentUserId,
+      following: targetUserId,
+    });
 
     if (!follow) {
       throw new AppError("Not following this user", 404);
@@ -163,7 +172,10 @@ class UserService {
   }
 
   async checkFollowStatus(currentUserId, targetUserId) {
-    const follow = await followDAO.findOne({ follower: currentUserId, following: targetUserId });
+    const follow = await followDAO.findOne({
+      follower: currentUserId,
+      following: targetUserId,
+    });
     return { isFollowing: !!follow };
   }
 
@@ -205,7 +217,10 @@ class UserService {
 
   // ==================== SEARCH / SUGGESTIONS ====================
 
-  async getSuggestedUsers(currentUserId, limit = DEFAULT_SUGGESTED_USERS_LIMIT) {
+  async getSuggestedUsers(
+    currentUserId,
+    limit = DEFAULT_SUGGESTED_USERS_LIMIT,
+  ) {
     limit = Math.min(Number(limit), MAX_USER_LIMIT);
 
     const followingIds = await followDAO.findFollowingIds(currentUserId);
@@ -221,7 +236,7 @@ class UserService {
         sort: { followersCount: -1 },
         limit,
         lean: true,
-      }
+      },
     );
 
     const users = suggestedUsers.map((user) => ({

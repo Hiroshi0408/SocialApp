@@ -1,5 +1,9 @@
-const { uploadImage, uploadVideo, uploadMedia } = require("../config/cloudinary");
-const User = require("../models/User");
+const {
+  uploadImage,
+  uploadVideo,
+  uploadMedia,
+} = require("../config/cloudinary");
+const userDAO = require("../dao/userDAO.js");
 const logger = require("../utils/logger.js");
 
 //[POST] /api/upload/image - Upload Image
@@ -13,7 +17,9 @@ exports.uploadImageToCloudinary = async (req, res) => {
       });
     }
 
-    logger.info(` Uploading image: ${req.file.originalname} (${req.file.size} bytes)`);
+    logger.info(
+      ` Uploading image: ${req.file.originalname} (${req.file.size} bytes)`,
+    );
 
     // Upload to Cloudinary
     const result = await uploadImage(req.file.buffer, "social-app/posts");
@@ -46,9 +52,14 @@ exports.uploadVideoToCloudinary = async (req, res) => {
       });
     }
 
-    logger.info(` Uploading video: ${req.file.originalname} (${req.file.size} bytes)`);
+    logger.info(
+      ` Uploading video: ${req.file.originalname} (${req.file.size} bytes)`,
+    );
 
-    const result = await uploadVideo(req.file.buffer, "social-app/posts/videos");
+    const result = await uploadVideo(
+      req.file.buffer,
+      "social-app/posts/videos",
+    );
 
     res.status(200).json({
       success: true,
@@ -82,9 +93,15 @@ exports.uploadMediaToCloudinary = async (req, res) => {
     }
 
     const isVideo = req.file.mimetype.startsWith("video/");
-    logger.info(` Uploading ${isVideo ? "video" : "image"}: ${req.file.originalname} (${req.file.size} bytes)`);
+    logger.info(
+      ` Uploading ${isVideo ? "video" : "image"}: ${req.file.originalname} (${req.file.size} bytes)`,
+    );
 
-    const result = await uploadMedia(req.file.buffer, req.file.mimetype, "social-app/posts");
+    const result = await uploadMedia(
+      req.file.buffer,
+      req.file.mimetype,
+      "social-app/posts",
+    );
 
     const response = {
       success: true,
@@ -127,10 +144,10 @@ exports.uploadAvatar = async (req, res) => {
 
     const result = await uploadImage(req.file.buffer, "social-app/avatars");
 
-    const user = await User.findByIdAndUpdate(
+    const user = await userDAO.updateById(
       userId,
       { avatar: result.url },
-      { new: true }
+      { new: true },
     );
 
     if (!user) {

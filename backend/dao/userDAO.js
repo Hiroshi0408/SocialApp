@@ -80,6 +80,16 @@ class UserDAO {
     return await User.findOne({ firebaseUid: uid }).exec();
   }
 
+  async findByWalletAddress(walletAddress) {
+    return await User.findOne({ walletAddress: walletAddress.toLowerCase() }).exec();
+  }
+
+  async createWalletUser(data) {
+    const user = new User(data);
+    // validateBeforeSave: false vì wallet user không có email (schema yêu cầu email)
+    return await user.save({ validateBeforeSave: false });
+  }
+
   async findByVerificationToken(rawToken) {
     const hashedToken = crypto
       .createHash("sha256")
@@ -209,9 +219,10 @@ class UserDAO {
   }
 
   async decrementPostsCount(userId) {
+    // Dùng $max để đảm bảo counter không bao giờ xuống dưới 0
     return await User.findByIdAndUpdate(
       userId,
-      { $inc: { postsCount: -1 } },
+      [{ $set: { postsCount: { $max: [0, { $subtract: ["$postsCount", 1] }] } } }],
       { new: true },
     ).exec();
   }

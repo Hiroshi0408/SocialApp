@@ -4,7 +4,9 @@ const logger = require("../utils/logger");
 // [GET] /api/posts/feed
 exports.getFeed = async (req, res, next) => {
   try {
-    logger.info(`Get feed - User: ${req.user.username}, Scope: ${req.query.scope || "following"}`);
+    logger.info(
+      `Get feed - User: ${req.user.username}, Scope: ${req.query.scope || "following"}`,
+    );
     const result = await postService.getFeed(req.user.id, req.query);
     res.json({ success: true, ...result });
   } catch (error) {
@@ -66,8 +68,16 @@ exports.createPost = async (req, res, next) => {
 exports.updatePost = async (req, res, next) => {
   try {
     logger.info(`Update post - ID: ${req.params.id}`);
-    const post = await postService.updatePost(req.params.id, req.user.id, req.body);
-    res.json({ success: true, message: "Post updated successfully", post: { ...post.toJSON(), user: post.userId } });
+    const post = await postService.updatePost(
+      req.params.id,
+      req.user.id,
+      req.body,
+    );
+    res.json({
+      success: true,
+      message: "Post updated successfully",
+      post: { ...post.toJSON(), user: post.userId },
+    });
   } catch (error) {
     next(error);
   }
@@ -87,7 +97,9 @@ exports.deletePost = async (req, res, next) => {
 // [POST] /api/posts/:id/like
 exports.toggleLike = async (req, res, next) => {
   try {
-    logger.info(`Toggle like - Post: ${req.params.id}, User: ${req.user.username}`);
+    logger.info(
+      `Toggle like - Post: ${req.params.id}, User: ${req.user.username}`,
+    );
     const result = await postService.toggleLike(req.params.id, req.user.id);
     res.json({
       success: true,
@@ -115,16 +127,13 @@ exports.getTaggedPosts = async (req, res, next) => {
   try {
     const targetUserId = req.params.userId || req.user.id;
     logger.info(`Get tagged posts - User: ${targetUserId}`);
-    const result = await postService.getTaggedPosts(targetUserId, req.user.id, req.query);
+    const result = await postService.getTaggedPosts(
+      targetUserId,
+      req.user.id,
+      req.query,
+    );
     res.json({ success: true, ...result });
   } catch (error) {
     next(error);
   }
 };
-
-// [POST] /api/posts/:id/comments  — delegate sang commentController
-// Xem backend/controllers/commentController.js
-exports.addComment = require("./commentController").addComment;
-
-// [GET] /api/posts/:id/comments  — delegate sang commentController
-exports.getComments = require("./commentController").getComments;
