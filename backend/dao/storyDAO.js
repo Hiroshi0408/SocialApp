@@ -1,8 +1,12 @@
 const Story = require("../models/Story");
 
 class StoryDAO {
-  async findById(id) {
-    return await Story.findById(id);
+  async findById(id, options = {}) {
+    const { populate = "", lean = false } = options;
+    let query = Story.findById(id);
+    if (populate) query = query.populate(populate);
+    if (lean) query = query.lean();
+    return await query;
   }
 
   async findActive(filter = {}) {

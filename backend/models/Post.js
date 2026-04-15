@@ -87,7 +87,15 @@ const postSchema = new mongoose.Schema(
     deletedAt: Date,
   },
   {
-    timestamps: true, // createdAt, updatedAt
+    timestamps: true,
+    toJSON: {
+      transform: (doc, ret) => {
+        delete ret.deleted;
+        delete ret.deletedAt;
+        delete ret.__v;
+        return ret;
+      },
+    },
   }
 );
 
@@ -120,15 +128,6 @@ postSchema.methods.extractMentions = function () {
   }
 
   this.mentions = mentions;
-};
-
-// Hide sensitive data
-postSchema.methods.toJSON = function () {
-  const post = this.toObject();
-  delete post.deleted;
-  delete post.deletedAt;
-  delete post.__v;
-  return post;
 };
 
 // Extract hashtags and mentions before saving

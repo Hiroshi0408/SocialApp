@@ -1,27 +1,19 @@
 const conversationDAO = require("../dao/conversationDAO");
 const messageDAO = require("../dao/messageDAO");
 const userDAO = require("../dao/userDAO");
+const friendDAO = require("../dao/friendDAO");
 const AppError = require("../utils/AppError");
 const logger = require("../utils/logger");
 const { getIO } = require("../config/socket");
 
-// TODO: Thay bằng friendDAO khi muốn dọn tiếp
-const Friendship = require("../models/Friendship");
-
 class ChatService {
   async getConversations(userId) {
-    const [friendships, conversations] = await Promise.all([
-      Friendship.find({ $or: [{ userA: userId }, { userB: userId }] }).select("userA userB").lean(),
+    const [friendIds, conversations] = await Promise.all([
+      friendDAO.findFriendIds(userId),
       conversationDAO.findByUser(userId),
     ]);
 
-    const friendIdSet = new Set(
-      friendships.map((f) => {
-        const a = f.userA.toString();
-        const b = f.userB.toString();
-        return a === userId.toString() ? b : a;
-      })
-    );
+    const friendIdSet = new Set(friendIds.map((id) => id.toString()));
 
     const formattedConversations = conversations.map((conv) => {
       const otherParticipant = conv.participants.find((p) => p._id.toString() !== userId.toString());
@@ -114,13 +106,12 @@ class ChatService {
 
     await message.populate("sender", "username avatar fullName");
 
-    // Cập nhật conversation
-    conversation.lastMessage = message._id;
-    conversation.lastMessageAt = message.createdAt;
-
     const otherParticipant = conversation.participants.find((p) => p.toString() !== senderId.toString());
 
-    await conversationDAO.incrementUnread(conversation, otherParticipant);
+    await Promise.all([
+      conversationDAO.updateLastMessage(conversationId, message._id, message.createdAt),
+      conversationDAO.incrementUnread(conversationId, otherParticipant),
+    ]);
 
     // Emit encrypted message via Socket.io
     try {
@@ -142,7 +133,7 @@ class ChatService {
     if (!conversation) throw new AppError("Conversation not found", 404);
 
     await messageDAO.markAsRead(conversationId, userId);
-    await conversationDAO.resetUnread(conversation, userId);
+    await conversationDAO.resetUnread(conversationId, userId);
 
     // Emit read event
     try {

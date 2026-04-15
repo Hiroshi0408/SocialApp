@@ -12,7 +12,7 @@ class SaveService {
     if (!post) throw new AppError("Post not found", 404);
 
     try {
-      await saveDAO.create(userId, postId);
+      await saveDAO.create({ userId, postId });
     } catch (error) {
       if (error.code === 11000) {
         // Duplicate — idempotent, trả về success
@@ -27,7 +27,7 @@ class SaveService {
   }
 
   async unsavePost(userId, postId) {
-    const save = await saveDAO.deleteOne(userId, postId);
+    const save = await saveDAO.deleteOne({ userId, postId });
     if (!save) throw new AppError("Post not saved", 404);
 
     await postDAO.updateById(postId, [
@@ -72,7 +72,7 @@ class SaveService {
   }
 
   async checkSaveStatus(userId, postId) {
-    const save = await saveDAO.findOne(userId, postId);
+    const save = await saveDAO.findOne({ userId, postId });
     return { isSaved: !!save };
   }
 }

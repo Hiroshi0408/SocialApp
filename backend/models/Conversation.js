@@ -43,6 +43,12 @@ const conversationSchema = new mongoose.Schema(
   },
   {
     timestamps: true,
+    toJSON: {
+      transform: (doc, ret) => {
+        delete ret.__v;
+        return ret;
+      },
+    },
   },
 );
 
@@ -66,28 +72,6 @@ conversationSchema.pre("save", function (next) {
   }
   next();
 });
-
-// Tìm conversation 1-1 giữa 2 users
-conversationSchema.statics.findBetweenUsers = async function (
-  userId1,
-  userId2,
-) {
-  return this.findOne({
-    type: "direct",
-    participants: { $all: [userId1, userId2] },
-  })
-    .populate("participants", "username avatar fullName")
-    .populate({
-      path: "lastMessage",
-      select: "content sender createdAt read",
-    });
-};
-
-conversationSchema.methods.toJSON = function () {
-  const conversation = this.toObject();
-  delete conversation.__v;
-  return conversation;
-};
 
 const Conversation = mongoose.model(
   "Conversation",

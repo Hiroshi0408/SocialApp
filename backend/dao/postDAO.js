@@ -2,8 +2,9 @@ const Post = require("../models/Post");
 
 class PostDAO {
   async findById(id, options = {}) {
-    const { populate = "", lean = false } = options;
-    let query = Post.findOne({ _id: id, deleted: false });
+    const { populate = "", lean = false, includeDeleted = false } = options;
+    const filter = includeDeleted ? { _id: id } : { _id: id, deleted: false };
+    let query = Post.findOne(filter);
     if (populate) query = query.populate(populate);
     if (lean) query = query.lean();
     return await query.exec();
@@ -16,12 +17,11 @@ class PostDAO {
       skip = 0,
       limit = 20,
       lean = false,
+      includeDeleted = false,
     } = options;
 
-    let query = Post.find({ ...filter, deleted: false })
-      .sort(sort)
-      .skip(skip)
-      .limit(limit);
+    const baseFilter = includeDeleted ? filter : { ...filter, deleted: false };
+    let query = Post.find(baseFilter).sort(sort).skip(skip).limit(limit);
 
     if (populate) query = query.populate(populate);
     if (lean) query = query.lean();
@@ -45,29 +45,10 @@ class PostDAO {
     ).exec();
   }
 
-  async count(filter) {
-    return await Post.countDocuments({ ...filter, deleted: false });
-  }
-
-  // Dùng cho admin — không bị force deleted: false
-  async adminCount(filter) {
-    return await Post.countDocuments(filter);
-  }
-
-  async adminFindMany(filter, options = {}) {
-    const { sort = { createdAt: -1 }, skip = 0, limit = 20, select = "", populate = "" } = options;
-    let query = Post.find(filter).sort(sort).skip(skip).limit(limit);
-    if (select) query = query.select(select);
-    if (populate) query = query.populate(populate);
-    return await query.lean();
-  }
-
-  async adminFindById(id) {
-    return await Post.findById(id);
-  }
-
-  async adminUpdateById(id, data) {
-    return await Post.findByIdAndUpdate(id, data, { new: true });
+  async count(filter, options = {}) {
+    const { includeDeleted = false } = options;
+    const baseFilter = includeDeleted ? filter : { ...filter, deleted: false };
+    return await Post.countDocuments(baseFilter);
   }
 
   async incrementLikesCount(postId) {
@@ -100,6 +81,25 @@ class PostDAO {
       [{ $set: { commentsCount: { $max: [0, { $subtract: ["$commentsCount", amount] }] } } }],
       { new: true }
     ).exec();
+  }
+
+  // ========== STATS (dùng cho adminService) ==========
+
+  async aggregate(pipeline) {
+    return await Post.aggregate(pipeline);
+  }
+
+  async distinctUsersByPeriod(from) {
+    return await Post.distinct("userId", { createdAt: { $gte: from } });
+  }
+
+  async findByIds(ids, options = {}) {
+    const { select = "", populate = "", lean = false } = options;
+    let query = Post.find({ _id: { $in: ids } });
+    if (select) query = query.select(select);
+    if (populate) query = query.populate(populate);
+    if (lean) query = query.lean();
+    return await query.exec();
   }
 }
 

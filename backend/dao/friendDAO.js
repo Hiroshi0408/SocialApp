@@ -144,6 +144,17 @@ class FriendDAO {
     });
   }
 
+  // Trả về mảng ObjectId bạn bè của userId — dùng cho feed và chat
+  async findFriendIds(userId) {
+    const friendships = await Friendship.find({
+      $or: [{ userA: userId }, { userB: userId }],
+    }).select("userA userB").lean();
+
+    return friendships.map((f) => {
+      return f.userA.toString() === userId.toString() ? f.userB : f.userA;
+    });
+  }
+
   // Resolve trạng thái friendship giữa 2 user — dùng trong userService và friendService
   async resolveFriendshipStatus(userId1, userId2) {
     const pair = buildPair(userId1, userId2);

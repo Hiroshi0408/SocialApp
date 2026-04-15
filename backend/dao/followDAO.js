@@ -3,27 +3,21 @@ const Follow = require("../models/Follow");
 class FollowDAO {
   // ==================== CREATE ====================
 
-  async create(followerId, followingId) {
-    const follow = new Follow({ follower: followerId, following: followingId });
+  async create(data) {
+    const follow = new Follow(data);
     return await follow.save();
   }
 
   // ==================== DELETE ====================
 
-  async deleteOne(followerId, followingId) {
-    return await Follow.findOneAndDelete({
-      follower: followerId,
-      following: followingId,
-    }).exec();
+  async deleteOne(filter) {
+    return await Follow.findOneAndDelete(filter).exec();
   }
 
   // ==================== FIND ====================
 
-  async findOne(followerId, followingId) {
-    return await Follow.findOne({
-      follower: followerId,
-      following: followingId,
-    }).exec();
+  async findOne(filter) {
+    return await Follow.findOne(filter).exec();
   }
 
   async findFollowers(userId, options = {}) {

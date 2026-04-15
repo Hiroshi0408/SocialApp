@@ -10,6 +10,10 @@ router.get("/", notificationController.getNotifications);
 router.get("/unread-count", notificationController.getUnreadCount);
 router.put("/read-all", notificationController.markAllAsRead);
 router.put("/:id/read", mongoIdValidation, notificationController.markAsRead);
-router.delete("/:id", mongoIdValidation, notificationController.deleteNotification);
+router.delete(
+  "/:id",
+  mongoIdValidation,
+  notificationController.deleteNotification,
+);
 
 module.exports = router;

@@ -28,7 +28,7 @@ class UserService {
     }
 
     const [followDoc, friendship] = await Promise.all([
-      followDAO.findOne(currentUserId, user._id),
+      followDAO.findOne({ follower: currentUserId, following: user._id }),
       friendService.resolveFriendshipStatus(currentUserId, user._id),
     ]);
 
@@ -116,13 +116,13 @@ class UserService {
       throw new AppError("User not found", 404);
     }
 
-    const existing = await followDAO.findOne(currentUserId, targetUserId);
+    const existing = await followDAO.findOne({ follower: currentUserId, following: targetUserId });
     if (existing) {
       throw new AppError("Already following this user", 400);
     }
 
     try {
-      await followDAO.create(currentUserId, targetUserId);
+      await followDAO.create({ follower: currentUserId, following: targetUserId });
     } catch (err) {
       // Bẫy race condition: 2 request follow cùng lúc
       if (err.code === 11000) {
@@ -150,7 +150,7 @@ class UserService {
   }
 
   async unfollowUser(currentUserId, targetUserId) {
-    const follow = await followDAO.deleteOne(currentUserId, targetUserId);
+    const follow = await followDAO.deleteOne({ follower: currentUserId, following: targetUserId });
 
     if (!follow) {
       throw new AppError("Not following this user", 404);
@@ -163,7 +163,7 @@ class UserService {
   }
 
   async checkFollowStatus(currentUserId, targetUserId) {
-    const follow = await followDAO.findOne(currentUserId, targetUserId);
+    const follow = await followDAO.findOne({ follower: currentUserId, following: targetUserId });
     return { isFollowing: !!follow };
   }
 
