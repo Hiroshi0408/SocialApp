@@ -13,7 +13,6 @@ class StoryDAO {
     return await Story.find({
       ...filter,
       expiresAt: { $gt: new Date() },
-      isActive: true,
     })
       .populate("userId", "username fullName avatar")
       .sort({ createdAt: -1 })
@@ -24,7 +23,6 @@ class StoryDAO {
     return await Story.find({
       userId,
       expiresAt: { $gt: new Date() },
-      isActive: true,
     })
       .populate("userId", "username fullName avatar")
       .sort({ createdAt: 1 })

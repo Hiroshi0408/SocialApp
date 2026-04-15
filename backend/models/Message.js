@@ -30,15 +30,14 @@ const messageSchema = new mongoose.Schema(
     isEncrypted: {
       type: Boolean,
       default: false,
-      index: true,
     },
-    read: {
-      type: Boolean,
-      default: false,
-    },
-    readAt: {
-      type: Date,
-    },
+    // Mỗi user trong conversation tự track read status riêng
+    readBy: [
+      {
+        type: mongoose.Schema.Types.ObjectId,
+        ref: "User",
+      },
+    ],
     deleted: {
       type: Boolean,
       default: false,
@@ -63,9 +62,7 @@ const messageSchema = new mongoose.Schema(
 );
 
 messageSchema.index({ conversationId: 1, createdAt: -1 });
-messageSchema.index({ conversationId: 1, read: 1 });
 messageSchema.index({ sender: 1, createdAt: -1 });
-messageSchema.index({ createdAt: -1 });
 
 const Message = mongoose.model("Message", messageSchema, "messages");
 
