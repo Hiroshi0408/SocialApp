@@ -10,7 +10,7 @@ const notificationService = require("./notificationService");
 const AppError = require("../utils/AppError");
 const logger = require("../utils/logger");
 const { getTimeAgo } = require("../utils/timeHelper");
-const { extractMentions, validateMentions } = require("../utils/mentionHelper");
+const { validateMentions } = require("../utils/mentionHelper");
 const { formatPostsWithMetadata } = require("../helpers/postHelper");
 const { moderateText } = require("../utils/geminiModeration");
 const {
@@ -176,8 +176,6 @@ class PostService {
       }
     }
 
-    const mentions = caption ? extractMentions(caption) : [];
-
     const post = await postDAO.create({
       userId,
       image: image || "",
@@ -186,8 +184,8 @@ class PostService {
       videoDuration: videoDuration || 0,
       caption: caption || "",
       location: location || "",
-      mentions,
       taggedUsers: taggedUsers || [],
+      // mentions và hashtags tự động extract từ caption bởi pre-save hook trong Post model
     });
 
     await userDAO.incrementPostsCount(userId);

@@ -45,18 +45,6 @@ groupSchema.index({ name: 1, createdAt: -1 });
 groupSchema.index({ members: 1 });
 groupSchema.index({ creator: 1, createdAt: -1 });
 
-groupSchema.pre("save", function (next) {
-  if (!this.members || this.members.length === 0) {
-    this.members = [this.creator];
-  }
-
-  const uniqueMemberIds = [...new Set(this.members.map((id) => id.toString()))];
-  this.members = uniqueMemberIds.map((id) => new mongoose.Types.ObjectId(id));
-  this.membersCount = uniqueMemberIds.length;
-
-  next();
-});
-
 const Group = mongoose.model("Group", groupSchema, "groups");
 
 module.exports = Group;
