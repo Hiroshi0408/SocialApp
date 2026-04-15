@@ -21,7 +21,7 @@ class SaveService {
       throw error;
     }
 
-    await postDAO.updateById(postId, { $inc: { savesCount: 1 } });
+    await postDAO.incrementSavesCount(postId);
     logger.info(`Post saved - ID: ${postId}`);
     return { isSaved: true };
   }
@@ -30,9 +30,7 @@ class SaveService {
     const save = await saveDAO.deleteOne({ userId, postId });
     if (!save) throw new AppError("Post not saved", 404);
 
-    await postDAO.updateById(postId, [
-      { $set: { savesCount: { $max: [0, { $subtract: ["$savesCount", 1] }] } } },
-    ]);
+    await postDAO.decrementSavesCount(postId);
 
     logger.info(`Post unsaved - ID: ${postId}`);
     return { isSaved: false };

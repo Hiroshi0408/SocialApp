@@ -83,6 +83,22 @@ class PostDAO {
     ).exec();
   }
 
+  async incrementSavesCount(postId) {
+    return await Post.findByIdAndUpdate(
+      postId,
+      { $inc: { savesCount: 1 } },
+      { new: true }
+    ).exec();
+  }
+
+  async decrementSavesCount(postId) {
+    return await Post.findByIdAndUpdate(
+      postId,
+      [{ $set: { savesCount: { $max: [0, { $subtract: ["$savesCount", 1] }] } } }],
+      { new: true }
+    ).exec();
+  }
+
   // ========== STATS (dùng cho adminService) ==========
 
   async aggregate(pipeline) {
