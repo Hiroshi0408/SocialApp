@@ -1,10 +1,10 @@
-const { createTransporter } = require("../config/email");
-const logger = require("./logger.js");
+const { createTransporter } = require("../config/email.js");
+const logger = require("../utils/logger.js");
 const {
   getEmailVerificationTemplate,
   getPasswordResetTemplate,
   getWelcomeEmailTemplate,
-} = require("./emailTemplates");
+} = require("../utils/emailTemplates.js");
 
 const sendEmail = async ({ to, subject, html }) => {
   try {

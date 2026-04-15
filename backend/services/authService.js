@@ -3,7 +3,7 @@ const admin = require("../config/firebaseAdmin");
 const {
   sendVerificationEmail,
   sendPasswordResetEmail,
-} = require("../utils/emailService");
+} = require("./emailService");
 const { generateToken, generateRawToken } = require("../helpers/generate");
 const AppError = require("../utils/AppError");
 const logger = require("../utils/logger");
@@ -32,7 +32,12 @@ class AuthService {
       });
     }
 
-    const user = await userDAO.createUser({ fullName, username, email, password });
+    const user = await userDAO.createUser({
+      fullName,
+      username,
+      email,
+      password,
+    });
     logger.info("User registered:", user.username);
 
     const verificationToken = generateRawToken();
@@ -139,10 +144,7 @@ class AuthService {
       } catch (err) {
         // Race condition: username bị lấy trước trong khoảnh khắc giữa check và create
         if (err.code === 11000) {
-          throw new AppError(
-            "Registration conflict, please try again",
-            409
-          );
+          throw new AppError("Registration conflict, please try again", 409);
         }
         throw err;
       }
@@ -166,7 +168,8 @@ class AuthService {
         updates.isEmailVerified = true;
       }
       if (tokenPhotoURL && !user.avatar) updates.avatar = tokenPhotoURL;
-      if (tokenDisplayName && !user.fullName) updates.fullName = tokenDisplayName;
+      if (tokenDisplayName && !user.fullName)
+        updates.fullName = tokenDisplayName;
 
       if (Object.keys(updates).length > 0) {
         user = await userDAO.updateById(user._id, updates);
@@ -241,7 +244,10 @@ class AuthService {
         await sendPasswordResetEmail(user.email, user.username, resetToken);
         logger.info("Password reset email sent to:", user.email);
       } catch (emailError) {
-        logger.error("Failed to send password reset email:", emailError.message);
+        logger.error(
+          "Failed to send password reset email:",
+          emailError.message,
+        );
         await userDAO.clearPasswordResetToken(user._id);
         throw new AppError("Failed to send password reset email", 500);
       }
