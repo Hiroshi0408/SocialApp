@@ -135,7 +135,15 @@
     "captionPlaceholder": "Write a caption...",
     "locationLabel": "Location",
     "locationPlaceholder": "Add location...",
-    "saving": "Saving..."
+    "saving": "Saving...",
+    "onChainVerified": "On-chain verified",
+    "onChainVerifying": "Verifying on blockchain...",
+    "onChainVerifyFailed": "Verification failed. Please try again.",
+    "onChainMatch": "✓ Content matches — not tampered",
+    "onChainMismatch": "⚠ Content mismatch — may have been edited",
+    "onChainTxHash": "Transaction Hash",
+    "onChainTimestamp": "Registered at",
+    "onChainOwner": "Owner (wallet)"
   },
   "profile": {
     "usernameNotFound": "Username not found",
@@ -213,6 +221,14 @@
     "walletConnectionFailed": "Wallet connection failed",
     "walletLinkedSuccess": "Wallet linked successfully!",
     "walletLinkFailed": "Failed to link wallet",
+    "walletConnectedSuccess": "Wallet connected!",
+    "walletDisconnect": "Unlink wallet",
+    "walletUnlinking": "Unlinking...",
+    "walletUnlinkedSuccess": "Wallet unlinked successfully",
+    "walletUnlinkFailed": "Failed to unlink wallet",
+    "walletBalance": "Balance",
+    "walletBalanceRefresh": "Refresh balance",
+    "walletConnectToSeeBal": "Connect MetaMask to view balance",
     "logout": "Log Out"
   },
   "notificationsPage": {
@@ -426,7 +442,9 @@
     "captionPlaceholder": "Write a caption...",
     "locationPlaceholder": "Add location",
     "sharingButton": "Sharing...",
-    "shareButton": "Share"
+    "shareButton": "Share",
+    "registerOnChain": "Stamp on-chain",
+    "onChainTooltip": "Store a content hash on Sepolia to prove authorship. Anyone can verify it at any time."
   },
   "confirmDialog": {
     "defaultTitle": "Confirm Action",
@@ -466,5 +484,21 @@
     "accept": "Accept",
     "reject": "Reject",
     "end_call": "End Call"
+  },
+  "verifyPost": {
+    "title": "On-chain Post Verification",
+    "postId": "Post ID",
+    "verifying": "Verifying on Sepolia...",
+    "matchTitle": "Content is authentic",
+    "mismatchTitle": "Content has been altered",
+    "matchDesc": "The content hash matches the one registered on the blockchain. This post has not been modified since publishing.",
+    "mismatchDesc": "The current content hash DIFFERS from the on-chain record. The content may have been edited after publishing.",
+    "onChainHash": "On-chain hash",
+    "offChainHash": "Current content hash",
+    "registeredAt": "Registered at",
+    "owner": "Wallet address",
+    "viewOnEtherscan": "View on Sepolia Etherscan",
+    "backToHome": "← Back to home",
+    "unknownError": "An error occurred during verification"
   }
 }

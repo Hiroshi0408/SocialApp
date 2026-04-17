@@ -28,6 +28,7 @@ const AdminDashboard = lazy(
   () => import("./pages/AdminDashboard/AdminDashboard"),
 );
 const Group = lazy(() => import("./pages/Group/Group"));
+const VerifyPost = lazy(() => import("./pages/VerifyPost/VerifyPost"));
 
 function App() {
   return (
@@ -150,6 +151,9 @@ function App() {
                       </PrivateRoute>
                     }
                   />
+                  {/* Public — ai cũng verify được kể cả chưa login */}
+                  <Route path="/verify/:postId" element={<VerifyPost />} />
+
                   <Route path="*" element={<Navigate to="/" />} />
                 </Routes>
               </Suspense>

@@ -2,6 +2,7 @@ import React, { useState } from "react";
 import { useTranslation } from "react-i18next";
 import MediaUpload from "../MediaUpload/MediaUpload";
 import postService from "../../api/postService";
+import { useWeb3 } from "../../contexts/Web3Context";
 import { getUserAvatar } from "../../utils";
 import { POST_LIMITS } from "../../constants";
 import { showError } from "../../utils/toast";
@@ -9,10 +10,12 @@ import "./CreatePostModal.css";
 
 function CreatePostModal({ isOpen, onClose, onPostCreated }) {
   const { t } = useTranslation();
+  const { walletAddress } = useWeb3();
   const [step, setStep] = useState(1);
   const [mediaData, setMediaData] = useState(null);
   const [caption, setCaption] = useState("");
   const [location, setLocation] = useState("");
+  const [registerOnChain, setRegisterOnChain] = useState(false);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [error, setError] = useState("");
 
@@ -38,6 +41,7 @@ function CreatePostModal({ isOpen, onClose, onPostCreated }) {
       setStep(1);
       setCaption("");
       setLocation("");
+      setRegisterOnChain(false);
     }
   };
 
@@ -55,6 +59,7 @@ function CreatePostModal({ isOpen, onClose, onPostCreated }) {
         caption: caption.trim(),
         location: location.trim() || undefined,
         mediaType: mediaData.type,
+        registerOnChain: walletAddress ? registerOnChain : false,
       };
 
       if (mediaData.type === "video") {
@@ -63,7 +68,6 @@ function CreatePostModal({ isOpen, onClose, onPostCreated }) {
       } else {
         postData.image = mediaData.url;
       }
-
       const response = await postService.createPost(postData);
 
       if (response.success) {
@@ -87,6 +91,7 @@ function CreatePostModal({ isOpen, onClose, onPostCreated }) {
     setMediaData(null);
     setCaption("");
     setLocation("");
+    setRegisterOnChain(false);
     setError("");
     setIsSubmitting(false);
     onClose();
@@ -195,6 +200,23 @@ function CreatePostModal({ isOpen, onClose, onPostCreated }) {
                     maxLength={POST_LIMITS.LOCATION_MAX_LENGTH}
                   />
                 </div>
+
+                {walletAddress && (
+                  <label
+                    className="onchain-toggle"
+                    title={t("createPost.onChainTooltip")}
+                  >
+                    <input
+                      type="checkbox"
+                      checked={registerOnChain}
+                      onChange={(e) => setRegisterOnChain(e.target.checked)}
+                    />
+                    <span className="onchain-toggle-icon">🔗</span>
+                    <span className="onchain-toggle-label">
+                      {t("createPost.registerOnChain")}
+                    </span>
+                  </label>
+                )}
 
                 {error && <div className="error-message">{error}</div>}
 

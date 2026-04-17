@@ -53,6 +53,19 @@ describe("generate helper", () => {
     expect(token).toBe("jwt-token");
   });
 
+  test("generateToken fallback ve JWT_EXPIRATION khi JWT_EXPIRE khong duoc set", () => {
+    jwt.sign.mockReturnValue("jwt-token");
+    delete process.env.JWT_EXPIRE;
+
+    generateToken("user123", "nhan");
+
+    expect(jwt.sign).toHaveBeenCalledWith(
+      { id: "user123", username: "nhan" },
+      "test-secret",
+      { expiresIn: "7d" },
+    );
+  });
+
   test("generateRawToken tao chuoi hex 64 ky tu", () => {
     const token = generateRawToken();
 

@@ -311,6 +311,22 @@
   color: var(--primary-color);
 }
 
+/* Wallet Balance Chip */
+.wallet-balance-chip {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  padding: 5px 10px;
+  border-radius: 20px;
+  background: rgba(255, 138, 0, 0.12);
+  border: 1px solid rgba(255, 138, 0, 0.3);
+  color: #e07000;
+  font-size: var(--font-xs);
+  font-weight: 700;
+  white-space: nowrap;
+  cursor: default;
+}
+
 /* Responsive - Mobile */
 @media (max-width: 768px) {
   .header {
