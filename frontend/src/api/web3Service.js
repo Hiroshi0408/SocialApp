@@ -27,6 +27,16 @@ const web3Service = {
     });
     return response.data;
   },
+
+  unlinkWallet: async () => {
+    const response = await axios.delete("/web3/link-wallet");
+    return response.data;
+  },
+
+  verifyPost: async (postId) => {
+    const response = await axios.get(`/web3/posts/${postId}/verify`);
+    return response.data;
+  },
 };
 
 export default web3Service;

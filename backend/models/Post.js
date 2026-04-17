@@ -80,6 +80,12 @@ const postSchema = new mongoose.Schema(
       type: Boolean,
       default: false,
     },
+    onChain: {
+      registered: { type: Boolean, default: false },
+      contentHash: { type: String, default: null },
+      txHash: { type: String, default: null },
+      blockNumber: { type: Number, default: null },
+    },
     deleted: {
       type: Boolean,
       default: false,

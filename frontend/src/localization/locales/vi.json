@@ -135,7 +135,15 @@
     "captionPlaceholder": "Viết chú thích...",
     "locationLabel": "Vị trí",
     "locationPlaceholder": "Thêm vị trí...",
-    "saving": "Đang lưu..."
+    "saving": "Đang lưu...",
+    "onChainVerified": "Đã xác thực on-chain",
+    "onChainVerifying": "Đang xác thực trên blockchain...",
+    "onChainVerifyFailed": "Không thể xác thực. Vui lòng thử lại.",
+    "onChainMatch": "✓ Nội dung khớp — chưa bị sửa đổi",
+    "onChainMismatch": "⚠ Nội dung không khớp — có thể đã bị sửa",
+    "onChainTxHash": "Transaction Hash",
+    "onChainTimestamp": "Thời gian đăng ký",
+    "onChainOwner": "Chủ sở hữu (ví)"
   },
   "profile": {
     "usernameNotFound": "Không tìm thấy tên người dùng",
@@ -213,6 +221,14 @@
     "walletConnectionFailed": "Kết nối ví thất bại",
     "walletLinkedSuccess": "Liên kết ví thành công!",
     "walletLinkFailed": "Liên kết ví thất bại",
+    "walletConnectedSuccess": "Đã kết nối ví!",
+    "walletDisconnect": "Ngắt liên kết",
+    "walletUnlinking": "Đang ngắt...",
+    "walletUnlinkedSuccess": "Đã ngắt liên kết ví",
+    "walletUnlinkFailed": "Ngắt liên kết ví thất bại",
+    "walletBalance": "Số dư",
+    "walletBalanceRefresh": "Làm mới số dư",
+    "walletConnectToSeeBal": "Kết nối MetaMask để xem số dư",
     "logout": "Đăng xuất"
   },
   "notificationsPage": {
@@ -426,7 +442,9 @@
     "captionPlaceholder": "Viết chú thích...",
     "locationPlaceholder": "Thêm địa điểm",
     "sharingButton": "Đang chia sẻ...",
-    "shareButton": "Chia sẻ"
+    "shareButton": "Chia sẻ",
+    "registerOnChain": "Đóng dấu on-chain",
+    "onChainTooltip": "Lưu hash nội dung lên Sepolia để chứng minh tác quyền. Bạn có thể verify bất cứ lúc nào."
   },
   "confirmDialog": {
     "defaultTitle": "Xác nhận hành động",
@@ -466,5 +484,21 @@
     "accept": "Chấp nhận",
     "reject": "Từ chối",
     "end_call": "Kết thúc"
+  },
+  "verifyPost": {
+    "title": "Xác thực bài viết on-chain",
+    "postId": "Post ID",
+    "verifying": "Đang xác thực trên Sepolia...",
+    "matchTitle": "Nội dung hợp lệ",
+    "mismatchTitle": "Nội dung đã bị thay đổi",
+    "matchDesc": "Hash nội dung khớp hoàn toàn với bản đã đăng ký trên blockchain. Bài viết chưa bị sửa đổi kể từ khi đăng.",
+    "mismatchDesc": "Hash nội dung hiện tại KHÁC với bản đăng ký on-chain. Nội dung có thể đã bị chỉnh sửa sau khi đăng.",
+    "onChainHash": "Hash trên blockchain",
+    "offChainHash": "Hash nội dung hiện tại",
+    "registeredAt": "Đăng ký lúc",
+    "owner": "Địa chỉ ví",
+    "viewOnEtherscan": "Xem trên Sepolia Etherscan",
+    "backToHome": "← Quay lại trang chủ",
+    "unknownError": "Có lỗi xảy ra khi xác thực"
   }
 }

@@ -13,6 +13,7 @@ const { getTimeAgo } = require("../utils/timeHelper");
 const { validateMentions } = require("../utils/mentionHelper");
 const { formatPostsWithMetadata } = require("../helpers/postHelper");
 const { moderateText } = require("./geminiModeration");
+const contentRegistryService = require("./contentRegistryService");
 const {
   DEFAULT_POST_LIMIT,
   MAX_POST_LIMIT,
@@ -186,6 +187,7 @@ class PostService {
       caption,
       location,
       taggedUsers,
+      registerOnChain,
     } = data;
 
     if (!image && !video) {
@@ -218,6 +220,26 @@ class PostService {
     });
 
     await userDAO.incrementPostsCount(userId);
+
+    // Đóng dấu on-chain nếu user chọn — fire-and-forget không block response
+    // Dùng fire-and-forget vì tx Sepolia có thể mất 10-30s, không nên bắt user chờ
+    if (registerOnChain === true) {
+      contentRegistryService
+        .registerPost(post._id.toString(), post)
+        .then(async ({ contentHash, txHash, blockNumber }) => {
+          await postDAO.updateById(post._id, {
+            "onChain.registered": true,
+            "onChain.contentHash": contentHash,
+            "onChain.txHash": txHash,
+            "onChain.blockNumber": blockNumber,
+          });
+          logger.info(`Post ${post._id} registered on-chain: tx=${txHash}`);
+        })
+        .catch((err) =>
+          logger.error(`On-chain registration failed for post ${post._id}:`, err.message),
+        );
+    }
+
     await post.populate({ path: "userId", select: "username fullName avatar" });
 
     // Mention notifications (fire-and-forget)

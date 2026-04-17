@@ -1,6 +1,7 @@
 // Generate random string (for tokens)
 const jwt = require("jsonwebtoken");
 const crypto = require("crypto");
+const { JWT_EXPIRATION } = require("../constants");
 
 const generateRandomString = (length) => {
   const characters =

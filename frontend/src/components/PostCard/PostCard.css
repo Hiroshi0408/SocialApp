@@ -673,3 +673,133 @@
     padding-right: 8px;
   }
 }
+
+/* ===== ON-CHAIN BADGE ===== */
+.onchain-badge {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  background: none;
+  border: none;
+  color: #2563eb;
+  cursor: pointer;
+  padding: 2px;
+  margin-left: 4px;
+  border-radius: 50%;
+  transition: transform 0.15s ease, color 0.15s ease;
+  flex-shrink: 0;
+}
+
+.onchain-badge:hover {
+  transform: scale(1.2);
+  color: #1d4ed8;
+}
+
+/* ===== ON-CHAIN MODAL ===== */
+.onchain-modal {
+  background: var(--bg-primary);
+  border-radius: 12px;
+  width: 380px;
+  max-width: 92vw;
+  box-shadow: 0 8px 32px rgba(0, 0, 0, 0.2);
+  overflow: hidden;
+}
+
+.onchain-modal-header {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 16px 20px;
+  border-bottom: 1px solid var(--border-color);
+  color: #2563eb;
+}
+
+.onchain-modal-header h3 {
+  flex: 1;
+  margin: 0;
+  font-size: 15px;
+  font-weight: 600;
+  color: var(--text-primary);
+}
+
+.onchain-modal-body {
+  padding: 20px;
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+}
+
+.onchain-loading,
+.onchain-error {
+  text-align: center;
+  font-size: 14px;
+  color: var(--text-secondary);
+  padding: 12px 0;
+}
+
+.onchain-error { color: #dc2626; }
+
+.onchain-match-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 6px 14px;
+  border-radius: 20px;
+  font-size: 13px;
+  font-weight: 600;
+  align-self: flex-start;
+}
+
+.onchain-match-badge.match {
+  background: #dcfce7;
+  color: #15803d;
+}
+
+.onchain-match-badge.mismatch {
+  background: #fee2e2;
+  color: #dc2626;
+}
+
+.onchain-detail {
+  display: flex;
+  flex-direction: column;
+  gap: 3px;
+  font-size: 13px;
+}
+
+.onchain-detail-label {
+  color: var(--text-secondary);
+  font-size: 11px;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+}
+
+.onchain-tx-link {
+  color: #2563eb;
+  word-break: break-all;
+  font-family: monospace;
+  font-size: 12px;
+}
+
+.onchain-tx-link:hover { text-decoration: underline; }
+
+.onchain-address {
+  font-family: monospace;
+  font-size: 12px;
+  color: var(--text-primary);
+}
+
+.onchain-badge.onchain-pending {
+  color: #9ca3af;
+  cursor: default;
+  pointer-events: none;
+}
+
+@keyframes spin-badge {
+  to { transform: rotate(360deg); }
+}
+
+.onchain-spinner {
+  animation: spin-badge 1s linear infinite;
+  display: block;
+}

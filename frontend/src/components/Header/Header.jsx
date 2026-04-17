@@ -16,6 +16,7 @@ import ChatPopover from "../Chat/ChatPopover";
 import userService from "../../api/userService";
 import { useTranslation } from "react-i18next";
 import { languages } from "../../localization/languageList";
+import { useWeb3 } from "../../contexts/Web3Context";
 import "./Header.css";
 
 function Header() {
@@ -29,6 +30,7 @@ function Header() {
   const { theme, toggleTheme } = useContext(ThemeContext);
   const { unreadNotifications, setUnreadNotifications } = useSocket();
   const [chatOpen, setChatOpen] = useState(false);
+  const { walletAddress, balance } = useWeb3();
 
   const [suggestions, setSuggestions] = useState({ users: [] });
   const [openSuggest, setOpenSuggest] = useState(false);
@@ -265,6 +267,17 @@ function Header() {
               <path d="M21 15a4 4 0 0 1-4 4H8l-5 4V7a4 4 0 0 1 4-4h10a4 4 0 0 1 4 4z" />
             </svg>
           </button>
+
+          {walletAddress && (
+            <div className="wallet-balance-chip" title={walletAddress}>
+              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" aria-hidden="true">
+                <rect x="1.5" y="4" width="21" height="16" rx="4" stroke="currentColor" strokeWidth="2" />
+                <path d="M1.5 9.5H22.5" stroke="currentColor" strokeWidth="2" />
+                <circle cx="17.2" cy="14" r="1.6" fill="currentColor" />
+              </svg>
+              <span>{balance !== null ? `${balance} ETH` : "..."}</span>
+            </div>
+          )}
 
           <button
             className="nav-icon"

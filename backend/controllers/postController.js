@@ -38,6 +38,7 @@ exports.getPostById = async (req, res, next) => {
 // [POST] /api/posts
 exports.createPost = async (req, res, next) => {
   try {
+    console.log("Creating post with data:", req.body);
     logger.info(`Create post - User: ${req.user.username}`);
     const post = await postService.createPost(req.user.id, req.body);
     res.status(201).json({

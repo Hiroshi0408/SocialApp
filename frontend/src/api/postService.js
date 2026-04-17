@@ -59,6 +59,7 @@ const postService = {
       caption: postData.caption || "",
       location: postData.location || "",
       taggedUsers: postData.taggedUsers || [],
+      registerOnChain: postData.registerOnChain || false,
     });
     return response.data;
   },

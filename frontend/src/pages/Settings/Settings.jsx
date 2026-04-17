@@ -27,8 +27,8 @@ function Settings() {
   const [isSaving, setIsSaving] = useState(false);
   const [hasChanges, setHasChanges] = useState(false);
   const [isWalletLoading, setIsWalletLoading] = useState(false);
-  const { connectWallet } = useWeb3();
-  const { getNonce, linkWallet } = web3Service;
+  const { connectWallet, disconnectWallet, walletAddress, balance, fetchBalance } = useWeb3();
+  const { getNonce, linkWallet, unlinkWallet } = web3Service;
 
   const [passwordData, setPasswordData] = useState({
     currentPassword: "",
@@ -177,6 +177,32 @@ function Settings() {
       setIsWalletLoading(false);
     }
   };
+  const handleWalletUnlink = async () => {
+    setIsWalletLoading(true);
+    try {
+      const response = await unlinkWallet();
+      if (response.success) {
+        updateUser(response.user);
+        disconnectWallet();
+        showSuccess(t("settings.walletUnlinkedSuccess"));
+      } else {
+        showError(response.message || t("settings.walletUnlinkFailed"));
+      }
+    } catch (error) {
+      console.error("Wallet unlink error:", error);
+      showError(t("settings.walletUnlinkFailed"));
+    } finally {
+      setIsWalletLoading(false);
+    }
+  };
+
+  const handleConnectToSeeBal = async () => {
+    const result = await connectWallet();
+    if (result) {
+      showSuccess(t("settings.walletConnectedSuccess"));
+    }
+  };
+
   const handleLogout = () => {
     logout();
     navigate("/");
@@ -272,14 +298,54 @@ function Settings() {
                 <div className="form-group">
                   <label htmlFor="Wallet">Wallet</label>
                   {user?.walletAddress ? (
-                    <div className="wallet-connected">
-                      <span className="wallet-connected-label">
-                        {t("settings.metamaskLinked")}
-                      </span>
-                      <span className="wallet-address">
-                        {user.walletAddress.slice(0, 6)}...
-                        {user.walletAddress.slice(-4)}
-                      </span>
+                    <div className="wallet-linked-section">
+                      <div className="wallet-connected">
+                        <span className="wallet-connected-label">
+                          {t("settings.metamaskLinked")}
+                        </span>
+                        <span className="wallet-address">
+                          {user.walletAddress.slice(0, 6)}...
+                          {user.walletAddress.slice(-4)}
+                        </span>
+                      </div>
+
+                      {walletAddress ? (
+                        <div className="wallet-balance-row">
+                          <span className="wallet-balance-label">
+                            {t("settings.walletBalance")}
+                          </span>
+                          <span className="wallet-balance-value">
+                            {balance !== null ? `${balance} ETH` : "..."}
+                          </span>
+                          <button
+                            type="button"
+                            className="wallet-balance-refresh"
+                            onClick={() => fetchBalance(walletAddress)}
+                            title={t("settings.walletBalanceRefresh")}
+                          >
+                            ↻
+                          </button>
+                        </div>
+                      ) : (
+                        <button
+                          type="button"
+                          className="wallet-connect-small"
+                          onClick={handleConnectToSeeBal}
+                        >
+                          {t("settings.walletConnectToSeeBal")}
+                        </button>
+                      )}
+
+                      <button
+                        type="button"
+                        className="wallet-unlink-btn"
+                        onClick={handleWalletUnlink}
+                        disabled={isWalletLoading}
+                      >
+                        {isWalletLoading
+                          ? t("settings.walletUnlinking")
+                          : t("settings.walletDisconnect")}
+                      </button>
                     </div>
                   ) : (
                     <button

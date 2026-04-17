@@ -1,149 +1,73 @@
-const userDAO = require("../dao/userDAO");
-const { ethers } = require("ethers");
-const crypto = require("crypto");
+const web3Service = require("../services/web3Service");
+const contentRegistryService = require("../services/contentRegistryService");
+const postService = require("../services/postService");
+const AppError = require("../utils/AppError");
 const logger = require("../utils/logger");
-const { generateToken, generateRandomString } = require("../helpers/generate");
-
-// Lưu nonce tạm trong memory: walletAddress -> { nonce, expiresAt }
-// Nonce hết hạn sau 5 phút để tránh replay attack
-const nonceStore = new Map();
-
-// Dọn expired nonces định kỳ (mỗi 10 phút)
-setInterval(() => {
-  const now = Date.now();
-  for (const [key, value] of nonceStore.entries()) {
-    if (value.expiresAt < now) nonceStore.delete(key);
-  }
-}, 10 * 60 * 1000);
 
 // [GET] /api/web3/nonce/:walletAddress
-exports.getNonce = async (req, res) => {
+exports.getNonce = async (req, res, next) => {
   try {
     const { walletAddress } = req.params;
-    if (!ethers.isAddress(walletAddress)) {
-      return res
-        .status(400)
-        .json({ success: false, message: "Invalid wallet address" });
-    }
-
-    const nonce = crypto.randomBytes(32).toString("hex");
-    // Lưu nonce 5 phút — overwrite nếu đã có (user request nonce mới)
-    nonceStore.set(walletAddress.toLowerCase(), {
-      nonce,
-      expiresAt: Date.now() + 5 * 60 * 1000,
-    });
-
-    res.json({ message: "Login to SocialApp: " + nonce });
+    const message = await web3Service.generateNonce(walletAddress);
+    res.json({ message });
   } catch (error) {
-    logger.error("Error generating nonce: " + error.message);
-    res.status(500).json({ error: "Failed to generate nonce" });
+    logger.error("Error generating nonce:", error.message);
+    next(error);
   }
 };
 
 // [POST] /api/web3/wallet-login
-exports.walletLogin = async (req, res) => {
+exports.walletLogin = async (req, res, next) => {
   try {
     const { walletAddress, signature, message } = req.body;
-    logger.info("walletLogin data:", {
-      walletAddress,
-      message,
-      signature: signature?.slice(0, 20),
-    });
-
-    // Verify nonce: message phải khớp với nonce do server cấp
-    const stored = nonceStore.get(walletAddress?.toLowerCase());
-    if (!stored || stored.expiresAt < Date.now()) {
-      return res.status(400).json({
-        success: false,
-        message: "Nonce expired or not found. Please request a new nonce.",
-      });
-    }
-    const expectedMessage = "Login to SocialApp: " + stored.nonce;
-    if (message !== expectedMessage) {
-      return res.status(400).json({
-        success: false,
-        message: "Message does not match issued nonce",
-      });
-    }
-
-    const recoveredAddress = ethers.verifyMessage(message, signature);
-    logger.info("recovered:", recoveredAddress);
-    logger.info("expected:", walletAddress);
-
-    if (recoveredAddress.toLowerCase() !== walletAddress.toLowerCase()) {
-      return res.status(401).json({
-        success: false,
-        message: "Invalid signature",
-      });
-    }
-
-    // Xóa nonce sau khi dùng — tránh replay attack
-    nonceStore.delete(walletAddress.toLowerCase());
-
-    let user = await userDAO.findByWalletAddress(walletAddress);
-
-    if (!user) {
-      const username = "user_" + generateRandomString(8);
-      user = await userDAO.createWalletUser({
-        username,
-        fullName: "Wallet User",
-        walletAddress,
-      });
-    }
-
-    const token = generateToken(user._id, user.username);
-    res.json({ success: true, token, user: user.toJSON() });
+    const { token, user } = await web3Service.walletLogin(walletAddress, signature, message);
+    res.json({ success: true, token, user });
   } catch (error) {
-    logger.error("Error logging in with wallet: " + error.message);
-    res.status(400).json({ error: "Failed to login with wallet" });
+    logger.error("Error logging in with wallet:", error.message);
+    next(error);
   }
 };
 
 // [POST] /api/web3/link-wallet
-exports.linkWallet = async (req, res) => {
+exports.linkWallet = async (req, res, next) => {
   try {
     const { walletAddress, signature, message } = req.body;
-
-    // Verify nonce trước khi verify signature
-    const stored = nonceStore.get(walletAddress?.toLowerCase());
-    if (!stored || stored.expiresAt < Date.now()) {
-      return res.status(400).json({
-        success: false,
-        message: "Nonce expired or not found. Please request a new nonce.",
-      });
-    }
-    const expectedMessage = "Login to SocialApp: " + stored.nonce;
-    if (message !== expectedMessage) {
-      return res.status(400).json({
-        success: false,
-        message: "Message does not match issued nonce",
-      });
-    }
-
-    const recoveredAddress = ethers.verifyMessage(message, signature);
-    if (recoveredAddress.toLowerCase() !== walletAddress.toLowerCase()) {
-      return res.status(401).json({
-        success: false,
-        message: "Invalid signature",
-      });
-    }
-
-    // Xóa nonce sau khi dùng
-    nonceStore.delete(walletAddress.toLowerCase());
-
-    const userId = req.user.id;
-    const existingUser = await userDAO.findByWalletAddress(walletAddress);
-    if (existingUser && existingUser._id.toString() !== userId) {
-      return res.status(400).json({
-        success: false,
-        message: "Wallet already linked to another account",
-      });
-    }
-
-    await userDAO.updateById(userId, { walletAddress: walletAddress.toLowerCase() });
-    res.json({ success: true, message: "Wallet connected" });
+    const user = await web3Service.linkWallet(req.user.id, walletAddress, signature, message);
+    res.json({ success: true, message: "Wallet connected", user });
   } catch (error) {
     logger.error("Error linking wallet:", error.message);
-    res.status(500).json({ success: false, message: "Failed to link wallet" });
+    next(error);
+  }
+};
+
+// [DELETE] /api/web3/link-wallet
+exports.unlinkWallet = async (req, res, next) => {
+  try {
+    const user = await web3Service.unlinkWallet(req.user.id);
+    res.json({ success: true, message: "Wallet unlinked", user });
+  } catch (error) {
+    logger.error("Error unlinking wallet:", error.message);
+    next(error);
+  }
+};
+
+// [GET] /api/web3/posts/:postId/verify
+exports.verifyPost = async (req, res, next) => {
+  try {
+    const { postId } = req.params;
+
+    // Lấy post từ Mongo để tính lại off-chain hash
+    // getPostById throw AppError 404 nếu không tìm thấy
+    const post = await postService.getPostById(postId, null);
+
+    if (!post.onChain || !post.onChain.registered) {
+      return next(new AppError("Post is not registered on-chain", 400));
+    }
+
+    const result = await contentRegistryService.verifyPost(postId, post);
+    res.json({ success: true, ...result });
+  } catch (error) {
+    logger.error("Error verifying post on-chain:", error.message);
+    next(error);
   }
 };

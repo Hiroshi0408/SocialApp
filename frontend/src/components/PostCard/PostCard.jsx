@@ -8,6 +8,7 @@ import React, {
 } from "react";
 import { useTranslation } from "react-i18next";
 import postService from "../../api/postService";
+import web3Service from "../../api/web3Service";
 import { saveService } from "../../api";
 import {
   getId,
@@ -60,6 +61,11 @@ function PostCard({ post, onPostDeleted }) {
   const [loadingReplies, setLoadingReplies] = useState(new Set());
   const menuRef = useRef(null);
   const [selectedPost, setSelectedPost] = useState(null);
+  const [showOnChainModal, setShowOnChainModal] = useState(false);
+  const [onChainVerify, setOnChainVerify] = useState(null);
+  const [isVerifying, setIsVerifying] = useState(false);
+  // onChainStatus: theo dõi trạng thái local để poll khi TX đang pending
+  const [onChainStatus, setOnChainStatus] = useState(post.onChain || null);
 
   const closePostModal = () => {
     setSelectedPost(null);
@@ -87,6 +93,31 @@ function PostCard({ post, onPostDeleted }) {
     setIsSaved(post.isSaved);
     setCommentsCount(normalizeCount(post.comments));
   }, [post.isLiked, post.likes, post.isSaved, post.comments]);
+
+  // Poll BE mỗi 5s nếu onChain tồn tại nhưng TX chưa confirm
+  // Dừng sau 60s (12 lần) để tránh poll vô tận nếu TX fail
+  useEffect(() => {
+    if (!onChainStatus || onChainStatus.registered) return;
+
+    let attempts = 0;
+    const MAX_ATTEMPTS = 12;
+
+    const interval = setInterval(async () => {
+      attempts++;
+      try {
+        const data = await postService.getPostById(postId);
+        if (data?.post?.onChain?.registered) {
+          setOnChainStatus(data.post.onChain);
+          clearInterval(interval);
+        }
+      } catch {
+        // silent — không crash nếu request lỗi
+      }
+      if (attempts >= MAX_ATTEMPTS) clearInterval(interval);
+    }, 5000);
+
+    return () => clearInterval(interval);
+  }, [postId, onChainStatus]);
 
   const handleLike = useCallback(async () => {
     if (isLiking) return;
@@ -462,6 +493,20 @@ function PostCard({ post, onPostDeleted }) {
     openPostModal(post);
   }, [post]);
 
+  const handleOpenOnChainModal = useCallback(async () => {
+    setShowOnChainModal(true);
+    if (onChainVerify) return; // đã verify rồi, không cần gọi lại
+    setIsVerifying(true);
+    try {
+      const result = await web3Service.verifyPost(postId);
+      setOnChainVerify(result);
+    } catch {
+      setOnChainVerify({ error: true });
+    } finally {
+      setIsVerifying(false);
+    }
+  }, [postId, onChainVerify]);
+
   const fetchAllComments = useCallback(async () => {
     if (allCommentsLoaded || isLoadingComments) {
       setShowComments((prev) => !prev);
@@ -495,6 +540,26 @@ function PostCard({ post, onPostDeleted }) {
             className="post-avatar"
           />
           <span className="post-username">{post.user.username}</span>
+          {onChainStatus && !onChainStatus.registered && (
+            // TX đang pending — hiện spinner nhỏ
+            <span className="onchain-badge onchain-pending" title="Đang đăng ký lên blockchain...">
+              <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" className="onchain-spinner" aria-hidden="true">
+                <path d="M12 2v4M12 18v4M4.93 4.93l2.83 2.83M16.24 16.24l2.83 2.83M2 12h4M18 12h4M4.93 19.07l2.83-2.83M16.24 7.76l2.83-2.83"/>
+              </svg>
+            </span>
+          )}
+          {onChainStatus?.registered && (
+            <button
+              className="onchain-badge"
+              onClick={handleOpenOnChainModal}
+              title={t("postCard.onChainVerified")}
+              aria-label={t("postCard.onChainVerified")}
+            >
+              <svg width="14" height="14" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true">
+                <path d="M12 1L3 5v6c0 5.55 3.84 10.74 9 12 5.16-1.26 9-6.45 9-12V5l-9-4zm-2 16l-4-4 1.41-1.41L10 14.17l6.59-6.59L18 9l-8 8z"/>
+              </svg>
+            </button>
+          )}
         </div>
 
         <div className="post-menu-container" ref={menuRef}>
@@ -1022,6 +1087,56 @@ function PostCard({ post, onPostDeleted }) {
       )}
       {selectedPost && (
         <PostModal post={selectedPost} onClose={closePostModal} />
+      )}
+
+      {showOnChainModal && (
+        <div className="modal-overlay" onClick={() => setShowOnChainModal(false)}>
+          <div className="onchain-modal" onClick={(e) => e.stopPropagation()}>
+            <div className="onchain-modal-header">
+              <svg width="18" height="18" viewBox="0 0 24 24" fill="currentColor">
+                <path d="M12 1L3 5v6c0 5.55 3.84 10.74 9 12 5.16-1.26 9-6.45 9-12V5l-9-4zm-2 16l-4-4 1.41-1.41L10 14.17l6.59-6.59L18 9l-8 8z"/>
+              </svg>
+              <h3>{t("postCard.onChainVerified")}</h3>
+              <button className="modal-close-btn" onClick={() => setShowOnChainModal(false)}>×</button>
+            </div>
+            <div className="onchain-modal-body">
+              {isVerifying && <p className="onchain-loading">{t("postCard.onChainVerifying")}</p>}
+              {!isVerifying && onChainVerify?.error && (
+                <p className="onchain-error">{t("postCard.onChainVerifyFailed")}</p>
+              )}
+              {!isVerifying && onChainVerify && !onChainVerify.error && (
+                <>
+                  <div className={`onchain-match-badge ${onChainVerify.match ? "match" : "mismatch"}`}>
+                    {onChainVerify.match ? t("postCard.onChainMatch") : t("postCard.onChainMismatch")}
+                  </div>
+                  <div className="onchain-detail">
+                    <span className="onchain-detail-label">{t("postCard.onChainTxHash")}</span>
+                    <a
+                      href={`https://sepolia.etherscan.io/tx/${onChainStatus?.txHash}`}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="onchain-tx-link"
+                    >
+                      {onChainStatus?.txHash?.slice(0, 12)}...{onChainStatus?.txHash?.slice(-8)}
+                    </a>
+                  </div>
+                  <div className="onchain-detail">
+                    <span className="onchain-detail-label">{t("postCard.onChainTimestamp")}</span>
+                    <span>{onChainVerify.onChainData?.timestamp
+                      ? new Date(onChainVerify.onChainData.timestamp).toLocaleString()
+                      : "-"}</span>
+                  </div>
+                  <div className="onchain-detail">
+                    <span className="onchain-detail-label">{t("postCard.onChainOwner")}</span>
+                    <span className="onchain-address">
+                      {onChainVerify.onChainData?.owner?.slice(0, 8)}...{onChainVerify.onChainData?.owner?.slice(-6)}
+                    </span>
+                  </div>
+                </>
+              )}
+            </div>
+          </div>
+        </div>
       )}
     </article>
   );
