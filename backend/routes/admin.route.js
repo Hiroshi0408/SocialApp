@@ -56,4 +56,17 @@ router.patch(
 router.get("/stats", adminController.getStats);
 router.get("/audit", requireRole("admin"), adminController.listAuditLogs);
 
+// Organizations (charity verify)
+router.get("/organizations", adminController.listOrganizations);
+router.patch(
+  "/organizations/:id/verify",
+  requireRole("admin"),
+  adminController.verifyOrganization,
+);
+router.patch(
+  "/organizations/:id/reject",
+  requireRole("admin"),
+  adminController.rejectOrganization,
+);
+
 module.exports = router;

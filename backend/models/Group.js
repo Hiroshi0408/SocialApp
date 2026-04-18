@@ -35,6 +35,14 @@ const groupSchema = new mongoose.Schema(
       default: 1,
       min: 1,
     },
+    // Nếu group được tạo bởi verified Organization (auto-create khi verify) → không cho bán
+    // trong GroupMarketplace. Null = group thường của user.
+    organizationId: {
+      type: mongoose.Schema.Types.ObjectId,
+      ref: "Organization",
+      default: null,
+      index: true,
+    },
   },
   {
     timestamps: true,

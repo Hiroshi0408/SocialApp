@@ -225,15 +225,16 @@ class PostService {
     // Dùng fire-and-forget vì tx Sepolia có thể mất 10-30s, không nên bắt user chờ
     if (registerOnChain === true) {
       contentRegistryService
-        .registerPost(post._id.toString(), post)
-        .then(async ({ contentHash, txHash, blockNumber }) => {
+        .registerPost(post._id.toString(), post, userId)
+        .then(async ({ contentHash, txHash, blockNumber, version }) => {
           await postDAO.updateById(post._id, {
             "onChain.registered": true,
+            "onChain.version": version,
             "onChain.contentHash": contentHash,
             "onChain.txHash": txHash,
             "onChain.blockNumber": blockNumber,
           });
-          logger.info(`Post ${post._id} registered on-chain: tx=${txHash}`);
+          logger.info(`Post ${post._id} registered on-chain (${version}): tx=${txHash}`);
         })
         .catch((err) =>
           logger.error(`On-chain registration failed for post ${post._id}:`, err.message),

@@ -29,6 +29,16 @@ const AdminDashboard = lazy(
 );
 const Group = lazy(() => import("./pages/Group/Group"));
 const VerifyPost = lazy(() => import("./pages/VerifyPost/VerifyPost"));
+const Organizations = lazy(() => import("./pages/Organizations/Organizations"));
+const OrganizationDetail = lazy(
+  () => import("./pages/OrganizationDetail/OrganizationDetail"),
+);
+const ApplyOrganization = lazy(
+  () => import("./pages/ApplyOrganization/ApplyOrganization"),
+);
+const MyOrganization = lazy(
+  () => import("./pages/MyOrganization/MyOrganization"),
+);
 
 function App() {
   return (
@@ -153,6 +163,26 @@ function App() {
                   />
                   {/* Public — ai cũng verify được kể cả chưa login */}
                   <Route path="/verify/:postId" element={<VerifyPost />} />
+
+                  {/* Organizations — browse + detail public, apply/mine cần login */}
+                  <Route path="/organizations" element={<Organizations />} />
+                  <Route
+                    path="/organizations/apply"
+                    element={
+                      <PrivateRoute>
+                        <ApplyOrganization />
+                      </PrivateRoute>
+                    }
+                  />
+                  <Route
+                    path="/organizations/mine"
+                    element={
+                      <PrivateRoute>
+                        <MyOrganization />
+                      </PrivateRoute>
+                    }
+                  />
+                  <Route path="/org/:slug" element={<OrganizationDetail />} />
 
                   <Route path="*" element={<Navigate to="/" />} />
                 </Routes>

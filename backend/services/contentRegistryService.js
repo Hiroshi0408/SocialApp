@@ -26,25 +26,43 @@ class ContentRegistryService {
     return blockchainService.getReadOnlyContract(address, CONTENT_REGISTRY_ABI);
   }
 
-  // Hash nội dung post theo cùng 1 cách ở cả registerPost và verifyPost
-  // để đảm bảo so sánh hash về sau luôn nhất quán
-  // Dùng caption + image + video + createdAt — đủ để detect nếu content bị sửa
-  computeContentHash(post) {
+  // Hash nội dung post — 2 version để phân biệt post cũ/mới (phương án không migrate):
+  //   v1 (legacy, post cũ): { caption, image, video, createdAt }
+  //   v2 (post mới):        { v: "v2", authorId, caption, image, video, createdAt }
+  // Vì sao có authorId trong hash v2: BE trả gas nên msg.sender luôn là ví BE,
+  // không thể dùng `owner` on-chain để prove tác giả. Cho authorId vào hash = cách
+  // duy nhất để ràng buộc "ai là người đăng" vào content đã register.
+  computeContentHash(post, { version = "v2", authorId = null } = {}) {
+    const createdAt =
+      post.createdAt instanceof Date ? post.createdAt.toISOString() : post.createdAt;
+
+    if (version === "v1") {
+      const raw = JSON.stringify({
+        caption: post.caption || "",
+        image: post.image || "",
+        video: post.video || "",
+        createdAt,
+      });
+      return ethers.keccak256(ethers.toUtf8Bytes(raw));
+    }
+
+    // v2 (default cho post mới)
     const raw = JSON.stringify({
+      v: "v2",
+      authorId: authorId ? authorId.toString() : "",
       caption: post.caption || "",
       image: post.image || "",
       video: post.video || "",
-      createdAt: post.createdAt instanceof Date
-        ? post.createdAt.toISOString()
-        : post.createdAt,
+      createdAt,
     });
     return ethers.keccak256(ethers.toUtf8Bytes(raw));
   }
 
   // Gọi registerPost trên Sepolia — BE trả gas
-  // Trả về { contentHash, txHash, blockNumber }
-  async registerPost(postId, post) {
-    const contentHash = this.computeContentHash(post);
+  // Luôn dùng hash v2 (kèm authorId) cho post mới. Trả về { contentHash, txHash, blockNumber, version }
+  async registerPost(postId, post, authorId) {
+    const version = "v2";
+    const contentHash = this.computeContentHash(post, { version, authorId });
 
     try {
       const contract = this._getContract();
@@ -58,6 +76,7 @@ class ContentRegistryService {
         contentHash,
         txHash: receipt.hash,
         blockNumber: receipt.blockNumber,
+        version,
       };
     } catch (err) {
       // Contract revert "Post ID already exists" → coi như đã register, không crash
@@ -71,17 +90,26 @@ class ContentRegistryService {
   }
 
   // Gọi verifyPost on-chain, tính lại hash từ Mongo rồi so sánh
-  // Trả về { match, onChainData, offChainHash }
+  // Tự detect version từ post.onChain.version — post cũ (null) dùng v1, post mới dùng v2.
+  // Trả về { match, version, onChainData, offChainHash }
   async verifyPost(postId, post) {
     try {
       const contract = this._getReadOnlyContract();
       const onChainPost = await contract.verifyPost(postId.toString());
 
-      const offChainHash = this.computeContentHash(post);
+      // post.userId có thể là ObjectId hoặc object đã populate — lấy _id nếu có
+      const version = post.onChain?.version || "v1";
+      const authorId =
+        version === "v2"
+          ? post.userId?._id || post.userId
+          : null;
+
+      const offChainHash = this.computeContentHash(post, { version, authorId });
       const onChainHash = onChainPost.contentHash;
 
       return {
         match: onChainHash === offChainHash,
+        version,
         onChainData: {
           contentHash: onChainHash,
           owner: onChainPost.owner,

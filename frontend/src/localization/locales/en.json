@@ -26,7 +26,8 @@
     "notifications": "Notifications",
     "explore": "Explore",
     "profile": "Profile",
-    "groups": "Groups"
+    "groups": "Groups",
+    "organizations": "Organizations"
   },
   "emailVerificationBanner": {
     "success": "Verification email sent! Please check your inbox.",
