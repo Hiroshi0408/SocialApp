@@ -1,0 +1,149 @@
+.my-org-page {
+  display: flex;
+  min-height: 100vh;
+  background-color: var(--bg-color);
+}
+
+.my-org-wrapper {
+  flex: 1;
+  margin-left: var(--sidebar-width);
+  display: flex;
+  flex-direction: column;
+  padding-top: var(--header-height);
+}
+
+.my-org-main {
+  flex: 1;
+  max-width: 780px;
+  width: 100%;
+  margin: 0 auto;
+  padding: var(--spacing-lg);
+}
+
+.my-org-main h1 {
+  margin-bottom: 20px;
+}
+
+.my-org-empty {
+  padding: 40px;
+  text-align: center;
+  color: var(--text-secondary);
+}
+
+.my-org-empty-state {
+  background: var(--card-bg);
+  border-radius: 12px;
+  padding: 40px;
+  text-align: center;
+  box-shadow: var(--shadow-sm);
+}
+
+.btn-apply-now {
+  display: inline-block;
+  margin-top: 12px;
+  padding: 10px 20px;
+  background: var(--primary-color, #1d9bf0);
+  color: #fff;
+  text-decoration: none;
+  border-radius: 8px;
+  font-weight: 600;
+}
+
+.my-org-status {
+  padding: 20px 24px;
+  border-radius: 12px;
+  margin-bottom: 20px;
+}
+
+.my-org-status h3 {
+  margin: 0 0 6px;
+  font-size: 1.1rem;
+}
+
+.my-org-status p {
+  margin: 0;
+  font-size: 14px;
+}
+
+.status-pending {
+  background: #fff4d6;
+  color: #8a6400;
+}
+
+.status-verified {
+  background: #e7f7ef;
+  color: #126a3a;
+}
+
+.status-rejected {
+  background: #fde2e2;
+  color: #b42318;
+}
+
+.my-org-reject-reason {
+  margin-top: 10px !important;
+  font-style: italic;
+}
+
+.my-org-summary {
+  background: var(--card-bg);
+  border-radius: 12px;
+  padding: 20px 24px;
+  box-shadow: var(--shadow-sm);
+  margin-bottom: 20px;
+}
+
+.my-org-row {
+  display: flex;
+  padding: 10px 0;
+  border-bottom: 1px solid var(--border-color);
+  font-size: 14px;
+}
+
+.my-org-row:last-child {
+  border-bottom: none;
+}
+
+.my-org-label {
+  width: 120px;
+  color: var(--text-secondary);
+  flex-shrink: 0;
+}
+
+.my-org-row code {
+  background: var(--bg-secondary, #eef3f8);
+  padding: 2px 8px;
+  border-radius: 4px;
+  font-size: 12px;
+}
+
+.my-org-actions {
+  display: flex;
+  gap: 12px;
+  flex-wrap: wrap;
+}
+
+.btn-view-public {
+  padding: 10px 18px;
+  border-radius: 8px;
+  border: 1px solid var(--border-color);
+  background: var(--card-bg);
+  color: var(--text-primary);
+  text-decoration: none;
+  font-weight: 500;
+}
+
+.btn-create-campaign {
+  padding: 10px 18px;
+  border-radius: 8px;
+  background: var(--primary-color, #1d9bf0);
+  color: #fff;
+  border: none;
+  font-weight: 600;
+  cursor: pointer;
+}
+
+.btn-create-campaign:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+}

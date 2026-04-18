@@ -1,0 +1,251 @@
+.org-detail-page {
+  display: flex;
+  min-height: 100vh;
+  background-color: var(--bg-color);
+}
+
+.org-detail-wrapper {
+  flex: 1;
+  margin-left: var(--sidebar-width);
+  display: flex;
+  flex-direction: column;
+  padding-top: var(--header-height);
+}
+
+.org-detail-main {
+  flex: 1;
+  max-width: var(--container-max-width);
+  width: 100%;
+  margin: 0 auto;
+  padding: var(--spacing-lg);
+}
+
+.org-detail-empty {
+  padding: 60px;
+  text-align: center;
+  color: var(--text-secondary);
+}
+
+.org-detail-hero {
+  background: var(--card-bg);
+  border-radius: 12px;
+  overflow: hidden;
+  box-shadow: var(--shadow-sm);
+  margin-bottom: 16px;
+}
+
+.org-detail-cover {
+  width: 100%;
+  height: 200px;
+  background: var(--bg-secondary, #eef3f8);
+  overflow: hidden;
+}
+
+.org-detail-cover img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+
+.org-detail-cover-placeholder {
+  width: 100%;
+  height: 100%;
+  background: linear-gradient(135deg, #a0d8ff, #5eb4ff);
+}
+
+.org-detail-top {
+  display: flex;
+  gap: 20px;
+  padding: 16px 24px 24px;
+  align-items: flex-start;
+  flex-wrap: wrap;
+}
+
+.org-detail-logo {
+  width: 96px;
+  height: 96px;
+  border-radius: 16px;
+  overflow: hidden;
+  margin-top: -48px;
+  flex-shrink: 0;
+  border: 4px solid var(--card-bg);
+  background: var(--bg-secondary, #eef3f8);
+}
+
+.org-detail-logo img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+
+.org-detail-logo-fallback {
+  width: 100%;
+  height: 100%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-weight: 700;
+  font-size: 36px;
+  color: #fff;
+  background: #5eb4ff;
+}
+
+.org-detail-head {
+  flex: 1;
+  min-width: 200px;
+}
+
+.org-detail-name {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  flex-wrap: wrap;
+}
+
+.org-detail-name h1 {
+  margin: 0;
+  font-size: 1.6rem;
+  font-weight: 700;
+}
+
+.org-detail-sub {
+  margin-top: 6px;
+  font-size: 13px;
+  color: var(--text-secondary);
+  display: flex;
+  gap: 16px;
+  flex-wrap: wrap;
+  align-items: center;
+}
+
+.org-detail-sub code {
+  background: var(--bg-secondary, #eef3f8);
+  padding: 2px 6px;
+  border-radius: 4px;
+  font-size: 12px;
+}
+
+.org-official-group-link {
+  color: var(--primary-color, #1d9bf0);
+  text-decoration: none;
+  font-weight: 500;
+}
+
+.org-detail-tags {
+  display: flex;
+  gap: 6px;
+  margin-top: 10px;
+  flex-wrap: wrap;
+}
+
+.org-tag {
+  font-size: 12px;
+  padding: 3px 10px;
+  border-radius: 999px;
+  background: var(--bg-secondary, #eef3f8);
+  color: var(--text-secondary);
+}
+
+.org-status-pill {
+  padding: 2px 10px;
+  border-radius: 999px;
+  font-size: 12px;
+  font-weight: 500;
+}
+
+.org-status-pending {
+  background: #fff4d6;
+  color: #8a6400;
+}
+
+.org-status-rejected {
+  background: #fde2e2;
+  color: #b42318;
+}
+
+.org-detail-actions {
+  display: flex;
+  gap: 8px;
+}
+
+.btn-donate {
+  padding: 10px 20px;
+  border-radius: 8px;
+  background: var(--primary-color, #1d9bf0);
+  color: #fff;
+  border: none;
+  font-weight: 600;
+  font-size: 14px;
+  cursor: pointer;
+}
+
+.btn-donate:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+}
+
+.org-detail-tabs {
+  display: flex;
+  gap: 4px;
+  background: var(--card-bg);
+  border-radius: 12px;
+  padding: 6px;
+  margin-bottom: 16px;
+  box-shadow: var(--shadow-sm);
+}
+
+.org-detail-tabs button {
+  flex: 1;
+  padding: 10px 16px;
+  border: none;
+  background: transparent;
+  color: var(--text-secondary);
+  font-weight: 500;
+  border-radius: 8px;
+  cursor: pointer;
+}
+
+.org-detail-tabs button.active {
+  background: var(--primary-color, #1d9bf0);
+  color: #fff;
+}
+
+.org-detail-body {
+  background: var(--card-bg);
+  border-radius: 12px;
+  padding: 20px 24px;
+  box-shadow: var(--shadow-sm);
+}
+
+.org-about h3 {
+  margin-top: 20px;
+  margin-bottom: 8px;
+  font-size: 1rem;
+}
+
+.org-about h3:first-child {
+  margin-top: 0;
+}
+
+.org-meta-list {
+  padding-left: 20px;
+}
+
+.org-meta-list li {
+  margin: 6px 0;
+}
+
+.org-verified-note {
+  margin-top: 16px;
+  padding: 12px 14px;
+  background: #e7f7ef;
+  color: #126a3a;
+  border-radius: 8px;
+  font-size: 13px;
+}
+
+.org-placeholder {
+  padding: 40px;
+  text-align: center;
+  color: var(--text-secondary);
+}

@@ -82,6 +82,9 @@ const postSchema = new mongoose.Schema(
     },
     onChain: {
       registered: { type: Boolean, default: false },
+      // null = post cũ (hash v1, không có authorId) — không migrate
+      // 'v2' = post mới (hash có authorId để chống copy-claim ownership)
+      version: { type: String, default: null },
       contentHash: { type: String, default: null },
       txHash: { type: String, default: null },
       blockNumber: { type: Number, default: null },

@@ -1,6 +1,7 @@
 import React, { useEffect, useMemo, useState } from "react";
 import toast from "react-hot-toast";
 import adminService from "../../api/adminService";
+import organizationService from "../../api/organizationService";
 import { useAuth } from "../../contexts/AuthContext";
 import "./AdminDashboard.css";
 
@@ -59,6 +60,7 @@ function Tabs({ tab, setTab }) {
     { key: "overview", label: "Overview" },
     { key: "users", label: "Users" },
     { key: "moderation", label: "Moderation" },
+    { key: "organizations", label: "Organizations" },
     { key: "audit", label: "Audit" },
   ];
   return (
@@ -145,6 +147,16 @@ export default function AdminDashboard() {
       totalPages: 1,
       items: [],
     },
+  });
+
+  // Organizations
+  const [orgsState, setOrgsState] = useState({
+    page: 1,
+    limit: 20,
+    status: "pending",
+    totalPages: 1,
+    items: [],
+    total: 0,
   });
 
   // Audit
@@ -252,9 +264,54 @@ export default function AdminDashboard() {
       loadModerationPosts({ page: 1 });
       loadModerationComments({ page: 1 });
     }
+    if (tab === "organizations") loadOrganizations({ page: 1 });
     if (tab === "audit") loadAudit();
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [tab]);
+
+  const loadOrganizations = async (patch = {}) => {
+    const next = { ...orgsState, ...patch };
+    try {
+      setLoading(true);
+      const res = await organizationService.adminList({
+        status: next.status,
+        page: next.page,
+        limit: next.limit,
+      });
+      setOrgsState({
+        ...next,
+        items: res.organizations || [],
+        total: res.pagination?.total || 0,
+        totalPages: res.pagination?.totalPages || 1,
+      });
+    } catch (e) {
+      toast.error(e?.message || "Failed to load organizations");
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const onVerifyOrg = async (org) => {
+    try {
+      await organizationService.adminVerify(org.id);
+      toast.success("Organization verified. Official group chat created.");
+      await loadOrganizations();
+    } catch (e) {
+      toast.error(e?.response?.data?.message || "Failed to verify");
+    }
+  };
+
+  const onRejectOrg = async (org) => {
+    const reason = window.prompt("Reject reason (optional):", "");
+    if (reason === null) return; // cancelled
+    try {
+      await organizationService.adminReject(org.id, reason);
+      toast.success("Organization rejected");
+      await loadOrganizations();
+    } catch (e) {
+      toast.error(e?.response?.data?.message || "Failed to reject");
+    }
+  };
 
   const topPosts = useMemo(() => stats?.topPosts || [], [stats]);
 
@@ -772,6 +829,108 @@ export default function AdminDashboard() {
               onPage={(p) => loadModerationComments({ page: p })}
             />
           </div>
+        </div>
+      ) : null}
+
+      {tab === "organizations" ? (
+        <div className="admin-section">
+          <div className="admin-section-title">Organization applications</div>
+          <div className="admin-filters">
+            <select
+              className="admin-select"
+              value={orgsState.status}
+              onChange={(e) =>
+                loadOrganizations({ status: e.target.value, page: 1 })
+              }
+            >
+              <option value="pending">Pending</option>
+              <option value="verified">Verified</option>
+              <option value="rejected">Rejected</option>
+            </select>
+            <button
+              className="admin-btn"
+              onClick={() => loadOrganizations({ page: 1 })}
+            >
+              Reload
+            </button>
+          </div>
+
+          <div className="admin-table">
+            <div className="admin-row admin-head">
+              <div>Name</div>
+              <div>Owner</div>
+              <div>Wallet</div>
+              <div>Status</div>
+              <div>Applied</div>
+              <div>Action</div>
+            </div>
+
+            {orgsState.items.length === 0 ? (
+              <div className="admin-row admin-empty">No organizations</div>
+            ) : (
+              orgsState.items.map((o) => (
+                <div className="admin-row organizations" key={o.id}>
+                  <div className="admin-cell">
+                    <div className="admin-ellipsis">{o.name}</div>
+                    <div className="admin-muted">/{o.slug}</div>
+                  </div>
+                  <div className="admin-ellipsis">
+                    {o.owner?.username || "—"}
+                  </div>
+                  <div className="admin-ellipsis" title={o.walletAddress}>
+                    <code style={{ fontSize: 11 }}>
+                      {o.walletAddress
+                        ? `${o.walletAddress.slice(0, 6)}...${o.walletAddress.slice(-4)}`
+                        : "—"}
+                    </code>
+                  </div>
+                  <div>
+                    <span
+                      className={`admin-pill ${
+                        o.status === "verified"
+                          ? "ok"
+                          : o.status === "rejected"
+                            ? "danger"
+                            : ""
+                      }`}
+                    >
+                      {o.status}
+                    </span>
+                  </div>
+                  <div>{formatDateTime(o.createdAt)}</div>
+                  <div style={{ display: "flex", gap: 6 }}>
+                    {o.status === "pending" && (
+                      <>
+                        <button
+                          className="admin-btn"
+                          onClick={() => onVerifyOrg(o)}
+                        >
+                          Verify
+                        </button>
+                        <button
+                          className="admin-btn danger"
+                          onClick={() => onRejectOrg(o)}
+                        >
+                          Reject
+                        </button>
+                      </>
+                    )}
+                    {o.status === "rejected" && (
+                      <span className="admin-muted" style={{ fontSize: 12 }}>
+                        {o.rejectedReason || "No reason"}
+                      </span>
+                    )}
+                  </div>
+                </div>
+              ))
+            )}
+          </div>
+
+          <Pagination
+            page={orgsState.page}
+            totalPages={orgsState.totalPages}
+            onPage={(p) => loadOrganizations({ page: p })}
+          />
         </div>
       ) : null}
 

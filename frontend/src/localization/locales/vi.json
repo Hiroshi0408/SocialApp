@@ -26,7 +26,8 @@
     "notifications": "Thông báo",
     "explore": "Khám phá",
     "profile": "Trang cá nhân",
-    "groups": "Nhóm"
+    "groups": "Nhóm",
+    "organizations": "Tổ chức"
   },
   "emailVerificationBanner": {
     "success": "Email xác thực đã được gửi! Vui lòng kiểm tra hộp thư của bạn.",
