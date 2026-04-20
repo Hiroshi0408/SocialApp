@@ -6,6 +6,7 @@ const commentDAO = require("../dao/commentDAO");
 const followDAO = require("../dao/followDAO");
 const friendDAO = require("../dao/friendDAO");
 const notificationDAO = require("../dao/notificationDAO");
+const groupDAO = require("../dao/groupDAO");
 const notificationService = require("./notificationService");
 const AppError = require("../utils/AppError");
 const logger = require("../utils/logger");
@@ -43,7 +44,8 @@ class PostService {
     // Bao gồm bài của chính mình
     targetUserIds.push(userId);
 
-    const filter = { userId: { $in: targetUserIds } };
+    // Feed Home loại bỏ post trong group — bài group chỉ hiện ở GroupDetail
+    const filter = { userId: { $in: targetUserIds }, groupId: null };
     const populate = { path: "userId", select: "username fullName avatar" };
 
     const [posts, total] = await Promise.all([
@@ -81,9 +83,10 @@ class PostService {
     const skip = (page - 1) * limit;
     const populate = { path: "userId", select: "username fullName avatar" };
 
+    const filter = { groupId: null };
     const [posts, total] = await Promise.all([
-      postDAO.findMany({}, { populate, skip, limit, lean: true }),
-      postDAO.count({}),
+      postDAO.findMany(filter, { populate, skip, limit, lean: true }),
+      postDAO.count(filter),
     ]);
 
     const postIds = posts.map((p) => p._id);
@@ -116,7 +119,8 @@ class PostService {
     const skip = (page - 1) * limit;
     const populate = { path: "userId", select: "username fullName avatar" };
 
-    const filter = { userId };
+    // Profile không hiện bài group (nội bộ group)
+    const filter = { userId, groupId: null };
     const [posts, total] = await Promise.all([
       postDAO.findMany(filter, { populate, skip, limit, lean: true }),
       postDAO.count(filter),
@@ -137,6 +141,52 @@ class PostService {
     };
   }
 
+  async getGroupFeed(groupId, userId, query = {}) {
+    const group = await groupDAO.findById(groupId, { lean: true });
+    if (!group) throw new AppError("Group not found", 404);
+
+    const isMember = group.members.some(
+      (m) => m.toString() === userId.toString(),
+    );
+    if (!isMember) {
+      throw new AppError("Only group members can view posts", 403);
+    }
+
+    const page = parseInt(query.page) || 1;
+    const limit = Math.min(
+      parseInt(query.limit) || DEFAULT_POST_LIMIT,
+      MAX_POST_LIMIT,
+    );
+    const skip = (page - 1) * limit;
+    const populate = { path: "userId", select: "username fullName avatar" };
+
+    const filter = { groupId };
+    const [posts, total] = await Promise.all([
+      postDAO.findMany(filter, { populate, skip, limit, lean: true }),
+      postDAO.count(filter),
+    ]);
+
+    const postIds = posts.map((p) => p._id);
+    const [likes, saves] = await Promise.all([
+      likeDAO.findByUserAndTargets(userId, postIds, "post"),
+      saveDAO.findByUserAndPosts(userId, postIds),
+    ]);
+
+    const likedSet = new Set(likes.map((l) => l.targetId.toString()));
+    const savedSet = new Set(saves.map((s) => s.postId.toString()));
+
+    return {
+      posts: formatPostsWithMetadata(posts, likedSet, savedSet),
+      pagination: {
+        page,
+        limit,
+        total,
+        totalPages: Math.ceil(total / limit),
+        hasMore: skip + posts.length < total,
+      },
+    };
+  }
+
   // ========== SINGLE POST ==========
 
   async getPostById(postId, currentUserId) {
@@ -146,6 +196,15 @@ class PostService {
 
     if (!post) {
       throw new AppError("Post not found", 404);
+    }
+
+    // Post trong group riêng — chỉ member mới xem được. Giữ privacy đúng
+    // với feed loại bỏ groupId: người ngoài không lẻn được qua URL trực tiếp.
+    if (post.groupId) {
+      const isMember = await groupDAO.isMember(post.groupId, currentUserId);
+      if (!isMember) {
+        throw new AppError("Only group members can view this post", 403);
+      }
     }
 
     const [like, save, commentsData] = await Promise.all([
@@ -188,10 +247,19 @@ class PostService {
       location,
       taggedUsers,
       registerOnChain,
+      groupId,
     } = data;
 
     if (!image && !video) {
       throw new AppError("Image or video is required", 400);
+    }
+
+    // Nếu post vào group → bắt buộc user phải là member
+    if (groupId) {
+      const isMember = await groupDAO.isMember(groupId, userId);
+      if (!isMember) {
+        throw new AppError("You must join the group before posting", 403);
+      }
     }
 
     if (caption && caption.trim()) {
@@ -209,6 +277,7 @@ class PostService {
 
     const post = await postDAO.create({
       userId,
+      groupId: groupId || null,
       image: image || "",
       video: video || "",
       mediaType: mediaType || (video ? "video" : "image"),
@@ -414,7 +483,8 @@ class PostService {
     let searchTag = q.trim().toLowerCase();
     if (!searchTag.startsWith("#")) searchTag = "#" + searchTag;
 
-    const filter = { hashtags: searchTag };
+    // Hashtag search chỉ trả post public, không lộ bài group
+    const filter = { hashtags: searchTag, groupId: null };
     const populate = { path: "userId", select: "username fullName avatar" };
 
     const [posts, total] = await Promise.all([
@@ -446,7 +516,8 @@ class PostService {
     );
     const skip = (page - 1) * limit;
 
-    const filter = { taggedUsers: targetUserId };
+    // Tagged posts page không lộ bài group (post group chỉ hiện trong GroupDetail)
+    const filter = { taggedUsers: targetUserId, groupId: null };
     const populate = [
       { path: "userId", select: "username fullName avatar" },
       { path: "taggedUsers", select: "username fullName avatar" },

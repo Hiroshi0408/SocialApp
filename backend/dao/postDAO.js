@@ -45,6 +45,13 @@ class PostDAO {
     ).exec();
   }
 
+  async softDeleteMany(filter) {
+    return await Post.updateMany(
+      { ...filter, deleted: false },
+      { $set: { deleted: true, deletedAt: new Date() } }
+    ).exec();
+  }
+
   async count(filter, options = {}) {
     const { includeDeleted = false } = options;
     const baseFilter = includeDeleted ? filter : { ...filter, deleted: false };

@@ -92,7 +92,7 @@ function OrganizationDetail() {
                       </span>
                       {org.groupId && (
                         <Link
-                          to={`/groups`}
+                          to={`/groups/${org.groupId}`}
                           className="org-official-group-link"
                         >
                           Official group chat →

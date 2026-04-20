@@ -21,6 +21,7 @@ router.use(authMiddleware);
 
 router.get("/", postController.getAllPosts);
 router.get("/feed", postController.getFeed);
+router.get("/group/:groupId", postController.getGroupFeed);
 router.get("/tagged", postController.getTaggedPosts);
 router.get("/tagged/:userId", postController.getTaggedPosts);
 router.get(

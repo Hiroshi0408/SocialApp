@@ -13,8 +13,23 @@ const groupService = {
     return response.data;
   },
 
+  getGroupById: async (groupId) => {
+    const response = await axios.get(`/groups/${groupId}`);
+    return response.data;
+  },
+
   createGroup: async (payload) => {
     const response = await axios.post("/groups", payload);
+    return response.data;
+  },
+
+  updateGroup: async (groupId, payload) => {
+    const response = await axios.patch(`/groups/${groupId}`, payload);
+    return response.data;
+  },
+
+  deleteGroup: async (groupId) => {
+    const response = await axios.delete(`/groups/${groupId}`);
     return response.data;
   },
 
@@ -25,6 +40,19 @@ const groupService = {
 
   leaveGroup: async (groupId) => {
     const response = await axios.post(`/groups/${groupId}/leave`);
+    return response.data;
+  },
+
+  kickMember: async (groupId, userId) => {
+    const response = await axios.delete(`/groups/${groupId}/members/${userId}`);
+    return response.data;
+  },
+
+  transferOwnership: async (groupId, targetUserId) => {
+    const response = await axios.post(
+      `/groups/${groupId}/transfer-ownership`,
+      { targetUserId },
+    );
     return response.data;
   },
 };

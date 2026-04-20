@@ -8,6 +8,15 @@ const postSchema = new mongoose.Schema(
       required: [true, "User ID is required"],
       index: true,
     },
+    // null = post "bình thường" hiển thị ở feed home/profile.
+    // != null = post thuộc group, chỉ hiện ở feed group + member mới xem được.
+    // Tách bằng field này thay vì collection riêng để tái dùng toàn bộ like/comment/save flow.
+    groupId: {
+      type: mongoose.Schema.Types.ObjectId,
+      ref: "Group",
+      default: null,
+      index: true,
+    },
     image: {
       type: String,
       default: "",
@@ -110,6 +119,7 @@ const postSchema = new mongoose.Schema(
 
 postSchema.index({ userId: 1, createdAt: -1 });
 postSchema.index({ userId: 1, deleted: 1, createdAt: -1 });
+postSchema.index({ groupId: 1, deleted: 1, createdAt: -1 });
 postSchema.index({ createdAt: -1 });
 postSchema.index({ likesCount: -1 });
 postSchema.index({ deleted: 1 });
