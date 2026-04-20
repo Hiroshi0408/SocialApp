@@ -8,7 +8,7 @@ import { POST_LIMITS } from "../../constants";
 import { showError } from "../../utils/toast";
 import "./CreatePostModal.css";
 
-function CreatePostModal({ isOpen, onClose, onPostCreated }) {
+function CreatePostModal({ isOpen, onClose, onPostCreated, groupId = null }) {
   const { t } = useTranslation();
   const { walletAddress } = useWeb3();
   const [step, setStep] = useState(1);
@@ -59,7 +59,10 @@ function CreatePostModal({ isOpen, onClose, onPostCreated }) {
         caption: caption.trim(),
         location: location.trim() || undefined,
         mediaType: mediaData.type,
-        registerOnChain: walletAddress ? registerOnChain : false,
+        // Post trong group riêng thì không register on-chain (ContentRegistry
+        // dùng để prove authorship công khai, không hợp với bài private)
+        registerOnChain: walletAddress && !groupId ? registerOnChain : false,
+        ...(groupId ? { groupId } : {}),
       };
 
       if (mediaData.type === "video") {
@@ -201,7 +204,7 @@ function CreatePostModal({ isOpen, onClose, onPostCreated }) {
                   />
                 </div>
 
-                {walletAddress && (
+                {walletAddress && !groupId && (
                   <label
                     className="onchain-toggle"
                     title={t("createPost.onChainTooltip")}

@@ -28,6 +28,7 @@ const AdminDashboard = lazy(
   () => import("./pages/AdminDashboard/AdminDashboard"),
 );
 const Group = lazy(() => import("./pages/Group/Group"));
+const GroupDetail = lazy(() => import("./pages/GroupDetail/GroupDetail"));
 const VerifyPost = lazy(() => import("./pages/VerifyPost/VerifyPost"));
 const Organizations = lazy(() => import("./pages/Organizations/Organizations"));
 const OrganizationDetail = lazy(
@@ -149,6 +150,14 @@ function App() {
                     element={
                       <PrivateRoute>
                         <Group />
+                      </PrivateRoute>
+                    }
+                  />
+                  <Route
+                    path="/groups/:groupId"
+                    element={
+                      <PrivateRoute>
+                        <GroupDetail />
                       </PrivateRoute>
                     }
                   />

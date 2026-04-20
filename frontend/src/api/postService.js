@@ -60,6 +60,18 @@ const postService = {
       location: postData.location || "",
       taggedUsers: postData.taggedUsers || [],
       registerOnChain: postData.registerOnChain || false,
+      ...(postData.groupId ? { groupId: postData.groupId } : {}),
+    });
+    return response.data;
+  },
+
+  getGroupFeed: async (
+    groupId,
+    page = API_DEFAULTS.PAGINATION.DEFAULT_PAGE,
+    limit = API_DEFAULTS.PAGINATION.POSTS_PER_PAGE,
+  ) => {
+    const response = await axios.get(`/posts/group/${groupId}`, {
+      params: { page, limit },
     });
     return response.data;
   },

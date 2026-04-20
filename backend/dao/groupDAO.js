@@ -10,8 +10,27 @@ class GroupDAO {
     return await query;
   }
 
+  async findOne(filter, options = {}) {
+    const { select = "", populate = "", lean = false } = options;
+    let query = Group.findOne(filter);
+    if (select) query = query.select(select);
+    if (populate) query = query.populate(populate);
+    if (lean) query = query.lean();
+    return await query;
+  }
+
   async findWithCreator(id) {
-    return await Group.findById(id).populate("creator", "_id username fullName avatar").lean();
+    return await Group.findById(id)
+      .populate("creator", "_id username fullName avatar")
+      .lean();
+  }
+
+  // Trả full info kèm members populated — dùng cho GroupDetail page
+  async findByIdWithMembers(id) {
+    return await Group.findById(id)
+      .populate("creator", "_id username fullName avatar")
+      .populate("members", "_id username fullName avatar")
+      .lean();
   }
 
   async findMany(filter, options = {}) {
@@ -25,12 +44,21 @@ class GroupDAO {
     return await Group.create(data);
   }
 
-  async updateById(id, data) {
-    return await Group.findByIdAndUpdate(id, data, { new: true });
+  async updateById(id, data, options = {}) {
+    const { runValidators = true } = options;
+    return await Group.findByIdAndUpdate(id, data, { new: true, runValidators });
   }
 
   async deleteById(id) {
     return await Group.findByIdAndDelete(id);
+  }
+
+  async isMember(groupId, userId) {
+    const group = await Group.findOne(
+      { _id: groupId, members: userId },
+      { _id: 1 },
+    ).lean();
+    return !!group;
   }
 }
 

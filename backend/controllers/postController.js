@@ -123,6 +123,20 @@ exports.searchByHashtag = async (req, res, next) => {
   }
 };
 
+// [GET] /api/posts/group/:groupId
+exports.getGroupFeed = async (req, res, next) => {
+  try {
+    const result = await postService.getGroupFeed(
+      req.params.groupId,
+      req.user.id,
+      req.query,
+    );
+    res.json({ success: true, ...result });
+  } catch (error) {
+    next(error);
+  }
+};
+
 // [GET] /api/posts/tagged  /  /api/posts/tagged/:userId
 exports.getTaggedPosts = async (req, res, next) => {
   try {
