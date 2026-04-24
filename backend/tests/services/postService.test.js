@@ -90,7 +90,7 @@ describe("getFeed", () => {
     expect(friendDAO.findFriendIds).toHaveBeenCalledWith("currentUser");
     expect(followDAO.findFollowingIds).not.toHaveBeenCalled();
     expect(postDAO.findMany).toHaveBeenCalledWith(
-      { userId: { $in: ["friendA", "friendB", "currentUser"] } },
+      { userId: { $in: ["friendA", "friendB", "currentUser"] }, groupId: null },
       expect.objectContaining({ skip: 0, limit: 10, lean: true }),
     );
     expect(result.posts).toHaveLength(1);
@@ -379,7 +379,7 @@ describe("searchByHashtag", () => {
     });
 
     expect(postDAO.findMany).toHaveBeenCalledWith(
-      { hashtags: "#reactjs" },
+      { hashtags: "#reactjs", groupId: null },
       expect.any(Object),
     );
     expect(result.hashtag).toBe("#reactjs");

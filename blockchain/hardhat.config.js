@@ -13,4 +13,7 @@ module.exports = {
       url: "http://127.0.0.1:8545", // hardhat local node
     },
   },
+  etherscan: {
+    apiKey: process.env.ETHERSCAN_API_KEY,
+  },
 };
