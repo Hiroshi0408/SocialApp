@@ -40,6 +40,7 @@ const ApplyOrganization = lazy(
 const MyOrganization = lazy(
   () => import("./pages/MyOrganization/MyOrganization"),
 );
+const Charity = lazy(() => import("./pages/Charity/Charity"));
 
 function App() {
   return (
@@ -192,6 +193,9 @@ function App() {
                     }
                   />
                   <Route path="/org/:slug" element={<OrganizationDetail />} />
+
+                  {/* Charity — list public; detail/create/mine sẽ thêm các day sau */}
+                  <Route path="/charity" element={<Charity />} />
 
                   <Route path="*" element={<Navigate to="/" />} />
                 </Routes>

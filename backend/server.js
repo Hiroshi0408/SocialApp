@@ -83,6 +83,7 @@ app.use("/api/admin", require("./routes/admin.route"));
 app.use("/api/web3", require("./routes/web3.route"));
 app.use("/api/friends", require("./routes/friend.route"));
 app.use("/api/organizations", require("./routes/organization.route"));
+app.use("/api/charity", require("./routes/charity.route"));
 // Health check
 app.get("/api/health", (req, res) => {
   res.json({

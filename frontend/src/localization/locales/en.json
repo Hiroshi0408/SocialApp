@@ -27,7 +27,8 @@
     "explore": "Explore",
     "profile": "Profile",
     "groups": "Groups",
-    "organizations": "Organizations"
+    "organizations": "Organizations",
+    "charity": "Charity"
   },
   "emailVerificationBanner": {
     "success": "Verification email sent! Please check your inbox.",
@@ -559,6 +560,54 @@
       "posts": "Posts",
       "members": "Members",
       "about": "About"
+    }
+  },
+  "charity": {
+    "title": "Transparent Charity Campaigns",
+    "subtitle": "Every transaction is recorded on blockchain — anyone can verify.",
+    "createCampaign": "Create campaign",
+    "myCampaigns": "My campaigns",
+    "loadFailed": "Failed to load campaigns",
+    "by": "by",
+    "anonymousOrg": "Anonymous organization",
+    "raisedOf": "{{raised}} / {{goal}} ETH",
+    "donors_one": "{{count}} donor",
+    "donors_other": "{{count}} donors",
+    "daysLeft_one": "{{count}} day left",
+    "daysLeft_other": "{{count}} days left",
+    "hoursLeft_one": "{{count}} hour left",
+    "hoursLeft_other": "{{count}} hours left",
+    "ended": "Ended",
+    "milestonesCount_one": "{{count}} milestone",
+    "milestonesCount_other": "{{count}} milestones",
+    "filters": {
+      "allStatus": "All",
+      "allCategories": "All categories",
+      "sortLabel": "Sort",
+      "sortNewest": "Newest",
+      "sortEndingSoon": "Ending soon",
+      "sortMostFunded": "Most funded"
+    },
+    "status": {
+      "OPEN": "Open",
+      "FUNDED": "Funded",
+      "EXECUTING": "Executing",
+      "COMPLETED": "Completed",
+      "FAILED": "Failed",
+      "REFUNDED": "Refunded"
+    },
+    "category": {
+      "education": "Education",
+      "medical": "Medical",
+      "disaster": "Disaster relief",
+      "animal": "Animal welfare",
+      "other": "Other"
+    },
+    "empty": {
+      "title": "No campaigns yet",
+      "description": "Be the first to launch a transparent on-chain fundraising campaign.",
+      "cta": "Create the first campaign",
+      "ctaGuest": "Register your organization to create campaigns"
     }
   },
   "editGroup": {

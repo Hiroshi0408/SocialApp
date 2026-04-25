@@ -9,3 +9,4 @@ export { default as uploadService } from "./uploadService";
 export { default as chatService } from "./chatService";
 export { default as groupService } from "./groupService";
 export { default as organizationService } from "./organizationService";
+export { default as charityService } from "./charityService";
