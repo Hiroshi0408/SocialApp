@@ -53,6 +53,31 @@ const LIKE_TARGET_TYPES = {
   COMMENT: "comment",
 };
 
+// ==================== CHARITY ====================
+// Phải khớp thứ tự enum Status trong contracts/Charity.sol (uint8)
+const CHARITY_STATUS_NAMES = [
+  "OPEN",
+  "FUNDED",
+  "EXECUTING",
+  "COMPLETED",
+  "FAILED",
+  "REFUNDED",
+];
+const CHARITY_CATEGORIES = [
+  "education",
+  "medical",
+  "disaster",
+  "animal",
+  "other",
+];
+const MAX_CHARITY_MILESTONES = 10; // khớp MAX_MILESTONES trong contract
+const MIN_CAMPAIGN_DURATION_DAYS = 1;
+const MAX_CAMPAIGN_DURATION_DAYS = 90;
+const DEFAULT_CAMPAIGN_LIMIT = 12;
+const MAX_CAMPAIGN_LIMIT = 50;
+const DEFAULT_DONATION_LIMIT = 20;
+const MAX_DONATION_LIMIT = 100;
+
 module.exports = {
   // Auth
   JWT_EXPIRATION,
@@ -95,4 +120,15 @@ module.exports = {
   // Enums
   USER_STATUS,
   LIKE_TARGET_TYPES,
+
+  // Charity
+  CHARITY_STATUS_NAMES,
+  CHARITY_CATEGORIES,
+  MAX_CHARITY_MILESTONES,
+  MIN_CAMPAIGN_DURATION_DAYS,
+  MAX_CAMPAIGN_DURATION_DAYS,
+  DEFAULT_CAMPAIGN_LIMIT,
+  MAX_CAMPAIGN_LIMIT,
+  DEFAULT_DONATION_LIMIT,
+  MAX_DONATION_LIMIT,
 };

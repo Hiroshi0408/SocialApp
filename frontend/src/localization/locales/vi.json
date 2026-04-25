@@ -27,7 +27,8 @@
     "explore": "Khám phá",
     "profile": "Trang cá nhân",
     "groups": "Nhóm",
-    "organizations": "Tổ chức"
+    "organizations": "Tổ chức",
+    "charity": "Quỹ từ thiện"
   },
   "emailVerificationBanner": {
     "success": "Email xác thực đã được gửi! Vui lòng kiểm tra hộp thư của bạn.",
@@ -559,6 +560,54 @@
       "posts": "Bài viết",
       "members": "Thành viên",
       "about": "Giới thiệu"
+    }
+  },
+  "charity": {
+    "title": "Quỹ từ thiện minh bạch",
+    "subtitle": "Mọi giao dịch được lưu trên blockchain — ai cũng kiểm tra được.",
+    "createCampaign": "Tạo chiến dịch",
+    "myCampaigns": "Chiến dịch của tôi",
+    "loadFailed": "Tải danh sách chiến dịch thất bại",
+    "by": "bởi",
+    "anonymousOrg": "Tổ chức ẩn danh",
+    "raisedOf": "{{raised}} / {{goal}} ETH",
+    "donors_one": "{{count}} người ủng hộ",
+    "donors_other": "{{count}} người ủng hộ",
+    "daysLeft_one": "Còn {{count}} ngày",
+    "daysLeft_other": "Còn {{count}} ngày",
+    "hoursLeft_one": "Còn {{count}} giờ",
+    "hoursLeft_other": "Còn {{count}} giờ",
+    "ended": "Đã kết thúc",
+    "milestonesCount_one": "{{count}} cột mốc",
+    "milestonesCount_other": "{{count}} cột mốc",
+    "filters": {
+      "allStatus": "Tất cả",
+      "allCategories": "Tất cả lĩnh vực",
+      "sortLabel": "Sắp xếp",
+      "sortNewest": "Mới nhất",
+      "sortEndingSoon": "Sắp kết thúc",
+      "sortMostFunded": "Nhiều ủng hộ nhất"
+    },
+    "status": {
+      "OPEN": "Đang gây quỹ",
+      "FUNDED": "Đã đủ quỹ",
+      "EXECUTING": "Đang giải ngân",
+      "COMPLETED": "Hoàn thành",
+      "FAILED": "Thất bại",
+      "REFUNDED": "Đã hoàn tiền"
+    },
+    "category": {
+      "education": "Giáo dục",
+      "medical": "Y tế",
+      "disaster": "Cứu trợ thiên tai",
+      "animal": "Bảo vệ động vật",
+      "other": "Khác"
+    },
+    "empty": {
+      "title": "Chưa có chiến dịch nào",
+      "description": "Hãy là người đầu tiên tạo chiến dịch gây quỹ minh bạch trên blockchain.",
+      "cta": "Tạo chiến dịch đầu tiên",
+      "ctaGuest": "Đăng ký tổ chức để tạo chiến dịch"
     }
   },
   "editGroup": {
