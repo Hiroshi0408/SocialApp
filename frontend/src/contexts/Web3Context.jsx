@@ -1,11 +1,14 @@
 import React, { createContext, useContext, useState, useCallback, useEffect } from "react";
 import { ethers } from "ethers";
+import { toast } from "react-hot-toast";
+import { useTranslation } from "react-i18next";
 
 const SEPOLIA_CHAIN_ID = "0xaa36a7"; // 11155111
 
 const Web3Context = createContext();
 
 export const Web3Provider = ({ children }) => {
+  const { t } = useTranslation();
   const [walletAddress, setWalletAddress] = useState(null);
   const [isConnecting, setIsConnecting] = useState(false);
   const [signer, setSigner] = useState(null);
@@ -50,6 +53,12 @@ export const Web3Provider = ({ children }) => {
     }
   };
 
+  const disconnectWallet = useCallback(() => {
+    setWalletAddress(null);
+    setSigner(null);
+    setBalance(null);
+  }, []);
+
   // Auto-reconnect khi page load — dùng eth_accounts (không popup)
   // Chỉ restore nếu đã authorize VÀ đang đúng mạng Sepolia
   useEffect(() => {
@@ -79,23 +88,75 @@ export const Web3Provider = ({ children }) => {
     tryAutoConnect();
   }, [fetchBalance]);
 
-  // Cập nhật balance khi user đổi network trong MetaMask
+  // accountsChanged: user đổi account hoặc disconnect ví trong MetaMask
   useEffect(() => {
     if (!window.ethereum) return;
-    const handleChainChanged = () => {
-      if (walletAddress) fetchBalance(walletAddress);
+    const handleAccountsChanged = async (accounts) => {
+      if (accounts.length === 0) {
+        disconnectWallet();
+        toast(t("web3.disconnected"), { icon: "👛" });
+        return;
+      }
+      // Không làm gì nếu vẫn là account cũ
+      if (accounts[0].toLowerCase() === walletAddress?.toLowerCase()) return;
+      try {
+        const chainId = await window.ethereum.request({ method: "eth_chainId" });
+        if (chainId !== SEPOLIA_CHAIN_ID) {
+          // Đổi account trên sai mạng — cập nhật address nhưng clear signer
+          setWalletAddress(accounts[0]);
+          setSigner(null);
+          setBalance(null);
+          toast.error(t("web3.wrongNetwork"));
+          return;
+        }
+        const provider = new ethers.BrowserProvider(window.ethereum);
+        const signerInstance = await provider.getSigner();
+        const address = await signerInstance.getAddress();
+        setSigner(signerInstance);
+        setWalletAddress(address);
+        await fetchBalance(address);
+        toast.success(t("web3.accountSwitched"));
+      } catch {
+        disconnectWallet();
+      }
+    };
+    window.ethereum.on("accountsChanged", handleAccountsChanged);
+    return () => window.ethereum.removeListener("accountsChanged", handleAccountsChanged);
+  }, [walletAddress, fetchBalance, disconnectWallet, t]);
+
+  // chainChanged: user đổi network trong MetaMask
+  useEffect(() => {
+    if (!window.ethereum) return;
+    const handleChainChanged = async (chainId) => {
+      if (chainId !== SEPOLIA_CHAIN_ID) {
+        // Sai mạng — clear signer + balance, giữ address để UX đỡ giật
+        setSigner(null);
+        setBalance(null);
+        toast.error(t("web3.wrongNetwork"));
+        return;
+      }
+      // Quay về Sepolia — restore signer nếu đang có ví
+      if (!walletAddress) return;
+      try {
+        const provider = new ethers.BrowserProvider(window.ethereum);
+        const signerInstance = await provider.getSigner();
+        setSigner(signerInstance);
+        await fetchBalance(walletAddress);
+        toast.success(t("web3.backToSepolia"));
+      } catch {
+        // MetaMask có thể cần unlock — bỏ qua
+      }
     };
     window.ethereum.on("chainChanged", handleChainChanged);
     return () => window.ethereum.removeListener("chainChanged", handleChainChanged);
-  }, [walletAddress, fetchBalance]);
+  }, [walletAddress, fetchBalance, t]);
 
   const connectWallet = async () => {
+    if (!window.ethereum) {
+      toast.error(t("web3.noProvider"));
+      return;
+    }
     try {
-      if (!window.ethereum) {
-        alert("Vui lòng cài MetaMask!");
-        return;
-      }
-
       setIsConnecting(true);
 
       // Đảm bảo đang ở Sepolia trước khi lấy signer
@@ -111,16 +172,18 @@ export const Web3Provider = ({ children }) => {
 
       return { address, signer: signerInstance };
     } catch (error) {
-      console.error("Connect wallet error:", error);
+      if (
+        error.code === "ACTION_REJECTED" ||
+        error.code === 4001 ||
+        error?.info?.error?.code === 4001
+      ) {
+        toast(t("web3.connectRejected"), { icon: "🚫" });
+      } else {
+        toast.error(t("web3.connectFailed"));
+      }
     } finally {
       setIsConnecting(false);
     }
-  };
-
-  const disconnectWallet = () => {
-    setWalletAddress(null);
-    setSigner(null);
-    setBalance(null);
   };
 
   return (

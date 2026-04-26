@@ -7,6 +7,7 @@ const { apiLimiter } = require("./middlewares/rateLimiter.middleware");
 const { initializeSocket } = require("./config/socket");
 const errorHandler = require("./middlewares/errorHandler");
 const logger = require("./utils/logger.js");
+const { startCharityExpiryCron } = require("./jobs/charityExpiryCron");
 // Load environment variables
 dotenv.config();
 
@@ -67,6 +68,9 @@ connectDatabase();
 
 // INITIALIZE SOCKET.IO
 initializeSocket(server);
+
+// CRON JOBS
+startCharityExpiryCron();
 
 // ROUTES
 app.use("/api/auth", require("./routes/auth.route"));

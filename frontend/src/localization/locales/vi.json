@@ -734,6 +734,18 @@
       "successToast": "Hoàn tiền thành công! ETH đã về ví của bạn."
     }
   },
+  "web3": {
+    "disconnected": "Ví đã ngắt kết nối",
+    "accountSwitched": "Đã chuyển ví thành công",
+    "wrongNetwork": "Vui lòng chuyển sang mạng Sepolia để dùng tính năng blockchain",
+    "backToSepolia": "Đã về mạng Sepolia",
+    "connectRejected": "Bạn đã hủy kết nối ví",
+    "connectFailed": "Kết nối ví thất bại, vui lòng thử lại",
+    "noProvider": "Vui lòng cài MetaMask để dùng tính năng blockchain",
+    "error": {
+      "insufficient": "Số dư ETH không đủ để thực hiện giao dịch"
+    }
+  },
   "editGroup": {
     "title": "Chỉnh sửa nhóm",
     "image": "Ảnh đại diện",

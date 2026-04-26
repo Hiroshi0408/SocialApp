@@ -738,6 +738,15 @@ class CharityService {
     if (!["FUNDED", "EXECUTING"].includes(campaign.status)) {
       throw new AppError(`Cannot force-fail campaign with status ${campaign.status}`, 400);
     }
+    // Contract reject khi đã unlock milestone (unlockedTotal > 0). Fail-fast ở BE
+    // để khỏi tốn gas estimate + tx revert. Cache có thể stale nên cũng sync chain
+    // trước khi quyết — vẫn giữ guard này như defense-in-depth.
+    if (campaign.unlockedTotalWei && BigInt(campaign.unlockedTotalWei) > 0n) {
+      throw new AppError(
+        "Cannot force-fail after a milestone has been disbursed",
+        400
+      );
+    }
 
     const contract = this._getContract();
     let txHash = null;
@@ -884,20 +893,30 @@ class CharityService {
       throw new AppError("Event campaignId mismatch", 400);
     }
 
-    // Tìm donation doc gốc của donor này trong campaign
-    const donation = await donationDAO.findOneByDonor(campaign._id, eventDonor);
-    if (!donation) throw new AppError("No donation record found for this donor", 404);
-    if (donation.refunded) {
-      return formatDonation(donation);
+    // On-chain claimRefund gom TOÀN BỘ contribution của donor (1 lần kéo hết).
+    // Nếu donor có nhiều donation docs (donate nhiều lần) → cache phải mark hết,
+    // không chỉ 1 doc, để FE list hiển thị đúng và idempotent guard không skip
+    // các doc còn lại ở lần call sau.
+    const unrefunded = await donationDAO.findUnrefundedByDonor(campaign._id, eventDonor);
+    if (unrefunded.length === 0) {
+      // Hoặc donor chưa từng donate, hoặc đã refund hết → idempotent: trả doc đầu nếu có
+      const any = await donationDAO.findOneByDonor(campaign._id, eventDonor);
+      if (!any) throw new AppError("No donation record found for this donor", 404);
+      return formatDonation(any);
     }
 
-    const updated = await donationDAO.markRefunded(donation._id, txHashLower);
-
-    logger.info(
-      `Charity: refund recorded — campaign=${campaign._id}, donor=${eventDonor}, amount=${eventAmountWei}, tx=${txHashLower}`
+    await donationDAO.markManyRefunded(
+      unrefunded.map((d) => d._id),
+      txHashLower
     );
 
-    return formatDonation(updated);
+    logger.info(
+      `Charity: refund recorded — campaign=${campaign._id}, donor=${eventDonor}, amount=${eventAmountWei}, tx=${txHashLower}, marked=${unrefunded.length}`
+    );
+
+    // Trả về doc đầu tiên (representative) — FE chỉ cần biết refund đã thành công
+    const fresh = await donationDAO.findById(unrefunded[0]._id);
+    return formatDonation(fresh);
   }
 
   // Force sync 1 campaign từ chain (admin/cron, hoặc gọi nội bộ qua getCampaignDetail)
