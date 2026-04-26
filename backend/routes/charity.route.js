@@ -6,6 +6,7 @@ const { requireRole } = require("../middlewares/role.middleware");
 const {
   createCampaignValidation,
   recordDonationValidation,
+  recordRefundValidation,
   listCampaignsValidation,
   unlockMilestoneValidation,
   whitelistOrgValidation,
@@ -39,6 +40,20 @@ router.post(
   authMiddleware,
   recordDonationValidation,
   charityController.recordDonation
+);
+
+// mark-failed phải đứng trước /:id/... để không bị bắt nhầm
+router.post(
+  "/campaigns/:id/mark-failed",
+  mongoIdValidation,
+  charityController.markFailedIfExpired
+);
+
+router.post(
+  "/campaigns/:id/donations/record-refund",
+  authMiddleware,
+  recordRefundValidation,
+  charityController.recordRefund
 );
 
 // ════════════ Admin ════════════

@@ -384,6 +384,24 @@ const listCampaignsValidation = [
   handleValidationErrors,
 ];
 
+const recordRefundValidation = [
+  param("id").isMongoId().withMessage("Invalid campaign ID"),
+
+  body("onChainCampaignId")
+    .exists({ checkNull: true })
+    .withMessage("onChainCampaignId is required")
+    .isInt({ min: 0 })
+    .withMessage("onChainCampaignId must be a non-negative integer"),
+
+  body("txHash")
+    .notEmpty()
+    .withMessage("txHash is required")
+    .matches(/^0x[a-fA-F0-9]{64}$/)
+    .withMessage("Invalid txHash format"),
+
+  handleValidationErrors,
+];
+
 // ── Charity admin validations ──
 
 const unlockMilestoneValidation = [
@@ -448,6 +466,7 @@ module.exports = {
   // Charity
   createCampaignValidation,
   recordDonationValidation,
+  recordRefundValidation,
   listCampaignsValidation,
   unlockMilestoneValidation,
   whitelistOrgValidation,

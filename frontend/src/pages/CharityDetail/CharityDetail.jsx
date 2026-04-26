@@ -8,7 +8,9 @@ import Sidebar from "../../components/Sidebar/Sidebar";
 import VerifiedBadge from "../../components/VerifiedBadge/VerifiedBadge";
 import MilestoneList from "../../components/MilestoneList/MilestoneList";
 import DonateModal from "../../components/DonateModal/DonateModal";
+import ClaimRefundModal from "../../components/ClaimRefundModal/ClaimRefundModal";
 import { charityService } from "../../api";
+import { useWeb3 } from "../../contexts/Web3Context";
 import { showError, showSuccess } from "../../utils/toast";
 import { SEPOLIA_ETHERSCAN_BASE, DEFAULT_IMAGES } from "../../constants";
 import "./CharityDetail.css";
@@ -76,6 +78,7 @@ function DetailSkeleton() {
 function CharityDetail() {
   const { id } = useParams();
   const { t } = useTranslation();
+  const { walletAddress } = useWeb3();
 
   const [campaign, setCampaign] = useState(null);
   const [loading, setLoading] = useState(true);
@@ -85,6 +88,7 @@ function CharityDetail() {
   const [syncing, setSyncing] = useState(false);
   const [syncResult, setSyncResult] = useState(null);
   const [donateModalOpen, setDonateModalOpen] = useState(false);
+  const [claimRefundModalOpen, setClaimRefundModalOpen] = useState(false);
 
   const fetchDetail = useCallback(
     async ({ silent = false } = {}) => {
@@ -194,6 +198,8 @@ function CharityDetail() {
   const org = campaign.organization;
   const status = campaign.status || "OPEN";
   const canDonate = status === "OPEN";
+  // FAILED + wallet connected → cho phép thử claim (modal tự check contribution > 0)
+  const canClaimRefund = status === "FAILED" && !!walletAddress;
 
   return (
     <div className="charity-detail-page">
@@ -310,15 +316,31 @@ function CharityDetail() {
             </div>
 
             <div className="charity-detail-actions">
-              <button
-                type="button"
-                className="charity-detail-donate-btn"
-                disabled={!canDonate}
-                onClick={() => setDonateModalOpen(true)}
-              >
-                {t("charity.donate.cta")}
-              </button>
-              {!canDonate && (
+              {canDonate && (
+                <button
+                  type="button"
+                  className="charity-detail-donate-btn"
+                  onClick={() => setDonateModalOpen(true)}
+                >
+                  {t("charity.donate.cta")}
+                </button>
+              )}
+
+              {status === "FAILED" && (
+                <button
+                  type="button"
+                  className="charity-detail-claim-refund-btn"
+                  onClick={() =>
+                    walletAddress
+                      ? setClaimRefundModalOpen(true)
+                      : setClaimRefundModalOpen(true) // modal tự xử lý case chưa connect
+                  }
+                >
+                  {t("charity.claimRefund.cta")}
+                </button>
+              )}
+
+              {!canDonate && status !== "FAILED" && (
                 <p className="charity-detail-actions-note">
                   {t(`charity.detail.notDonatable.${status}`)}
                 </p>
@@ -516,6 +538,17 @@ function CharityDetail() {
         campaign={campaign}
         onSuccess={() => {
           showSuccess(t("charity.donate.successToast", { amount: "" }).trim());
+          fetchDetail({ silent: true });
+          fetchDonations();
+        }}
+      />
+
+      <ClaimRefundModal
+        isOpen={claimRefundModalOpen}
+        onClose={() => setClaimRefundModalOpen(false)}
+        campaign={campaign}
+        onSuccess={() => {
+          showSuccess(t("charity.claimRefund.successToast"));
           fetchDetail({ silent: true });
           fetchDonations();
         }}

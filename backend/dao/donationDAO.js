@@ -14,6 +14,10 @@ class DonationDAO {
     return await Donation.findOne({ txHash: txHash.toLowerCase() });
   }
 
+  async findByRefundTxHash(refundTxHash) {
+    return await Donation.findOne({ refundTxHash: refundTxHash.toLowerCase() });
+  }
+
   // Check donor đã donate campaign này chưa → quyết định có tăng donorsCount không
   async findOneByDonor(campaignId, donor) {
     return await Donation.findOne({

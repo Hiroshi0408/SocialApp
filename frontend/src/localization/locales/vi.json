@@ -723,6 +723,15 @@
       "viewOnEtherscan": "Xem trên Etherscan",
       "retry": "Thử lại",
       "close": "Đóng"
+    },
+    "claimRefund": {
+      "title": "Nhận lại tiền ủng hộ",
+      "cta": "Nhận lại tiền",
+      "desc": "Chiến dịch này không đạt mục tiêu. Bạn có thể lấy lại toàn bộ số ETH đã ủng hộ.",
+      "amountLabel": "Số ETH sẽ nhận lại",
+      "noContribution": "Ví này chưa ủng hộ chiến dịch hoặc đã nhận hoàn tiền.",
+      "confirm": "Xác nhận nhận lại tiền",
+      "successToast": "Hoàn tiền thành công! ETH đã về ví của bạn."
     }
   },
   "editGroup": {

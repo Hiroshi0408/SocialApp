@@ -48,6 +48,19 @@ const charityService = {
     return response.data;
   },
 
+  markFailedIfExpired: async (id) => {
+    const response = await axios.post(`/charity/campaigns/${id}/mark-failed`);
+    return response.data;
+  },
+
+  recordRefund: async (id, payload) => {
+    const response = await axios.post(
+      `/charity/campaigns/${id}/donations/record-refund`,
+      payload
+    );
+    return response.data;
+  },
+
   // Admin actions
   markExecuting: async (id) => {
     const response = await axios.post(`/charity/campaigns/${id}/execute`);

@@ -252,6 +252,23 @@
   opacity: 0.55;
 }
 
+.charity-detail-claim-refund-btn {
+  padding: 12px 22px;
+  border-radius: 999px;
+  border: none;
+  background: var(--danger, #dc2626);
+  color: #fff;
+  font-size: 15px;
+  font-weight: 700;
+  cursor: pointer;
+  transition: opacity 0.15s ease;
+  align-self: flex-start;
+}
+
+.charity-detail-claim-refund-btn:hover {
+  opacity: 0.9;
+}
+
 .charity-detail-actions-note {
   margin: 0;
   font-size: 12px;

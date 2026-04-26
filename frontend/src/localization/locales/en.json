@@ -723,6 +723,15 @@
       "viewOnEtherscan": "View on Etherscan",
       "retry": "Try again",
       "close": "Close"
+    },
+    "claimRefund": {
+      "title": "Claim Your Refund",
+      "cta": "Claim Refund",
+      "desc": "This campaign did not reach its goal. You can claim back the full ETH you contributed.",
+      "amountLabel": "ETH to receive",
+      "noContribution": "This wallet has no contribution to this campaign, or has already been refunded.",
+      "confirm": "Confirm Claim",
+      "successToast": "Refund successful! ETH has been returned to your wallet."
     }
   },
   "editGroup": {
