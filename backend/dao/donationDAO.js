@@ -26,6 +26,29 @@ class DonationDAO {
     });
   }
 
+  // Tất cả donation chưa refunded của 1 donor trong 1 campaign — dùng cho recordRefund.
+  // On-chain claimRefund gom toàn bộ contribution của donor → cache phải mark hết.
+  async findUnrefundedByDonor(campaignId, donor) {
+    return await Donation.find({
+      campaignId,
+      donor: donor.toLowerCase(),
+      refunded: { $ne: true },
+    });
+  }
+
+  // Mark nhiều donation cùng lúc bằng 1 refundTxHash — caller đã filter chưa refunded.
+  async markManyRefunded(ids, refundTxHash) {
+    if (!ids || ids.length === 0) return { modifiedCount: 0 };
+    return await Donation.updateMany(
+      { _id: { $in: ids } },
+      {
+        refunded: true,
+        refundTxHash: refundTxHash.toLowerCase(),
+        refundedAt: new Date(),
+      }
+    );
+  }
+
   async findManyByCampaign(campaignId, options = {}) {
     const {
       select = "",

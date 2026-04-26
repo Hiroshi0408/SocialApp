@@ -5,6 +5,7 @@ import { ethers } from "ethers";
 import { useWeb3 } from "../../contexts/Web3Context";
 import { charityService } from "../../api";
 import TxStatusModal from "../TxStatusModal/TxStatusModal";
+import { parseWeb3Error, assertSepolia } from "../../utils/web3Errors";
 import "./DonateModal.css";
 
 // Human-readable ABI — chỉ cần hàm donate
@@ -64,6 +65,9 @@ function DonateModal({ isOpen, onClose, campaign, onSuccess }) {
     try {
       setTxStatus("signing");
 
+      // Pre-flight: kiểm tra mạng trước khi gửi tx
+      await assertSepolia();
+
       const provider = new ethers.BrowserProvider(window.ethereum);
       const signerInstance = signer || (await provider.getSigner());
       const contract = new ethers.Contract(CHARITY_ADDRESS, CHARITY_ABI, signerInstance);
@@ -83,26 +87,23 @@ function DonateModal({ isOpen, onClose, campaign, onSuccess }) {
       });
 
       setTxStatus("success");
-      // Refresh balance + campaign detail
       if (walletAddress) fetchBalance(walletAddress);
       if (onSuccess) onSuccess();
     } catch (err) {
-      if (
-        err.code === "ACTION_REJECTED" ||
-        err.code === 4001 ||
-        err?.info?.error?.code === 4001
-      ) {
-        setTxStatus("rejected");
-      } else if (
-        err.code === "INSUFFICIENT_FUNDS" ||
-        err?.info?.error?.code === -32000
-      ) {
+      if (err.code === "WRONG_NETWORK") {
         setTxStatus("failed");
-        setErrorMsg(t("charity.donate.insufficientBalance"));
+        setErrorMsg(t("web3.wrongNetwork"));
+        return;
+      }
+      const { type, rawMessage } = parseWeb3Error(err);
+      if (type === "rejected") {
+        setTxStatus("rejected");
+      } else if (type === "insufficient") {
+        setTxStatus("failed");
+        setErrorMsg(t("web3.error.insufficient"));
       } else {
         setTxStatus("failed");
-        // ethers v6: err.reason hoặc err.shortMessage
-        setErrorMsg(err.reason || err.shortMessage || err.message || t("charity.tx.unknownError"));
+        setErrorMsg(rawMessage || t("charity.tx.unknownError"));
       }
     }
   // eslint-disable-next-line react-hooks/exhaustive-deps

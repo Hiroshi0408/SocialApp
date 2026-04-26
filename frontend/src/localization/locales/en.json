@@ -734,6 +734,18 @@
       "successToast": "Refund successful! ETH has been returned to your wallet."
     }
   },
+  "web3": {
+    "disconnected": "Wallet disconnected",
+    "accountSwitched": "Wallet account switched",
+    "wrongNetwork": "Please switch to Sepolia network to use blockchain features",
+    "backToSepolia": "Switched back to Sepolia",
+    "connectRejected": "You cancelled the wallet connection",
+    "connectFailed": "Failed to connect wallet, please try again",
+    "noProvider": "Please install MetaMask to use blockchain features",
+    "error": {
+      "insufficient": "Insufficient ETH balance to complete this transaction"
+    }
+  },
   "editGroup": {
     "title": "Edit Group",
     "image": "Image",
