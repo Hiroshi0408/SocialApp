@@ -654,6 +654,34 @@
       "noMilestones": "Chiến dịch chưa khai báo cột mốc nào.",
       "viewTx": "Xem tx",
       "viewReport": "Xem báo cáo"
+    },
+    "donate": {
+      "title": "Ủng hộ chiến dịch",
+      "cta": "Ủng hộ ngay",
+      "amountLabel": "Số ETH muốn ủng hộ",
+      "confirm": "Xác nhận ủng hộ",
+      "yourBalance": "Số dư ví",
+      "remainingToGoal": "Còn thiếu để đạt goal",
+      "minError": "Tối thiểu {{min}} ETH",
+      "insufficientBalance": "Số dư không đủ (cần giữ lại ~0.002 ETH cho gas)",
+      "connectHint": "Kết nối ví MetaMask để ủng hộ chiến dịch này",
+      "connectWallet": "Kết nối ví",
+      "connecting": "Đang kết nối...",
+      "successToast": "Cảm ơn bạn đã ủng hộ!",
+      "disclaimer": "Giao dịch sẽ được ghi lên Sepolia testnet và không thể hoàn tác."
+    },
+    "tx": {
+      "title": "Trạng thái giao dịch",
+      "signing": "Đang chờ xác nhận trong MetaMask...",
+      "signingHint": "Vui lòng mở MetaMask và xác nhận giao dịch",
+      "pending": "Giao dịch đã gửi, đang chờ confirm...",
+      "success": "Giao dịch thành công!",
+      "failed": "Giao dịch thất bại",
+      "rejected": "Bạn đã từ chối giao dịch",
+      "unknownError": "Đã xảy ra lỗi không xác định",
+      "viewOnEtherscan": "Xem trên Etherscan",
+      "retry": "Thử lại",
+      "close": "Đóng"
     }
   },
   "editGroup": {

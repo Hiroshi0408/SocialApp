@@ -654,6 +654,34 @@
       "noMilestones": "This campaign has no declared milestones.",
       "viewTx": "View tx",
       "viewReport": "View report"
+    },
+    "donate": {
+      "title": "Support this campaign",
+      "cta": "Donate now",
+      "amountLabel": "Amount in ETH",
+      "confirm": "Confirm donation",
+      "yourBalance": "Wallet balance",
+      "remainingToGoal": "Remaining to goal",
+      "minError": "Minimum {{min}} ETH",
+      "insufficientBalance": "Insufficient balance (keep ~0.002 ETH for gas)",
+      "connectHint": "Connect your MetaMask wallet to donate to this campaign",
+      "connectWallet": "Connect wallet",
+      "connecting": "Connecting...",
+      "successToast": "Thank you for your donation!",
+      "disclaimer": "This transaction will be recorded on Sepolia testnet and cannot be undone."
+    },
+    "tx": {
+      "title": "Transaction status",
+      "signing": "Waiting for MetaMask confirmation...",
+      "signingHint": "Please open MetaMask and confirm the transaction",
+      "pending": "Transaction sent, waiting for confirmation...",
+      "success": "Transaction successful!",
+      "failed": "Transaction failed",
+      "rejected": "You rejected the transaction",
+      "unknownError": "An unknown error occurred",
+      "viewOnEtherscan": "View on Etherscan",
+      "retry": "Try again",
+      "close": "Close"
     }
   },
   "editGroup": {

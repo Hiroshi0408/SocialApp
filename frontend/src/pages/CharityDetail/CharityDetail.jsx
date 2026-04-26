@@ -7,6 +7,7 @@ import Header from "../../components/Header/Header";
 import Sidebar from "../../components/Sidebar/Sidebar";
 import VerifiedBadge from "../../components/VerifiedBadge/VerifiedBadge";
 import MilestoneList from "../../components/MilestoneList/MilestoneList";
+import DonateModal from "../../components/DonateModal/DonateModal";
 import { charityService } from "../../api";
 import { showError, showSuccess } from "../../utils/toast";
 import { SEPOLIA_ETHERSCAN_BASE, DEFAULT_IMAGES } from "../../constants";
@@ -83,6 +84,7 @@ function CharityDetail() {
   const [donationsLoading, setDonationsLoading] = useState(true);
   const [syncing, setSyncing] = useState(false);
   const [syncResult, setSyncResult] = useState(null);
+  const [donateModalOpen, setDonateModalOpen] = useState(false);
 
   const fetchDetail = useCallback(
     async ({ silent = false } = {}) => {
@@ -311,10 +313,10 @@ function CharityDetail() {
               <button
                 type="button"
                 className="charity-detail-donate-btn"
-                disabled
-                title={t("charity.detail.donateComingSoonTooltip")}
+                disabled={!canDonate}
+                onClick={() => setDonateModalOpen(true)}
               >
-                {t("charity.detail.donateComingSoon")}
+                {t("charity.donate.cta")}
               </button>
               {!canDonate && (
                 <p className="charity-detail-actions-note">
@@ -507,6 +509,17 @@ function CharityDetail() {
           </section>
         </main>
       </div>
+
+      <DonateModal
+        isOpen={donateModalOpen}
+        onClose={() => setDonateModalOpen(false)}
+        campaign={campaign}
+        onSuccess={() => {
+          showSuccess(t("charity.donate.successToast", { amount: "" }).trim());
+          fetchDetail({ silent: true });
+          fetchDonations();
+        }}
+      />
     </div>
   );
 }
