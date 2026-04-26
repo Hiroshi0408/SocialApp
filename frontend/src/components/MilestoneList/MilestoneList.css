@@ -1,0 +1,155 @@
+.milestone-list {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  position: relative;
+}
+
+/* Đường nối dọc giữa các marker — vẽ qua pseudo-element trên ::before của ol,
+   chiều cao auto theo content. */
+.milestone-list::before {
+  content: "";
+  position: absolute;
+  left: 17px;
+  top: 18px;
+  bottom: 18px;
+  width: 2px;
+  background: var(--border-color);
+  z-index: 0;
+}
+
+.milestone-list-empty {
+  padding: 24px;
+  text-align: center;
+  color: var(--text-secondary);
+  border: 1px dashed var(--border-color);
+  border-radius: 12px;
+  background: var(--card-bg);
+}
+
+.milestone-item {
+  position: relative;
+  display: flex;
+  gap: 14px;
+  padding: 14px 0;
+  z-index: 1;
+}
+
+.milestone-marker {
+  flex-shrink: 0;
+  width: 36px;
+  height: 36px;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: var(--card-bg);
+  border: 2px solid var(--border-color);
+  color: var(--text-secondary);
+  font-weight: 700;
+  font-size: 13px;
+  z-index: 2;
+}
+
+.milestone-item--unlocked .milestone-marker {
+  background: #10b981;
+  border-color: #10b981;
+  color: #fff;
+}
+
+.milestone-marker-num {
+  font-variant-numeric: tabular-nums;
+}
+
+.milestone-body {
+  flex: 1;
+  min-width: 0;
+  background: var(--card-bg);
+  border: 1px solid var(--border-color);
+  border-radius: 12px;
+  padding: 12px 14px;
+}
+
+.milestone-item--unlocked .milestone-body {
+  border-color: rgba(16, 185, 129, 0.4);
+  background: linear-gradient(
+    180deg,
+    rgba(16, 185, 129, 0.06),
+    var(--card-bg) 60%
+  );
+}
+
+.milestone-head {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 12px;
+  flex-wrap: wrap;
+}
+
+.milestone-title {
+  margin: 0;
+  font-size: 15px;
+  font-weight: 700;
+  color: var(--text-primary);
+  line-height: 1.35;
+}
+
+.milestone-amount {
+  font-weight: 700;
+  font-size: 14px;
+  color: var(--text-primary);
+  font-variant-numeric: tabular-nums;
+  white-space: nowrap;
+}
+
+.milestone-description {
+  margin: 8px 0 0;
+  color: var(--text-secondary);
+  font-size: 13px;
+  line-height: 1.5;
+  white-space: pre-line;
+}
+
+.milestone-meta {
+  margin-top: 10px;
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 10px;
+  font-size: 12px;
+  color: var(--text-secondary);
+}
+
+.milestone-status {
+  font-weight: 600;
+  padding: 3px 9px;
+  border-radius: 999px;
+  text-transform: uppercase;
+  letter-spacing: 0.4px;
+  font-size: 11px;
+}
+
+.milestone-status--unlocked {
+  background: rgba(16, 185, 129, 0.14);
+  color: #047857;
+}
+
+.milestone-status--pending {
+  background: var(--bg-secondary, #eef0f2);
+  color: var(--text-secondary);
+}
+
+.milestone-meta-item {
+  font-variant-numeric: tabular-nums;
+}
+
+.milestone-meta-link {
+  color: var(--primary-color, #1d9bf0);
+  text-decoration: none;
+  font-weight: 600;
+}
+
+.milestone-meta-link:hover {
+  text-decoration: underline;
+}

@@ -13,6 +13,10 @@ export const FILE_LIMITS = {
   IMAGE_MAX_SIZE_MB: 5,
 };
 
+// Sepolia testnet — hardcode vì project chốt mạng này. Khi nào lên mainnet
+// thì refactor sang ENV. Dùng cho mọi link Etherscan trong UI Web3 (Charity, ContentRegistry...).
+export const SEPOLIA_ETHERSCAN_BASE = "https://sepolia.etherscan.io";
+
 export const API_DEFAULTS = {
   PAGINATION: {
     DEFAULT_PAGE: 1,
