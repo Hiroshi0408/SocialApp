@@ -1,0 +1,146 @@
+.donate-modal-connect {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 16px;
+  padding: 12px 0;
+  text-align: center;
+}
+
+.donate-modal-connect-hint {
+  font-size: 0.9rem;
+  color: var(--text-secondary, #888);
+  margin: 0;
+}
+
+.donate-modal-connect-btn {
+  background: var(--color-primary, #6c63ff);
+  color: #fff;
+  border: none;
+  border-radius: 10px;
+  padding: 11px 28px;
+  font-size: 0.95rem;
+  font-weight: 500;
+  cursor: pointer;
+  transition: opacity 0.15s;
+}
+.donate-modal-connect-btn:hover:not(:disabled) { opacity: 0.88; }
+.donate-modal-connect-btn:disabled { opacity: 0.6; cursor: not-allowed; }
+
+/* ── Form ── */
+.donate-modal-form {
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+}
+
+.donate-modal-campaign-name {
+  font-size: 0.9rem;
+  font-weight: 500;
+  color: var(--text-secondary, #555);
+  background: var(--bg-secondary, #f7f7f7);
+  border-radius: 8px;
+  padding: 8px 12px;
+}
+
+.donate-modal-balance-row,
+.donate-modal-remaining-row {
+  display: flex;
+  justify-content: space-between;
+  font-size: 0.85rem;
+}
+
+.donate-modal-balance-label,
+.donate-modal-remaining-label {
+  color: var(--text-secondary, #888);
+}
+
+.donate-modal-balance-value {
+  font-weight: 600;
+  color: var(--text-primary, #111);
+}
+
+.donate-modal-remaining-value {
+  font-weight: 600;
+  color: var(--color-primary, #6c63ff);
+}
+
+/* ── Input ── */
+.donate-modal-field {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.donate-modal-label {
+  font-size: 0.85rem;
+  font-weight: 500;
+  color: var(--text-primary, #333);
+}
+
+.donate-modal-input-wrap {
+  position: relative;
+  display: flex;
+  align-items: center;
+}
+
+.donate-modal-input {
+  width: 100%;
+  padding: 11px 52px 11px 14px;
+  border: 1.5px solid var(--border-color, #ddd);
+  border-radius: 10px;
+  font-size: 1rem;
+  background: var(--bg-primary, #fff);
+  color: var(--text-primary, #111);
+  transition: border-color 0.15s;
+  box-sizing: border-box;
+}
+.donate-modal-input:focus {
+  outline: none;
+  border-color: var(--color-primary, #6c63ff);
+}
+
+/* Remove number input arrows */
+.donate-modal-input::-webkit-outer-spin-button,
+.donate-modal-input::-webkit-inner-spin-button { -webkit-appearance: none; }
+.donate-modal-input[type=number] { -moz-appearance: textfield; }
+
+.donate-modal-input-unit {
+  position: absolute;
+  right: 14px;
+  font-size: 0.85rem;
+  font-weight: 600;
+  color: var(--text-secondary, #888);
+  pointer-events: none;
+}
+
+.donate-modal-field-error {
+  font-size: 0.8rem;
+  color: var(--color-danger, #e53e3e);
+  margin: 0;
+}
+
+/* ── Submit ── */
+.donate-modal-submit {
+  background: var(--color-primary, #6c63ff);
+  color: #fff;
+  border: none;
+  border-radius: 10px;
+  padding: 12px;
+  font-size: 1rem;
+  font-weight: 600;
+  cursor: pointer;
+  transition: opacity 0.15s;
+  margin-top: 4px;
+}
+.donate-modal-submit:hover:not(:disabled) { opacity: 0.88; }
+.donate-modal-submit:disabled { opacity: 0.5; cursor: not-allowed; }
+
+/* ── Disclaimer ── */
+.donate-modal-disclaimer {
+  font-size: 0.76rem;
+  color: var(--text-secondary, #aaa);
+  text-align: center;
+  margin: 0;
+  line-height: 1.5;
+}
