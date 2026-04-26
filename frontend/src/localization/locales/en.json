@@ -608,6 +608,52 @@
       "description": "Be the first to launch a transparent on-chain fundraising campaign.",
       "cta": "Create the first campaign",
       "ctaGuest": "Register your organization to create campaigns"
+    },
+    "milestone": {
+      "unlocked": "Unlocked",
+      "pending": "Pending"
+    },
+    "transparency": {
+      "title": "On-chain transparency",
+      "subtitle": "Every record below is public — you can verify it directly on Etherscan.",
+      "contract": "Smart contract",
+      "beneficiary": "Beneficiary wallet",
+      "createTx": "Create tx",
+      "onChainId": "On-chain id",
+      "verifyButton": "Verify on-chain",
+      "verifying": "Verifying...",
+      "match": "Cache matches on-chain ✅",
+      "mismatch": "Synced — cache was just refreshed from chain",
+      "syncFailed": "Verification failed"
+    },
+    "detail": {
+      "loadFailed": "Failed to load campaign",
+      "loading": "Loading...",
+      "notFoundTitle": "Campaign not found",
+      "notFoundDescription": "It may have been removed or the link is incorrect.",
+      "backToList": "Back to campaigns",
+      "donorsLabel": "Donors",
+      "deadlineLabel": "Deadline",
+      "unlockedLabel": "Released",
+      "milestonesLabel": "Milestones",
+      "donateComingSoon": "Donate (coming soon)",
+      "donateComingSoonTooltip": "Donate feature lands on Day 8",
+      "notDonatable": {
+        "FUNDED": "Goal reached — waiting to enter the disbursement phase.",
+        "EXECUTING": "Funds are being released by milestone — donations are closed.",
+        "COMPLETED": "Campaign is fully completed.",
+        "FAILED": "Campaign failed — donors can claim a refund.",
+        "REFUNDED": "All donors have been refunded."
+      },
+      "aboutTitle": "About this campaign",
+      "milestonesTitle": "Milestones",
+      "milestonesSubtitle": "Funds are released to the beneficiary milestone-by-milestone, only after the organization submits a report and an admin approves it.",
+      "milestoneFallbackTitle": "Milestone {{idx}}",
+      "latestDonorsTitle": "Latest donors",
+      "noDonationsYet": "No donations yet.",
+      "noMilestones": "This campaign has no declared milestones.",
+      "viewTx": "View tx",
+      "viewReport": "View report"
     }
   },
   "editGroup": {

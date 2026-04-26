@@ -608,6 +608,52 @@
       "description": "Hãy là người đầu tiên tạo chiến dịch gây quỹ minh bạch trên blockchain.",
       "cta": "Tạo chiến dịch đầu tiên",
       "ctaGuest": "Đăng ký tổ chức để tạo chiến dịch"
+    },
+    "milestone": {
+      "unlocked": "Đã giải ngân",
+      "pending": "Chờ giải ngân"
+    },
+    "transparency": {
+      "title": "Minh bạch on-chain",
+      "subtitle": "Mọi giao dịch dưới đây đều public — bạn có thể xác minh trực tiếp trên Etherscan.",
+      "contract": "Smart contract",
+      "beneficiary": "Ví thụ hưởng",
+      "createTx": "Tx khởi tạo",
+      "onChainId": "Mã on-chain",
+      "verifyButton": "Xác minh on-chain",
+      "verifying": "Đang xác minh...",
+      "match": "Cache khớp on-chain ✅",
+      "mismatch": "Đã đồng bộ — cache vừa được cập nhật từ on-chain",
+      "syncFailed": "Xác minh thất bại"
+    },
+    "detail": {
+      "loadFailed": "Không tải được chiến dịch",
+      "loading": "Đang tải...",
+      "notFoundTitle": "Không tìm thấy chiến dịch",
+      "notFoundDescription": "Chiến dịch có thể đã bị xoá hoặc liên kết không đúng.",
+      "backToList": "Về danh sách chiến dịch",
+      "donorsLabel": "Nhà ủng hộ",
+      "deadlineLabel": "Thời hạn",
+      "unlockedLabel": "Đã giải ngân",
+      "milestonesLabel": "Cột mốc",
+      "donateComingSoon": "Donate (sắp ra mắt)",
+      "donateComingSoonTooltip": "Tính năng donate sẽ ra mắt ở Day 8",
+      "notDonatable": {
+        "FUNDED": "Đã đủ quỹ — đang chờ chuyển sang giai đoạn giải ngân.",
+        "EXECUTING": "Đang giải ngân theo cột mốc — không nhận thêm donate.",
+        "COMPLETED": "Chiến dịch đã hoàn thành.",
+        "FAILED": "Chiến dịch thất bại — donor có thể nhận lại tiền.",
+        "REFUNDED": "Toàn bộ donor đã nhận lại tiền."
+      },
+      "aboutTitle": "Về chiến dịch",
+      "milestonesTitle": "Cột mốc giải ngân",
+      "milestonesSubtitle": "Tiền chỉ được chuyển tới ví thụ hưởng theo từng cột mốc, sau khi tổ chức nộp báo cáo và admin duyệt.",
+      "milestoneFallbackTitle": "Cột mốc {{idx}}",
+      "latestDonorsTitle": "Nhà ủng hộ gần đây",
+      "noDonationsYet": "Chưa có lượt ủng hộ nào.",
+      "noMilestones": "Chiến dịch chưa khai báo cột mốc nào.",
+      "viewTx": "Xem tx",
+      "viewReport": "Xem báo cáo"
     }
   },
   "editGroup": {
