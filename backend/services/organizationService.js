@@ -2,6 +2,8 @@ const organizationDAO = require("../dao/organizationDAO");
 const groupDAO = require("../dao/groupDAO");
 const AppError = require("../utils/AppError");
 const logger = require("../utils/logger");
+// Lazy require để tránh circular dependency (charityService → organizationDAO, organizationService → charityService)
+const getCharityService = () => require("./charityService");
 
 const POPULATE_OWNER = { path: "owner", select: "_id username fullName avatar" };
 const POPULATE_VERIFIER = { path: "verifiedBy", select: "_id username fullName" };
@@ -218,7 +220,7 @@ class OrganizationService {
   }
 
   // Admin verify — auto-create official group chat cho org, link 2 chiều.
-  // TODO(charity): khi Charity contract xong, gọi charityService.whitelistOrg(walletAddress).
+  // Sau khi verify: whitelist org wallet on-chain để org được tạo Charity campaign.
   async verify(adminId, orgId) {
     const org = await organizationDAO.findById(orgId);
     if (!org) throw new AppError("Organization not found", 404);
@@ -244,6 +246,17 @@ class OrganizationService {
     });
 
     logger.info(`Organization verified - id=${orgId}, admin=${adminId}, group=${group._id}`);
+
+    // Whitelist on-chain — fire-and-forget, không chặn response nếu chain chậm/lỗi
+    // Nếu fail thì admin gọi thủ công qua POST /api/charity/admin/whitelist-org
+    if (process.env.CHARITY_ADDRESS) {
+      getCharityService()
+        .whitelistOrgOnChain(orgId)
+        .catch((err) =>
+          logger.warn(`Auto-whitelist org on-chain failed (org=${orgId}): ${err.message}`)
+        );
+    }
+
     return formatOrganization(updated, { isAdmin: true });
   }
 

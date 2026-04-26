@@ -350,3 +350,73 @@
 .admin-row.audit {
   grid-template-columns: 1.1fr 1fr 1fr 1fr 2fr;
 }
+
+/* ── Charity admin tab ── */
+.admin-link {
+  color: var(--primary, #6366f1);
+  text-decoration: none;
+}
+.admin-link:hover {
+  text-decoration: underline;
+}
+
+/* Unlock milestone modal */
+.admin-modal-backdrop {
+  position: fixed;
+  inset: 0;
+  background: rgba(0, 0, 0, 0.5);
+  z-index: 1000;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.admin-modal {
+  background: var(--bg, #fff);
+  border: 1px solid var(--border, #e5e7eb);
+  border-radius: 10px;
+  padding: 24px;
+  width: 100%;
+  max-width: 480px;
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+}
+
+.admin-modal-title {
+  font-size: 18px;
+  font-weight: 700;
+}
+
+.admin-modal-subtitle {
+  font-size: 14px;
+  color: var(--text-secondary, #6b7280);
+  line-height: 1.6;
+}
+
+.admin-modal-field {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.admin-modal-label {
+  font-size: 13px;
+  font-weight: 500;
+}
+
+.admin-modal-note {
+  font-size: 12px;
+  color: var(--text-secondary, #6b7280);
+  background: var(--bg-secondary, #f9fafb);
+  border: 1px solid var(--border, #e5e7eb);
+  border-radius: 6px;
+  padding: 10px 12px;
+  line-height: 1.6;
+}
+
+.admin-modal-actions {
+  display: flex;
+  justify-content: flex-end;
+  gap: 10px;
+}

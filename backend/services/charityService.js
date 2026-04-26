@@ -28,6 +28,7 @@ const CHARITY_ABI = [
   "function claimRefund(uint256 id) external",
   "function markExecuting(uint256 id) external",
   "function unlockMilestone(uint256 id, uint256 idx) external",
+  "function adminForceFail(uint256 id) external",
   "function whitelistOrg(address org) external",
   "function unwhitelistOrg(address org) external",
 
@@ -622,6 +623,171 @@ class CharityService {
       donations: donations.map(formatDonation),
       pagination: { page, limit, total, totalPages: Math.ceil(total / limit) },
     };
+  }
+
+  // ────────────── operator / admin actions ──────────────
+
+  // Chuyển campaign FUNDED → EXECUTING (BE wallet gọi contract)
+  async markExecuting(campaignId, adminUserId) {
+    const campaign = await campaignDAO.findById(campaignId);
+    if (!campaign) throw new AppError("Campaign not found", 404);
+    if (campaign.onChainId === null || campaign.onChainStatus !== "confirmed") {
+      throw new AppError("Campaign is not confirmed on-chain", 400);
+    }
+    if (campaign.status !== "FUNDED") {
+      throw new AppError(`Campaign must be FUNDED to mark executing (current: ${campaign.status})`, 400);
+    }
+
+    const contract = this._getContract();
+    let txHash = null;
+    try {
+      const tx = await contract.markExecuting(campaign.onChainId);
+      txHash = tx.hash;
+      logger.info(`Charity markExecuting tx=${txHash}, campaign=${campaignId}, admin=${adminUserId}`);
+      const receipt = await tx.wait();
+      logger.info(`Charity markExecuting confirmed block=${receipt.blockNumber}`);
+    } catch (err) {
+      logger.error(`Charity markExecuting on-chain failed: ${err.message}`);
+      if (err instanceof AppError) throw err;
+      throw new AppError("Failed to markExecuting on-chain", 502);
+    }
+
+    await campaignDAO.updateStatus(campaignId, "EXECUTING");
+    const fresh = await campaignDAO.findById(campaignId, { populate: POPULATE_ORG });
+    return formatCampaign(fresh);
+  }
+
+  // Unlock 1 milestone — operator action sau khi admin xác nhận report
+  // reportPostId là _id của Post báo cáo (phải thuộc org owner)
+  async unlockMilestone(campaignId, milestoneIdx, reportPostId, adminUserId) {
+    const campaign = await campaignDAO.findById(campaignId);
+    if (!campaign) throw new AppError("Campaign not found", 404);
+    if (campaign.onChainId === null || campaign.onChainStatus !== "confirmed") {
+      throw new AppError("Campaign is not confirmed on-chain", 400);
+    }
+    if (campaign.status !== "EXECUTING") {
+      throw new AppError(`Campaign must be EXECUTING (current: ${campaign.status})`, 400);
+    }
+
+    const idx = Number(milestoneIdx);
+    if (!Number.isFinite(idx) || idx < 0 || idx >= campaign.milestones.length) {
+      throw new AppError("Invalid milestone index", 400);
+    }
+    if (campaign.milestones[idx].unlocked) {
+      throw new AppError("Milestone already unlocked", 400);
+    }
+
+    // Validate reportPostId nếu cung cấp
+    if (reportPostId) {
+      const Post = require("../models/Post");
+      const post = await Post.findById(reportPostId).select("_id author").lean();
+      if (!post) throw new AppError("Report post not found", 404);
+      // Lấy org để check author là owner
+      const org = await organizationDAO.findById(campaign.organizationId, { lean: true });
+      if (post.author.toString() !== org?.owner?.toString()) {
+        throw new AppError("Report post must be authored by the organization owner", 403);
+      }
+    }
+
+    const contract = this._getContract();
+    let txHash = null;
+    let blockNumber = null;
+    try {
+      const tx = await contract.unlockMilestone(campaign.onChainId, idx);
+      txHash = tx.hash;
+      logger.info(`Charity unlockMilestone tx=${txHash}, campaign=${campaignId}, idx=${idx}, admin=${adminUserId}`);
+      const receipt = await tx.wait();
+      blockNumber = receipt.blockNumber;
+      logger.info(`Charity unlockMilestone confirmed block=${blockNumber}`);
+    } catch (err) {
+      logger.error(`Charity unlockMilestone on-chain failed: ${err.message}`);
+      if (err instanceof AppError) throw err;
+      throw new AppError("Failed to unlockMilestone on-chain", 502);
+    }
+
+    await campaignDAO.markMilestoneUnlocked(campaignId, idx, {
+      txHash,
+      reportPostId: reportPostId || null,
+    });
+
+    // Sync chain cache (unlockedTotal + status — nếu milestone cuối → COMPLETED)
+    try {
+      const chain = await this._readChainState(campaign.onChainId);
+      if (chain) {
+        await campaignDAO.syncChainCache(campaignId, {
+          raisedWei: chain.raisedWei,
+          unlockedTotalWei: chain.unlockedTotalWei,
+          status: chain.status,
+        });
+      }
+    } catch (err) {
+      logger.warn(`Charity: syncChainCache after unlockMilestone failed: ${err.message}`);
+    }
+
+    const fresh = await campaignDAO.findById(campaignId, { populate: POPULATE_ORG });
+    return formatCampaign(fresh);
+  }
+
+  // Force fail — admin dùng khi phát hiện gian lận (FUNDED hoặc EXECUTING)
+  async adminForceFail(campaignId, adminUserId) {
+    const campaign = await campaignDAO.findById(campaignId);
+    if (!campaign) throw new AppError("Campaign not found", 404);
+    if (campaign.onChainId === null || campaign.onChainStatus !== "confirmed") {
+      throw new AppError("Campaign is not confirmed on-chain", 400);
+    }
+    if (!["FUNDED", "EXECUTING"].includes(campaign.status)) {
+      throw new AppError(`Cannot force-fail campaign with status ${campaign.status}`, 400);
+    }
+
+    const contract = this._getContract();
+    let txHash = null;
+    try {
+      // adminForceFail chưa có trong ABI human-readable — dùng tên function đúng contract
+      const tx = await contract.adminForceFail(campaign.onChainId);
+      txHash = tx.hash;
+      logger.info(`Charity adminForceFail tx=${txHash}, campaign=${campaignId}, admin=${adminUserId}`);
+      const receipt = await tx.wait();
+      logger.info(`Charity adminForceFail confirmed block=${receipt.blockNumber}`);
+    } catch (err) {
+      logger.error(`Charity adminForceFail on-chain failed: ${err.message}`);
+      if (err instanceof AppError) throw err;
+      throw new AppError("Failed to adminForceFail on-chain", 502);
+    }
+
+    await campaignDAO.updateStatus(campaignId, "FAILED");
+    const fresh = await campaignDAO.findById(campaignId, { populate: POPULATE_ORG });
+    return formatCampaign(fresh);
+  }
+
+  // Whitelist 1 org wallet trên contract (gọi sau khi admin verify org)
+  async whitelistOrgOnChain(orgId) {
+    const org = await organizationDAO.findById(orgId);
+    if (!org) throw new AppError("Organization not found", 404);
+    if (!org.walletAddress) throw new AppError("Organization has no wallet address", 400);
+
+    const contract = this._getContract();
+    let txHash = null;
+    let blockNumber = null;
+    try {
+      const tx = await contract.whitelistOrg(org.walletAddress);
+      txHash = tx.hash;
+      logger.info(`Charity whitelistOrg tx=${txHash}, org=${orgId}, wallet=${org.walletAddress}`);
+      const receipt = await tx.wait();
+      blockNumber = receipt.blockNumber;
+      logger.info(`Charity whitelistOrg confirmed block=${blockNumber}`);
+    } catch (err) {
+      logger.error(`Charity whitelistOrg on-chain failed: ${err.message}`);
+      if (err instanceof AppError) throw err;
+      throw new AppError("Failed to whitelist org on-chain", 502);
+    }
+
+    await organizationDAO.updateById(orgId, {
+      "onChain.whitelistTxHash": txHash,
+      "onChain.whitelistBlockNumber": blockNumber,
+      "onChain.whitelistedAt": new Date(),
+    });
+
+    logger.info(`Charity whitelistOrg done — org=${orgId}, wallet=${org.walletAddress}`);
   }
 
   // Force sync 1 campaign từ chain (admin/cron, hoặc gọi nội bộ qua getCampaignDetail)

@@ -114,17 +114,14 @@ function Charity() {
   }, [loadMore]);
 
   const emptyCta = useMemo(() => {
-    // User chưa login → guest CTA chung "Đăng ký tổ chức" (route public)
     if (!user) {
       return {
         to: "/organizations/apply",
         label: t("charity.empty.ctaGuest"),
       };
     }
-    // User đã login → đẩy về org page; flow tạo campaign sẽ làm Day 10
-    // Tạm điều hướng về /organizations/mine để user kiểm tra trạng thái org của họ.
     return {
-      to: "/organizations/mine",
+      to: "/charity/create",
       label: t("charity.empty.cta"),
     };
   }, [user, t]);
@@ -141,8 +138,8 @@ function Charity() {
               <p className="charity-subtitle">{t("charity.subtitle")}</p>
             </div>
             {user && (
-              <Link to="/organizations/mine" className="charity-cta-secondary">
-                {t("charity.myCampaigns")}
+              <Link to="/charity/create" className="charity-cta-primary">
+                {t("charity.createCampaign")}
               </Link>
             )}
           </header>

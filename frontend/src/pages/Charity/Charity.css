@@ -49,6 +49,22 @@
   font-size: 14px;
 }
 
+.charity-cta-primary {
+  padding: 10px 18px;
+  border-radius: 8px;
+  background: var(--primary-color);
+  color: white;
+  text-decoration: none;
+  font-weight: 600;
+  font-size: 14px;
+  transition: opacity 0.15s;
+  white-space: nowrap;
+}
+
+.charity-cta-primary:hover {
+  opacity: 0.88;
+}
+
 .charity-cta-secondary {
   padding: 10px 18px;
   border-radius: 8px;

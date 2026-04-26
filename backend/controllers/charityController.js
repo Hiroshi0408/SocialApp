@@ -72,3 +72,50 @@ exports.syncFromChain = async (req, res, next) => {
     next(error);
   }
 };
+
+// [POST] /api/charity/campaigns/:id/execute — admin, FUNDED → EXECUTING
+exports.markExecuting = async (req, res, next) => {
+  try {
+    logger.info(`Charity markExecuting - admin=${req.user.username}, campaign=${req.params.id}`);
+    const campaign = await charityService.markExecuting(req.params.id, req.user.id);
+    res.json({ success: true, campaign });
+  } catch (error) {
+    next(error);
+  }
+};
+
+// [POST] /api/charity/campaigns/:id/milestones/:idx/unlock — admin, unlock 1 milestone
+exports.unlockMilestone = async (req, res, next) => {
+  try {
+    const { id, idx } = req.params;
+    const { reportPostId } = req.body;
+    logger.info(`Charity unlockMilestone - admin=${req.user.username}, campaign=${id}, idx=${idx}`);
+    const campaign = await charityService.unlockMilestone(id, idx, reportPostId, req.user.id);
+    res.json({ success: true, campaign });
+  } catch (error) {
+    next(error);
+  }
+};
+
+// [POST] /api/charity/admin/force-fail/:id — admin, force campaign → FAILED
+exports.adminForceFail = async (req, res, next) => {
+  try {
+    logger.info(`Charity adminForceFail - admin=${req.user.username}, campaign=${req.params.id}`);
+    const campaign = await charityService.adminForceFail(req.params.id, req.user.id);
+    res.json({ success: true, campaign });
+  } catch (error) {
+    next(error);
+  }
+};
+
+// [POST] /api/charity/admin/whitelist-org — admin, whitelist org wallet on-chain
+exports.whitelistOrg = async (req, res, next) => {
+  try {
+    const { orgId } = req.body;
+    logger.info(`Charity whitelistOrg - admin=${req.user.username}, org=${orgId}`);
+    await charityService.whitelistOrgOnChain(orgId);
+    res.json({ success: true, message: "Organization whitelisted on-chain" });
+  } catch (error) {
+    next(error);
+  }
+};

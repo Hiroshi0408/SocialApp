@@ -44,6 +44,9 @@ const Charity = lazy(() => import("./pages/Charity/Charity"));
 const CharityDetail = lazy(
   () => import("./pages/CharityDetail/CharityDetail"),
 );
+const CreateCampaign = lazy(
+  () => import("./pages/CreateCampaign/CreateCampaign"),
+);
 
 function App() {
   return (
@@ -197,8 +200,16 @@ function App() {
                   />
                   <Route path="/org/:slug" element={<OrganizationDetail />} />
 
-                  {/* Charity — list + detail public; create/mine sẽ thêm các day sau */}
+                  {/* Charity — list + detail public; create cần login */}
                   <Route path="/charity" element={<Charity />} />
+                  <Route
+                    path="/charity/create"
+                    element={
+                      <PrivateRoute>
+                        <CreateCampaign />
+                      </PrivateRoute>
+                    }
+                  />
                   <Route path="/charity/:id" element={<CharityDetail />} />
 
                   <Route path="*" element={<Navigate to="/" />} />
