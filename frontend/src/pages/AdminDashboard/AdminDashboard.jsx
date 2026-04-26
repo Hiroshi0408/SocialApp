@@ -1,8 +1,12 @@
 import React, { useEffect, useMemo, useState } from "react";
+import { Link } from "react-router-dom";
+import { ethers } from "ethers";
 import toast from "react-hot-toast";
 import adminService from "../../api/adminService";
 import organizationService from "../../api/organizationService";
+import charityService from "../../api/charityService";
 import { useAuth } from "../../contexts/AuthContext";
+import { SEPOLIA_ETHERSCAN_BASE } from "../../constants";
 import "./AdminDashboard.css";
 
 const formatDateTime = (d) => {
@@ -61,6 +65,7 @@ function Tabs({ tab, setTab }) {
     { key: "users", label: "Users" },
     { key: "moderation", label: "Moderation" },
     { key: "organizations", label: "Organizations" },
+    { key: "charity", label: "Charity" },
     { key: "audit", label: "Audit" },
   ];
   return (
@@ -162,6 +167,16 @@ export default function AdminDashboard() {
   // Audit
   const [audit, setAudit] = useState([]);
 
+  // Charity admin — 2 danh sách: FUNDED (chờ execute) + EXECUTING (chờ unlock milestone)
+  const [charityState, setCharityState] = useState({
+    funded: [],
+    executing: [],
+    loadingFunded: false,
+    loadingExecuting: false,
+    // unlock modal state
+    unlockModal: null, // { campaignId, milestoneIdx, reportPostId }
+  });
+
   const canSeeAudit = isAdmin;
 
   const loadStats = async (d = days) => {
@@ -253,6 +268,66 @@ export default function AdminDashboard() {
     }
   };
 
+  const loadCharityFunded = async () => {
+    setCharityState((s) => ({ ...s, loadingFunded: true }));
+    try {
+      const res = await charityService.listCampaigns({ status: "FUNDED", limit: 50 });
+      setCharityState((s) => ({ ...s, funded: res.campaigns || [] }));
+    } catch (e) {
+      toast.error(e?.response?.data?.message || "Failed to load FUNDED campaigns");
+    } finally {
+      setCharityState((s) => ({ ...s, loadingFunded: false }));
+    }
+  };
+
+  const loadCharityExecuting = async () => {
+    setCharityState((s) => ({ ...s, loadingExecuting: true }));
+    try {
+      const res = await charityService.listCampaigns({ status: "EXECUTING", limit: 50 });
+      setCharityState((s) => ({ ...s, executing: res.campaigns || [] }));
+    } catch (e) {
+      toast.error(e?.response?.data?.message || "Failed to load EXECUTING campaigns");
+    } finally {
+      setCharityState((s) => ({ ...s, loadingExecuting: false }));
+    }
+  };
+
+  const onMarkExecuting = async (campaign) => {
+    if (!window.confirm(`Mark campaign "${campaign.title}" as EXECUTING?\nThis will call the smart contract.`)) return;
+    try {
+      await charityService.markExecuting(campaign.id);
+      toast.success("Campaign is now EXECUTING");
+      loadCharityFunded();
+      loadCharityExecuting();
+    } catch (e) {
+      toast.error(e?.response?.data?.message || "Failed to mark executing");
+    }
+  };
+
+  const onForceFail = async (campaign) => {
+    if (!window.confirm(`Force-fail campaign "${campaign.title}"?\nDonors will be able to claim refund. This cannot be undone.`)) return;
+    try {
+      await charityService.adminForceFail(campaign.id);
+      toast.success("Campaign force-failed");
+      loadCharityFunded();
+      loadCharityExecuting();
+    } catch (e) {
+      toast.error(e?.response?.data?.message || "Failed to force-fail");
+    }
+  };
+
+  const onUnlockMilestone = async () => {
+    const { campaignId, milestoneIdx, reportPostId } = charityState.unlockModal;
+    try {
+      await charityService.unlockMilestone(campaignId, milestoneIdx, reportPostId || null);
+      toast.success(`Milestone ${milestoneIdx + 1} unlocked`);
+      setCharityState((s) => ({ ...s, unlockModal: null }));
+      loadCharityExecuting();
+    } catch (e) {
+      toast.error(e?.response?.data?.message || "Failed to unlock milestone");
+    }
+  };
+
   useEffect(() => {
     loadStats(7);
     // eslint-disable-next-line react-hooks/exhaustive-deps
@@ -265,6 +340,10 @@ export default function AdminDashboard() {
       loadModerationComments({ page: 1 });
     }
     if (tab === "organizations") loadOrganizations({ page: 1 });
+    if (tab === "charity") {
+      loadCharityFunded();
+      loadCharityExecuting();
+    }
     if (tab === "audit") loadAudit();
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [tab]);
@@ -931,6 +1010,211 @@ export default function AdminDashboard() {
             totalPages={orgsState.totalPages}
             onPage={(p) => loadOrganizations({ page: p })}
           />
+        </div>
+      ) : null}
+
+      {tab === "charity" ? (
+        <div className="admin-grid2">
+          {/* Panel 1: FUNDED campaigns — chờ markExecuting */}
+          <div className="admin-section">
+            <div className="admin-section-title">
+              Campaigns awaiting execution
+              <span className="admin-pill" style={{ marginLeft: 8 }}>FUNDED</span>
+            </div>
+            <div className="admin-table">
+              <div className="admin-row admin-head">
+                <div>Campaign</div>
+                <div>Organization</div>
+                <div>Goal (ETH)</div>
+                <div>Raised (ETH)</div>
+                <div>Deadline</div>
+                <div>Actions</div>
+              </div>
+              {charityState.loadingFunded ? (
+                <div className="admin-row admin-empty">Loading...</div>
+              ) : charityState.funded.length === 0 ? (
+                <div className="admin-row admin-empty">No FUNDED campaigns</div>
+              ) : (
+                charityState.funded.map((c) => {
+                  const goalEth = ethers.formatEther(c.goalWei || "0");
+                  const raisedEth = ethers.formatEther(c.raisedWei || "0");
+                  return (
+                    <div className="admin-row" key={c.id} style={{ gridTemplateColumns: "2fr 1.5fr 1fr 1fr 1.2fr 1.5fr" }}>
+                      <div className="admin-cell">
+                        <Link to={`/charity/${c.id}`} className="admin-link">
+                          <div className="admin-ellipsis">{c.title}</div>
+                        </Link>
+                        <div className="admin-muted">#{String(c.id).slice(-8)}</div>
+                      </div>
+                      <div className="admin-ellipsis">{c.organization?.name || "—"}</div>
+                      <div>{goalEth}</div>
+                      <div>{raisedEth}</div>
+                      <div style={{ fontSize: 12 }}>{formatDateTime(c.deadline)}</div>
+                      <div style={{ display: "flex", gap: 6, flexWrap: "wrap" }}>
+                        <button
+                          className="admin-btn"
+                          onClick={() => onMarkExecuting(c)}
+                        >
+                          Mark Executing
+                        </button>
+                        <button
+                          className="admin-btn danger"
+                          onClick={() => onForceFail(c)}
+                        >
+                          Force Fail
+                        </button>
+                      </div>
+                    </div>
+                  );
+                })
+              )}
+            </div>
+          </div>
+
+          {/* Panel 2: EXECUTING campaigns — unlock milestones */}
+          <div className="admin-section">
+            <div className="admin-section-title">
+              Campaigns awaiting milestone unlock
+              <span className="admin-pill ok" style={{ marginLeft: 8 }}>EXECUTING</span>
+            </div>
+            <div className="admin-table">
+              <div className="admin-row admin-head">
+                <div>Campaign</div>
+                <div>Milestone</div>
+                <div>Amount (ETH)</div>
+                <div>Status</div>
+                <div>Actions</div>
+              </div>
+              {charityState.loadingExecuting ? (
+                <div className="admin-row admin-empty">Loading...</div>
+              ) : charityState.executing.length === 0 ? (
+                <div className="admin-row admin-empty">No EXECUTING campaigns</div>
+              ) : (
+                charityState.executing.flatMap((c) =>
+                  (c.milestones || []).map((m, idx) => {
+                    const amountEth = ethers.formatEther(m.amountWei || "0");
+                    return (
+                      <div className="admin-row" key={`${c.id}-${idx}`} style={{ gridTemplateColumns: "2fr 2fr 1fr 1fr 1.5fr" }}>
+                        <div className="admin-cell">
+                          <Link to={`/charity/${c.id}`} className="admin-link">
+                            <div className="admin-ellipsis">{c.title}</div>
+                          </Link>
+                          <div className="admin-muted">
+                            <button
+                              className="admin-btn danger"
+                              style={{ fontSize: 11, padding: "2px 8px" }}
+                              onClick={() => onForceFail(c)}
+                            >
+                              Force Fail
+                            </button>
+                          </div>
+                        </div>
+                        <div className="admin-cell">
+                          <div className="admin-ellipsis">#{idx + 1} {m.title}</div>
+                          <div className="admin-muted" style={{ fontSize: 11 }}>{m.description || ""}</div>
+                          {m.reportPostId && (
+                            <Link to={`/post/${m.reportPostId}`} className="admin-link" style={{ fontSize: 11 }}>
+                              View report post
+                            </Link>
+                          )}
+                        </div>
+                        <div>{amountEth}</div>
+                        <div>
+                          {m.unlocked ? (
+                            <span className="admin-pill ok">Unlocked</span>
+                          ) : (
+                            <span className="admin-pill">Pending</span>
+                          )}
+                        </div>
+                        <div>
+                          {m.unlocked ? (
+                            m.unlockedTxHash ? (
+                              <a
+                                href={`${SEPOLIA_ETHERSCAN_BASE}/tx/${m.unlockedTxHash}`}
+                                target="_blank"
+                                rel="noopener noreferrer"
+                                className="admin-link"
+                                style={{ fontSize: 12 }}
+                              >
+                                View tx
+                              </a>
+                            ) : null
+                          ) : (
+                            <button
+                              className="admin-btn"
+                              onClick={() =>
+                                setCharityState((s) => ({
+                                  ...s,
+                                  unlockModal: {
+                                    campaignId: c.id,
+                                    campaignTitle: c.title,
+                                    milestoneIdx: idx,
+                                    milestoneTitle: m.title,
+                                    reportPostId: "",
+                                  },
+                                }))
+                              }
+                            >
+                              Unlock
+                            </button>
+                          )}
+                        </div>
+                      </div>
+                    );
+                  })
+                )
+              )}
+            </div>
+          </div>
+
+          {/* Unlock milestone modal */}
+          {charityState.unlockModal && (
+            <div className="admin-modal-backdrop" onClick={() => setCharityState((s) => ({ ...s, unlockModal: null }))}>
+              <div className="admin-modal" onClick={(e) => e.stopPropagation()}>
+                <div className="admin-modal-title">
+                  Unlock Milestone #{(charityState.unlockModal.milestoneIdx || 0) + 1}
+                </div>
+                <div className="admin-modal-subtitle">
+                  Campaign: <b>{charityState.unlockModal.campaignTitle}</b><br />
+                  Milestone: <b>{charityState.unlockModal.milestoneTitle}</b>
+                </div>
+                <div className="admin-modal-field">
+                  <label className="admin-modal-label">
+                    Report Post ID <span className="admin-muted">(optional — Mongo _id của post báo cáo)</span>
+                  </label>
+                  <input
+                    className="admin-input"
+                    placeholder="6452ab..."
+                    value={charityState.unlockModal.reportPostId || ""}
+                    onChange={(e) =>
+                      setCharityState((s) => ({
+                        ...s,
+                        unlockModal: { ...s.unlockModal, reportPostId: e.target.value },
+                      }))
+                    }
+                  />
+                </div>
+                <div className="admin-modal-note">
+                  This will call <code>unlockMilestone</code> on the Charity smart contract.<br />
+                  ETH will be transferred to the beneficiary wallet. This is irreversible.
+                </div>
+                <div className="admin-modal-actions">
+                  <button
+                    className="admin-btn"
+                    onClick={() => setCharityState((s) => ({ ...s, unlockModal: null }))}
+                  >
+                    Cancel
+                  </button>
+                  <button
+                    className="admin-btn primary"
+                    onClick={onUnlockMilestone}
+                  >
+                    Confirm Unlock
+                  </button>
+                </div>
+              </div>
+            </div>
+          )}
         </div>
       ) : null}
 

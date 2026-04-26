@@ -2,10 +2,13 @@ const express = require("express");
 const router = express.Router();
 const charityController = require("../controllers/charityController");
 const authMiddleware = require("../middlewares/auth.middleware");
+const { requireRole } = require("../middlewares/role.middleware");
 const {
   createCampaignValidation,
   recordDonationValidation,
   listCampaignsValidation,
+  unlockMilestoneValidation,
+  whitelistOrgValidation,
   mongoIdValidation,
 } = require("../middlewares/validation.middleware");
 
@@ -36,6 +39,39 @@ router.post(
   authMiddleware,
   recordDonationValidation,
   charityController.recordDonation
+);
+
+// ════════════ Admin ════════════
+router.post(
+  "/campaigns/:id/execute",
+  authMiddleware,
+  requireRole("admin"),
+  mongoIdValidation,
+  charityController.markExecuting
+);
+
+router.post(
+  "/campaigns/:id/milestones/:idx/unlock",
+  authMiddleware,
+  requireRole("admin"),
+  unlockMilestoneValidation,
+  charityController.unlockMilestone
+);
+
+router.post(
+  "/admin/force-fail/:id",
+  authMiddleware,
+  requireRole("admin"),
+  mongoIdValidation,
+  charityController.adminForceFail
+);
+
+router.post(
+  "/admin/whitelist-org",
+  authMiddleware,
+  requireRole("admin"),
+  whitelistOrgValidation,
+  charityController.whitelistOrg
 );
 
 module.exports = router;

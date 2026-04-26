@@ -69,6 +69,13 @@ const organizationSchema = new mongoose.Schema(
       default: null,
     },
 
+    // On-chain metadata — lưu sau khi admin whitelist org
+    onChain: {
+      whitelistTxHash: { type: String, default: null },
+      whitelistBlockNumber: { type: Number, default: null },
+      whitelistedAt: { type: Date, default: null },
+    },
+
     // Stats cache — update khi charity flow chạy sau này
     campaignsCount: { type: Number, default: 0, min: 0 },
     totalRaised: { type: String, default: "0" }, // wei BigInt as string

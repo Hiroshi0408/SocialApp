@@ -47,6 +47,30 @@ const charityService = {
     );
     return response.data;
   },
+
+  // Admin actions
+  markExecuting: async (id) => {
+    const response = await axios.post(`/charity/campaigns/${id}/execute`);
+    return response.data;
+  },
+
+  unlockMilestone: async (id, idx, reportPostId = null) => {
+    const response = await axios.post(
+      `/charity/campaigns/${id}/milestones/${idx}/unlock`,
+      { reportPostId }
+    );
+    return response.data;
+  },
+
+  adminForceFail: async (id) => {
+    const response = await axios.post(`/charity/admin/force-fail/${id}`);
+    return response.data;
+  },
+
+  adminWhitelistOrg: async (orgId) => {
+    const response = await axios.post("/charity/admin/whitelist-org", { orgId });
+    return response.data;
+  },
 };
 
 export default charityService;

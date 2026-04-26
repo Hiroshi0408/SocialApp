@@ -384,6 +384,23 @@ const listCampaignsValidation = [
   handleValidationErrors,
 ];
 
+// ── Charity admin validations ──
+
+const unlockMilestoneValidation = [
+  param("id").isMongoId().withMessage("Invalid campaign ID"),
+  param("idx").isInt({ min: 0 }).withMessage("Milestone index must be a non-negative integer"),
+  body("reportPostId")
+    .optional({ nullable: true })
+    .isMongoId()
+    .withMessage("reportPostId must be a valid Mongo ID"),
+  handleValidationErrors,
+];
+
+const whitelistOrgValidation = [
+  body("orgId").isMongoId().withMessage("orgId must be a valid Mongo ID"),
+  handleValidationErrors,
+];
+
 // PARAM VALIDATIONS
 
 const mongoIdValidation = [
@@ -432,6 +449,8 @@ module.exports = {
   createCampaignValidation,
   recordDonationValidation,
   listCampaignsValidation,
+  unlockMilestoneValidation,
+  whitelistOrgValidation,
 
   // Common
   mongoIdValidation,
