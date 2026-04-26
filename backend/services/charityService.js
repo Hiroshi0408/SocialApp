@@ -790,6 +790,116 @@ class CharityService {
     logger.info(`Charity whitelistOrg done — org=${orgId}, wallet=${org.walletAddress}`);
   }
 
+  // ────────────── markFailedIfExpired ──────────────
+
+  // Public endpoint — ai cũng gọi được sau khi deadline qua để đánh dấu FAILED.
+  // Contract markFailed() cũng là public, nên BE chỉ cần verify điều kiện rồi relay.
+  async markFailedIfExpired(campaignId) {
+    const campaign = await campaignDAO.findById(campaignId);
+    if (!campaign) throw new AppError("Campaign not found", 404);
+    if (campaign.onChainId === null || campaign.onChainStatus !== "confirmed") {
+      throw new AppError("Campaign is not confirmed on-chain", 400);
+    }
+    if (campaign.status !== "OPEN") {
+      throw new AppError(`Campaign is not OPEN (current: ${campaign.status})`, 400);
+    }
+    if (new Date() < new Date(campaign.deadline)) {
+      throw new AppError("Campaign deadline has not passed yet", 400);
+    }
+    // So sánh BigInt string — raised < goal
+    if (BigInt(campaign.raisedWei) >= BigInt(campaign.goalWei)) {
+      throw new AppError("Campaign has already met its goal", 400);
+    }
+
+    const contract = this._getContract();
+    let txHash = null;
+    try {
+      const tx = await contract.markFailed(campaign.onChainId);
+      txHash = tx.hash;
+      logger.info(`Charity markFailed tx=${txHash}, campaign=${campaignId}`);
+      const receipt = await tx.wait();
+      logger.info(`Charity markFailed confirmed block=${receipt.blockNumber}`);
+    } catch (err) {
+      logger.error(`Charity markFailed on-chain failed: ${err.message}`);
+      if (err instanceof AppError) throw err;
+      throw new AppError("Failed to markFailed on-chain", 502);
+    }
+
+    await campaignDAO.updateStatus(campaignId, "FAILED");
+    const fresh = await campaignDAO.findById(campaignId, { populate: POPULATE_ORG });
+    return formatCampaign(fresh);
+  }
+
+  // ────────────── recordRefund ──────────────
+
+  // FE gọi sau khi user ký claimRefund tx thành công, gửi { onChainCampaignId, txHash }.
+  // BE fetch receipt + parse RefundClaimed event để verify, sau đó cập nhật Donation doc.
+  async recordRefund(userId, payload) {
+    const { onChainCampaignId, txHash } = payload;
+    if (onChainCampaignId === undefined || onChainCampaignId === null) {
+      throw new AppError("onChainCampaignId is required", 400);
+    }
+    if (!txHash || !/^0x[0-9a-fA-F]{64}$/.test(txHash)) {
+      throw new AppError("Invalid txHash", 400);
+    }
+    const txHashLower = txHash.toLowerCase();
+
+    // Idempotent: nếu đã record rồi thì trả luôn donation đó
+    const existing = await donationDAO.findByRefundTxHash(txHashLower);
+    if (existing) return formatDonation(existing);
+
+    // Lookup campaign
+    const campaign = await campaignDAO.findByOnChainId(Number(onChainCampaignId));
+    if (!campaign) throw new AppError("Campaign not found", 404);
+    if (campaign.status !== "FAILED") {
+      throw new AppError("Campaign is not in FAILED state", 400);
+    }
+
+    // Fetch receipt
+    const provider = blockchainService.getProvider();
+    const receipt = await provider.getTransactionReceipt(txHashLower);
+    if (!receipt) throw new AppError("Transaction not found or not mined yet", 404);
+    if (receipt.status !== 1) throw new AppError("Transaction reverted on-chain", 400);
+    if (receipt.to?.toLowerCase() !== process.env.CHARITY_ADDRESS.toLowerCase()) {
+      throw new AppError("Transaction not sent to Charity contract", 400);
+    }
+
+    // Parse RefundClaimed event
+    const contract = this._getReadOnlyContract();
+    const iface = contract.interface;
+    const eventTopic = iface.getEvent("RefundClaimed").topicHash;
+    const log = receipt.logs.find(
+      (l) =>
+        l.topics[0] === eventTopic &&
+        l.address.toLowerCase() === process.env.CHARITY_ADDRESS.toLowerCase()
+    );
+    if (!log) throw new AppError("RefundClaimed event not found in transaction", 400);
+
+    const parsed = iface.parseLog({ topics: log.topics, data: log.data });
+    const eventCampaignId = Number(parsed.args.id);
+    const eventDonor = parsed.args.donor.toLowerCase();
+    const eventAmountWei = parsed.args.amount.toString();
+
+    if (eventCampaignId !== Number(onChainCampaignId)) {
+      throw new AppError("Event campaignId mismatch", 400);
+    }
+
+    // Tìm donation doc gốc của donor này trong campaign
+    const donation = await donationDAO.findOneByDonor(campaign._id, eventDonor);
+    if (!donation) throw new AppError("No donation record found for this donor", 404);
+    if (donation.refunded) {
+      return formatDonation(donation);
+    }
+
+    const updated = await donationDAO.markRefunded(donation._id, txHashLower);
+
+    logger.info(
+      `Charity: refund recorded — campaign=${campaign._id}, donor=${eventDonor}, amount=${eventAmountWei}, tx=${txHashLower}`
+    );
+
+    return formatDonation(updated);
+  }
+
   // Force sync 1 campaign từ chain (admin/cron, hoặc gọi nội bộ qua getCampaignDetail)
   async syncFromChain(campaignId) {
     const campaign = await campaignDAO.findById(campaignId);

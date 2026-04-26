@@ -108,6 +108,26 @@ exports.adminForceFail = async (req, res, next) => {
   }
 };
 
+// [POST] /api/charity/campaigns/:id/mark-failed — public, trigger OPEN → FAILED sau deadline
+exports.markFailedIfExpired = async (req, res, next) => {
+  try {
+    const campaign = await charityService.markFailedIfExpired(req.params.id);
+    res.json({ success: true, campaign });
+  } catch (error) {
+    next(error);
+  }
+};
+
+// [POST] /api/charity/campaigns/:id/donations/record-refund — auth, FE call sau claimRefund tx
+exports.recordRefund = async (req, res, next) => {
+  try {
+    const donation = await charityService.recordRefund(req.user.id, req.body);
+    res.json({ success: true, donation });
+  } catch (error) {
+    next(error);
+  }
+};
+
 // [POST] /api/charity/admin/whitelist-org — admin, whitelist org wallet on-chain
 exports.whitelistOrg = async (req, res, next) => {
   try {
