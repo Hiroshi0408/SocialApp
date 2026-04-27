@@ -109,15 +109,8 @@ function OrganizationDetail() {
                       </div>
                     )}
                   </div>
-                  <div className="org-detail-actions">
-                    <button
-                      className="btn-donate"
-                      disabled
-                      title="Will be enabled when Charity contract is deployed"
-                    >
-                      Donate (soon)
-                    </button>
-                  </div>
+                  {/* Donate button trước đây disable "soon" — Charity đã live, giờ
+                      điều hướng qua tab Campaigns để user chọn campaign cụ thể. */}
                 </div>
               </section>
 

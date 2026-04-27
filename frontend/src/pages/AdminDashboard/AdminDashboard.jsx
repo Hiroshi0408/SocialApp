@@ -168,11 +168,17 @@ export default function AdminDashboard() {
   const [audit, setAudit] = useState([]);
 
   // Charity admin — 2 danh sách: FUNDED (chờ execute) + EXECUTING (chờ unlock milestone)
+  // processingKey: id duy nhất của action đang chạy on-chain (để disable button + show
+  // spinner). Key dạng `execute:<campaignId>` / `forceFail:<campaignId>` /
+  // `unlock:<campaignId>:<idx>`. Chỉ 1 action tại 1 thời điểm — tránh confusion khi
+  // user click nhiều button (mỗi action mất ~15s wait Sepolia).
   const [charityState, setCharityState] = useState({
     funded: [],
     executing: [],
     loadingFunded: false,
     loadingExecuting: false,
+    processingKey: null,
+    fundedFilter: "FUNDED", // status filter cho panel 1 — debug khi sync chưa kịp
     // unlock modal state
     unlockModal: null, // { campaignId, milestoneIdx, reportPostId }
   });
@@ -268,13 +274,17 @@ export default function AdminDashboard() {
     }
   };
 
-  const loadCharityFunded = async () => {
+  const loadCharityFunded = async (statusOverride) => {
     setCharityState((s) => ({ ...s, loadingFunded: true }));
     try {
-      const res = await charityService.listCampaigns({ status: "FUNDED", limit: 50 });
+      const status = statusOverride ?? charityState.fundedFilter;
+      const params = { limit: 50 };
+      // "ALL" = không filter status → debug khi cache chưa kịp sync
+      if (status && status !== "ALL") params.status = status;
+      const res = await charityService.listCampaigns(params);
       setCharityState((s) => ({ ...s, funded: res.campaigns || [] }));
     } catch (e) {
-      toast.error(e?.response?.data?.message || "Failed to load FUNDED campaigns");
+      toast.error(e?.response?.data?.message || "Failed to load campaigns");
     } finally {
       setCharityState((s) => ({ ...s, loadingFunded: false }));
     }
@@ -292,39 +302,68 @@ export default function AdminDashboard() {
     }
   };
 
+  // Refresh cả 2 panel sau action — campaign có thể chuyển panel (FUNDED → EXECUTING)
+  const refreshCharityLists = () =>
+    Promise.all([loadCharityFunded(), loadCharityExecuting()]);
+
   const onMarkExecuting = async (campaign) => {
-    if (!window.confirm(`Mark campaign "${campaign.title}" as EXECUTING?\nThis will call the smart contract.`)) return;
+    if (!window.confirm(
+      `Mark campaign "${campaign.title}" as EXECUTING?\n` +
+      `This will call the smart contract — wait up to ~30s for confirmation.`
+    )) return;
+    const key = `execute:${campaign.id}`;
+    setCharityState((s) => ({ ...s, processingKey: key }));
     try {
       await charityService.markExecuting(campaign.id);
       toast.success("Campaign is now EXECUTING");
-      loadCharityFunded();
-      loadCharityExecuting();
+      await refreshCharityLists();
     } catch (e) {
-      toast.error(e?.response?.data?.message || "Failed to mark executing");
+      const msg = e?.code === "ECONNABORTED"
+        ? "Request timed out. The transaction may still be processing on-chain — please reload in a moment."
+        : (e?.response?.data?.message || "Failed to mark executing");
+      toast.error(msg);
+    } finally {
+      setCharityState((s) => ({ ...s, processingKey: null }));
     }
   };
 
   const onForceFail = async (campaign) => {
-    if (!window.confirm(`Force-fail campaign "${campaign.title}"?\nDonors will be able to claim refund. This cannot be undone.`)) return;
+    if (!window.confirm(
+      `Force-fail campaign "${campaign.title}"?\n` +
+      `Donors will be able to claim refund. This cannot be undone.\n` +
+      `Wait up to ~30s for on-chain confirmation.`
+    )) return;
+    const key = `forceFail:${campaign.id}`;
+    setCharityState((s) => ({ ...s, processingKey: key }));
     try {
       await charityService.adminForceFail(campaign.id);
       toast.success("Campaign force-failed");
-      loadCharityFunded();
-      loadCharityExecuting();
+      await refreshCharityLists();
     } catch (e) {
-      toast.error(e?.response?.data?.message || "Failed to force-fail");
+      const msg = e?.code === "ECONNABORTED"
+        ? "Request timed out. The transaction may still be processing on-chain — please reload in a moment."
+        : (e?.response?.data?.message || "Failed to force-fail");
+      toast.error(msg);
+    } finally {
+      setCharityState((s) => ({ ...s, processingKey: null }));
     }
   };
 
   const onUnlockMilestone = async () => {
     const { campaignId, milestoneIdx, reportPostId } = charityState.unlockModal;
+    const key = `unlock:${campaignId}:${milestoneIdx}`;
+    setCharityState((s) => ({ ...s, processingKey: key }));
     try {
       await charityService.unlockMilestone(campaignId, milestoneIdx, reportPostId || null);
       toast.success(`Milestone ${milestoneIdx + 1} unlocked`);
-      setCharityState((s) => ({ ...s, unlockModal: null }));
-      loadCharityExecuting();
+      setCharityState((s) => ({ ...s, unlockModal: null, processingKey: null }));
+      await refreshCharityLists();
     } catch (e) {
-      toast.error(e?.response?.data?.message || "Failed to unlock milestone");
+      const msg = e?.code === "ECONNABORTED"
+        ? "Request timed out. The transaction may still be processing on-chain — please reload in a moment."
+        : (e?.response?.data?.message || "Failed to unlock milestone");
+      toast.error(msg);
+      setCharityState((s) => ({ ...s, processingKey: null }));
     }
   };
 
@@ -1015,11 +1054,37 @@ export default function AdminDashboard() {
 
       {tab === "charity" ? (
         <div className="admin-grid2">
-          {/* Panel 1: FUNDED campaigns — chờ markExecuting */}
+          {/* Panel 1: campaigns — filter mặc định FUNDED, đổi qua dropdown để debug */}
           <div className="admin-section">
             <div className="admin-section-title">
               Campaigns awaiting execution
-              <span className="admin-pill" style={{ marginLeft: 8 }}>FUNDED</span>
+              <span className="admin-pill" style={{ marginLeft: 8 }}>
+                {charityState.fundedFilter}
+              </span>
+            </div>
+            <div className="admin-filters">
+              <select
+                className="admin-select"
+                value={charityState.fundedFilter}
+                onChange={(e) => {
+                  const v = e.target.value;
+                  setCharityState((s) => ({ ...s, fundedFilter: v }));
+                  loadCharityFunded(v);
+                }}
+              >
+                <option value="FUNDED">FUNDED (chờ execute)</option>
+                <option value="OPEN">OPEN (đang gây quỹ)</option>
+                <option value="COMPLETED">COMPLETED</option>
+                <option value="FAILED">FAILED</option>
+                <option value="ALL">All statuses (debug)</option>
+              </select>
+              <button
+                className="admin-btn"
+                onClick={() => refreshCharityLists()}
+                disabled={charityState.loadingFunded || charityState.loadingExecuting}
+              >
+                Reload
+              </button>
             </div>
             <div className="admin-table">
               <div className="admin-row admin-head">
@@ -1027,42 +1092,71 @@ export default function AdminDashboard() {
                 <div>Organization</div>
                 <div>Goal (ETH)</div>
                 <div>Raised (ETH)</div>
-                <div>Deadline</div>
+                <div>Status</div>
                 <div>Actions</div>
               </div>
               {charityState.loadingFunded ? (
                 <div className="admin-row admin-empty">Loading...</div>
               ) : charityState.funded.length === 0 ? (
-                <div className="admin-row admin-empty">No FUNDED campaigns</div>
+                <div className="admin-row admin-empty">
+                  No campaigns matching filter
+                </div>
               ) : (
                 charityState.funded.map((c) => {
                   const goalEth = ethers.formatEther(c.goalWei || "0");
                   const raisedEth = ethers.formatEther(c.raisedWei || "0");
+                  const isFunded = c.status === "FUNDED";
+                  const executingKey = `execute:${c.id}`;
+                  const failKey = `forceFail:${c.id}`;
+                  const isExecuting = charityState.processingKey === executingKey;
+                  const isFailing = charityState.processingKey === failKey;
+                  const anyProcessing = !!charityState.processingKey;
                   return (
-                    <div className="admin-row" key={c.id} style={{ gridTemplateColumns: "2fr 1.5fr 1fr 1fr 1.2fr 1.5fr" }}>
+                    <div
+                      className="admin-row"
+                      key={c.id}
+                      style={{ gridTemplateColumns: "2fr 1.5fr 1fr 1fr 1fr 1.6fr" }}
+                    >
                       <div className="admin-cell">
                         <Link to={`/charity/${c.id}`} className="admin-link">
                           <div className="admin-ellipsis">{c.title}</div>
                         </Link>
-                        <div className="admin-muted">#{String(c.id).slice(-8)}</div>
+                        <div className="admin-muted">
+                          #{String(c.id).slice(-8)}
+                        </div>
                       </div>
-                      <div className="admin-ellipsis">{c.organization?.name || "—"}</div>
+                      <div className="admin-ellipsis">
+                        {c.organization?.name || "—"}
+                      </div>
                       <div>{goalEth}</div>
                       <div>{raisedEth}</div>
-                      <div style={{ fontSize: 12 }}>{formatDateTime(c.deadline)}</div>
+                      <div>
+                        <span className="admin-pill">{c.status}</span>
+                      </div>
                       <div style={{ display: "flex", gap: 6, flexWrap: "wrap" }}>
-                        <button
-                          className="admin-btn"
-                          onClick={() => onMarkExecuting(c)}
-                        >
-                          Mark Executing
-                        </button>
-                        <button
-                          className="admin-btn danger"
-                          onClick={() => onForceFail(c)}
-                        >
-                          Force Fail
-                        </button>
+                        {isFunded && (
+                          <>
+                            <button
+                              className="admin-btn"
+                              onClick={() => onMarkExecuting(c)}
+                              disabled={anyProcessing}
+                            >
+                              {isExecuting ? "Processing..." : "Mark Executing"}
+                            </button>
+                            <button
+                              className="admin-btn danger"
+                              onClick={() => onForceFail(c)}
+                              disabled={anyProcessing}
+                            >
+                              {isFailing ? "Processing..." : "Force Fail"}
+                            </button>
+                          </>
+                        )}
+                        {!isFunded && (
+                          <span className="admin-muted" style={{ fontSize: 12 }}>
+                            No actions for {c.status}
+                          </span>
+                        )}
                       </div>
                     </div>
                   );
@@ -1071,116 +1165,179 @@ export default function AdminDashboard() {
             </div>
           </div>
 
-          {/* Panel 2: EXECUTING campaigns — unlock milestones */}
+          {/* Panel 2: EXECUTING campaigns — group milestones theo campaign */}
           <div className="admin-section">
             <div className="admin-section-title">
               Campaigns awaiting milestone unlock
-              <span className="admin-pill ok" style={{ marginLeft: 8 }}>EXECUTING</span>
+              <span className="admin-pill ok" style={{ marginLeft: 8 }}>
+                EXECUTING
+              </span>
             </div>
-            <div className="admin-table">
-              <div className="admin-row admin-head">
-                <div>Campaign</div>
-                <div>Milestone</div>
-                <div>Amount (ETH)</div>
-                <div>Status</div>
-                <div>Actions</div>
-              </div>
-              {charityState.loadingExecuting ? (
-                <div className="admin-row admin-empty">Loading...</div>
-              ) : charityState.executing.length === 0 ? (
-                <div className="admin-row admin-empty">No EXECUTING campaigns</div>
-              ) : (
-                charityState.executing.flatMap((c) =>
-                  (c.milestones || []).map((m, idx) => {
-                    const amountEth = ethers.formatEther(m.amountWei || "0");
-                    return (
-                      <div className="admin-row" key={`${c.id}-${idx}`} style={{ gridTemplateColumns: "2fr 2fr 1fr 1fr 1.5fr" }}>
-                        <div className="admin-cell">
-                          <Link to={`/charity/${c.id}`} className="admin-link">
-                            <div className="admin-ellipsis">{c.title}</div>
-                          </Link>
-                          <div className="admin-muted">
-                            <button
-                              className="admin-btn danger"
-                              style={{ fontSize: 11, padding: "2px 8px" }}
-                              onClick={() => onForceFail(c)}
-                            >
-                              Force Fail
-                            </button>
-                          </div>
-                        </div>
-                        <div className="admin-cell">
-                          <div className="admin-ellipsis">#{idx + 1} {m.title}</div>
-                          <div className="admin-muted" style={{ fontSize: 11 }}>{m.description || ""}</div>
-                          {m.reportPostId && (
-                            <Link to={`/post/${m.reportPostId}`} className="admin-link" style={{ fontSize: 11 }}>
-                              View report post
-                            </Link>
-                          )}
-                        </div>
-                        <div>{amountEth}</div>
-                        <div>
-                          {m.unlocked ? (
-                            <span className="admin-pill ok">Unlocked</span>
-                          ) : (
-                            <span className="admin-pill">Pending</span>
-                          )}
-                        </div>
-                        <div>
-                          {m.unlocked ? (
-                            m.unlockedTxHash ? (
-                              <a
-                                href={`${SEPOLIA_ETHERSCAN_BASE}/tx/${m.unlockedTxHash}`}
-                                target="_blank"
-                                rel="noopener noreferrer"
-                                className="admin-link"
-                                style={{ fontSize: 12 }}
-                              >
-                                View tx
-                              </a>
-                            ) : null
-                          ) : (
-                            <button
-                              className="admin-btn"
-                              onClick={() =>
-                                setCharityState((s) => ({
-                                  ...s,
-                                  unlockModal: {
-                                    campaignId: c.id,
-                                    campaignTitle: c.title,
-                                    milestoneIdx: idx,
-                                    milestoneTitle: m.title,
-                                    reportPostId: "",
-                                  },
-                                }))
-                              }
-                            >
-                              Unlock
-                            </button>
-                          )}
+            {charityState.loadingExecuting ? (
+              <div className="admin-row admin-empty">Loading...</div>
+            ) : charityState.executing.length === 0 ? (
+              <div className="admin-row admin-empty">No EXECUTING campaigns</div>
+            ) : (
+              charityState.executing.map((c) => {
+                const failKey = `forceFail:${c.id}`;
+                const isFailing = charityState.processingKey === failKey;
+                const anyProcessing = !!charityState.processingKey;
+                const unlockedCount = (c.milestones || []).filter(
+                  (m) => m.unlocked
+                ).length;
+                const totalMs = (c.milestones || []).length;
+                return (
+                  <div key={c.id} className="admin-campaign-group">
+                    <div className="admin-campaign-group-header">
+                      <div>
+                        <Link
+                          to={`/charity/${c.id}`}
+                          className="admin-link admin-campaign-group-title"
+                        >
+                          {c.title}
+                        </Link>
+                        <div className="admin-muted" style={{ fontSize: 12 }}>
+                          {c.organization?.name || "—"} • #
+                          {String(c.id).slice(-8)} • Milestones {unlockedCount}/
+                          {totalMs}
                         </div>
                       </div>
-                    );
-                  })
-                )
-              )}
-            </div>
+                      <button
+                        className="admin-btn danger"
+                        onClick={() => onForceFail(c)}
+                        disabled={anyProcessing || unlockedCount > 0}
+                        title={
+                          unlockedCount > 0
+                            ? "Cannot force-fail after a milestone has been disbursed"
+                            : ""
+                        }
+                      >
+                        {isFailing ? "Processing..." : "Force Fail"}
+                      </button>
+                    </div>
+
+                    <div className="admin-table">
+                      <div className="admin-row admin-head">
+                        <div>Milestone</div>
+                        <div>Amount (ETH)</div>
+                        <div>Status</div>
+                        <div>Action</div>
+                      </div>
+                      {(c.milestones || []).map((m, idx) => {
+                        const amountEth = ethers.formatEther(m.amountWei || "0");
+                        const unlockKey = `unlock:${c.id}:${idx}`;
+                        const isUnlocking =
+                          charityState.processingKey === unlockKey;
+                        return (
+                          <div
+                            className="admin-row"
+                            key={`${c.id}-${idx}`}
+                            style={{
+                              gridTemplateColumns: "3fr 1fr 1fr 1.5fr",
+                            }}
+                          >
+                            <div className="admin-cell">
+                              <div className="admin-ellipsis">
+                                #{idx + 1} {m.title}
+                              </div>
+                              {m.description && (
+                                <div
+                                  className="admin-muted"
+                                  style={{ fontSize: 11 }}
+                                >
+                                  {m.description}
+                                </div>
+                              )}
+                              {m.reportPostId && (
+                                <Link
+                                  to={`/post/${m.reportPostId}`}
+                                  className="admin-link"
+                                  style={{ fontSize: 11 }}
+                                >
+                                  View report post
+                                </Link>
+                              )}
+                            </div>
+                            <div>{amountEth}</div>
+                            <div>
+                              {m.unlocked ? (
+                                <span className="admin-pill ok">Unlocked</span>
+                              ) : (
+                                <span className="admin-pill">Pending</span>
+                              )}
+                            </div>
+                            <div>
+                              {m.unlocked ? (
+                                m.unlockedTxHash ? (
+                                  <a
+                                    href={`${SEPOLIA_ETHERSCAN_BASE}/tx/${m.unlockedTxHash}`}
+                                    target="_blank"
+                                    rel="noopener noreferrer"
+                                    className="admin-link"
+                                    style={{ fontSize: 12 }}
+                                  >
+                                    View tx
+                                  </a>
+                                ) : null
+                              ) : (
+                                <button
+                                  className="admin-btn"
+                                  disabled={anyProcessing}
+                                  onClick={() =>
+                                    setCharityState((s) => ({
+                                      ...s,
+                                      unlockModal: {
+                                        campaignId: c.id,
+                                        campaignTitle: c.title,
+                                        milestoneIdx: idx,
+                                        milestoneTitle: m.title,
+                                        reportPostId: "",
+                                      },
+                                    }))
+                                  }
+                                >
+                                  {isUnlocking ? "Processing..." : "Unlock"}
+                                </button>
+                              )}
+                            </div>
+                          </div>
+                        );
+                      })}
+                    </div>
+                  </div>
+                );
+              })
+            )}
           </div>
 
           {/* Unlock milestone modal */}
           {charityState.unlockModal && (
-            <div className="admin-modal-backdrop" onClick={() => setCharityState((s) => ({ ...s, unlockModal: null }))}>
-              <div className="admin-modal" onClick={(e) => e.stopPropagation()}>
+            <div
+              className="admin-modal-backdrop"
+              onClick={() => {
+                if (charityState.processingKey) return;
+                setCharityState((s) => ({ ...s, unlockModal: null }));
+              }}
+            >
+              <div
+                className="admin-modal"
+                onClick={(e) => e.stopPropagation()}
+              >
                 <div className="admin-modal-title">
-                  Unlock Milestone #{(charityState.unlockModal.milestoneIdx || 0) + 1}
+                  Unlock Milestone #
+                  {(charityState.unlockModal.milestoneIdx || 0) + 1}
                 </div>
                 <div className="admin-modal-subtitle">
-                  Campaign: <b>{charityState.unlockModal.campaignTitle}</b><br />
+                  Campaign: <b>{charityState.unlockModal.campaignTitle}</b>
+                  <br />
                   Milestone: <b>{charityState.unlockModal.milestoneTitle}</b>
                 </div>
                 <div className="admin-modal-field">
                   <label className="admin-modal-label">
-                    Report Post ID <span className="admin-muted">(optional — Mongo _id của post báo cáo)</span>
+                    Report Post ID{" "}
+                    <span className="admin-muted">
+                      (optional — Mongo _id của post báo cáo)
+                    </span>
                   </label>
                   <input
                     className="admin-input"
@@ -1189,27 +1346,40 @@ export default function AdminDashboard() {
                     onChange={(e) =>
                       setCharityState((s) => ({
                         ...s,
-                        unlockModal: { ...s.unlockModal, reportPostId: e.target.value },
+                        unlockModal: {
+                          ...s.unlockModal,
+                          reportPostId: e.target.value,
+                        },
                       }))
                     }
+                    disabled={!!charityState.processingKey}
                   />
                 </div>
                 <div className="admin-modal-note">
-                  This will call <code>unlockMilestone</code> on the Charity smart contract.<br />
-                  ETH will be transferred to the beneficiary wallet. This is irreversible.
+                  This will call <code>unlockMilestone</code> on the Charity
+                  smart contract.
+                  <br />
+                  ETH will be transferred to the beneficiary wallet. This is
+                  irreversible. Wait up to ~30s for confirmation.
                 </div>
                 <div className="admin-modal-actions">
                   <button
                     className="admin-btn"
-                    onClick={() => setCharityState((s) => ({ ...s, unlockModal: null }))}
+                    onClick={() =>
+                      setCharityState((s) => ({ ...s, unlockModal: null }))
+                    }
+                    disabled={!!charityState.processingKey}
                   >
                     Cancel
                   </button>
                   <button
                     className="admin-btn primary"
                     onClick={onUnlockMilestone}
+                    disabled={!!charityState.processingKey}
                   >
-                    Confirm Unlock
+                    {charityState.processingKey?.startsWith("unlock:")
+                      ? "Processing..."
+                      : "Confirm Unlock"}
                   </button>
                 </div>
               </div>

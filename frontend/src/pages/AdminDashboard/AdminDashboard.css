@@ -420,3 +420,30 @@
   justify-content: flex-end;
   gap: 10px;
 }
+
+/* Campaign group — gom nhiều milestone của 1 campaign EXECUTING */
+.admin-campaign-group {
+  border: 1px solid var(--border, #e5e7eb);
+  border-radius: 8px;
+  padding: 12px 14px;
+  margin-bottom: 14px;
+  background: var(--bg-secondary, #f9fafb);
+}
+
+.admin-campaign-group-header {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 12px;
+  margin-bottom: 10px;
+}
+
+.admin-campaign-group-title {
+  font-size: 15px;
+  font-weight: 600;
+}
+
+.admin-btn:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
