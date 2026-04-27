@@ -9,6 +9,8 @@ const logger = require("../utils/logger");
 const {
   CHARITY_STATUS_NAMES,
   MAX_CHARITY_MILESTONES,
+  MIN_CHARITY_MILESTONES,
+  MAX_MILESTONE_PERCENT,
   MIN_CAMPAIGN_DURATION_DAYS,
   MAX_CAMPAIGN_DURATION_DAYS,
   DEFAULT_CAMPAIGN_LIMIT,
@@ -240,8 +242,13 @@ class CharityService {
     if (!title || !title.trim()) throw new AppError("Title is required", 400);
     if (!goalEth) throw new AppError("Goal is required", 400);
     if (!durationDays) throw new AppError("Duration is required", 400);
-    if (!Array.isArray(milestones) || milestones.length === 0) {
-      throw new AppError("At least 1 milestone is required", 400);
+    if (!Array.isArray(milestones) || milestones.length < MIN_CHARITY_MILESTONES) {
+      // Min 2: chống scam pattern "1 milestone gom 100% goal". Mỗi tiêu chí
+      // disburse phải có nhiều mốc rời để admin/donor giám sát từng giai đoạn.
+      throw new AppError(
+        `At least ${MIN_CHARITY_MILESTONES} milestones are required`,
+        400
+      );
     }
     if (milestones.length > MAX_CHARITY_MILESTONES) {
       throw new AppError(`Maximum ${MAX_CHARITY_MILESTONES} milestones`, 400);
@@ -271,6 +278,9 @@ class CharityService {
 
     const milestoneAmountsWei = [];
     let sum = 0n;
+    // Threshold % BigInt: amount * 100n <= goal * MAX_MILESTONE_PERCENT_n
+    // (rearrange tránh phép chia chéo BigInt — không có BigInt decimal)
+    const maxPercentN = BigInt(MAX_MILESTONE_PERCENT);
     for (const [i, m] of milestones.entries()) {
       if (!m.title || !m.title.trim()) {
         throw new AppError(`Milestone ${i + 1}: title is required`, 400);
@@ -282,6 +292,18 @@ class CharityService {
         throw new AppError(`Milestone ${i + 1}: invalid amount`, 400);
       }
       if (mWei <= 0n) throw new AppError(`Milestone ${i + 1}: amount must be > 0`, 400);
+
+      // Per-milestone max %: chống case 1 mốc gom phần lớn goal. Contract cũng
+      // enforce nhưng kiểm BE sớm để đỡ tốn gas estimate khi user nhập sai.
+      // mWei * 100 <= goalWei * MAX_PERCENT  ⟺  amount/goal <= MAX_PERCENT/100
+      if (mWei * 100n > goalWei * maxPercentN) {
+        const actualPercent = Number((mWei * 10000n) / goalWei) / 100;
+        throw new AppError(
+          `Milestone ${i + 1} exceeds ${MAX_MILESTONE_PERCENT}% of goal (${actualPercent.toFixed(1)}%)`,
+          400
+        );
+      }
+
       milestoneAmountsWei.push(mWei);
       sum += mWei;
     }

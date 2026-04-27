@@ -11,10 +11,11 @@ import charityService from "../../api/charityService";
 import uploadService from "../../api/uploadService";
 import { useWeb3 } from "../../contexts/Web3Context";
 import { parseWeb3Error, assertSepolia } from "../../utils/web3Errors";
+import { CHARITY_RULES } from "../../constants";
 import "./CreateCampaign.css";
 
 const CATEGORIES = ["education", "medical", "disaster", "animal", "other"];
-const MAX_MILESTONES = 10;
+const { MIN_MILESTONES, MAX_MILESTONES, MAX_MILESTONE_PERCENT } = CHARITY_RULES;
 
 // Human-readable ABI — chỉ cần createCampaign
 const CHARITY_ABI = [
@@ -42,7 +43,10 @@ function CreateCampaign() {
     goalEth: "",
     durationDays: "30",
   });
-  const [milestones, setMilestones] = useState([emptyMilestone()]);
+  // Init với MIN_MILESTONES dòng để user không phải tự click "Thêm milestone" lần đầu
+  const [milestones, setMilestones] = useState(
+    Array.from({ length: MIN_MILESTONES }, emptyMilestone)
+  );
   const [coverPreview, setCoverPreview] = useState(null);
   const [uploading, setUploading] = useState(false);
   const [errors, setErrors] = useState({});
@@ -103,9 +107,10 @@ function CreateCampaign() {
   };
 
   const removeMilestone = (idx) => {
-    if (milestones.length <= 1) return;
+    // Không cho dưới MIN_MILESTONES (chống scam pattern "1 mốc gom 100% goal")
+    if (milestones.length <= MIN_MILESTONES) return;
     setMilestones((ms) => ms.filter((_, i) => i !== idx));
-    setErrors((e) => ({ ...e, milestonesSum: undefined }));
+    setErrors((e) => ({ ...e, milestonesSum: undefined, milestonesCount: undefined }));
   };
 
   const validate = () => {
@@ -120,12 +125,31 @@ function CreateCampaign() {
     if (!form.durationDays || isNaN(dur) || dur < 1 || dur > 90)
       errs.durationDays = t("charity.create.errorDuration");
 
+    // Min count check — chống scam "1 milestone gom hết goal"
+    if (milestones.length < MIN_MILESTONES) {
+      errs.milestonesCount = t("charity.create.errorMinMilestones", {
+        min: MIN_MILESTONES,
+      });
+    }
+
     milestones.forEach((m, i) => {
       if (!m.title.trim())
         errs[`milestones.${i}.title`] = t("charity.create.errorRequired");
       const amt = parseFloat(m.amountEth);
       if (!m.amountEth || isNaN(amt) || amt <= 0)
         errs[`milestones.${i}.amountEth`] = t("charity.create.errorAmountInvalid");
+
+      // Per-milestone max %: contract enforce + BE re-check, FE validate sớm
+      // để user không phải đợi tx revert mới biết. Chỉ check khi có goal hợp lệ.
+      if (!isNaN(amt) && amt > 0 && !isNaN(goal) && goal > 0) {
+        const percent = (amt / goal) * 100;
+        if (percent > MAX_MILESTONE_PERCENT) {
+          errs[`milestones.${i}.amountEth`] = t(
+            "charity.create.errorMilestonePercent",
+            { max: MAX_MILESTONE_PERCENT, actual: percent.toFixed(1) }
+          );
+        }
+      }
     });
 
     if (!errs.goalEth && milestones.length > 0) {
@@ -469,66 +493,112 @@ function CreateCampaign() {
                 )}
               </div>
 
-              <p className="cc-milestones-hint">{t("charity.create.milestonesHint")}</p>
+              <p className="cc-milestones-hint">
+                {t("charity.create.milestonesHint")}
+                <br />
+                <strong>
+                  {t("charity.create.milestonesRules", {
+                    min: MIN_MILESTONES,
+                    max: MAX_MILESTONE_PERCENT,
+                  })}
+                </strong>
+              </p>
 
-              {milestones.map((m, idx) => (
-                <div key={idx} className="cc-milestone">
-                  <div className="cc-milestone-toprow">
-                    <span className="cc-milestone-num">#{idx + 1}</span>
-                    {milestones.length > 1 && (
-                      <button
-                        type="button"
-                        className="cc-remove-btn"
-                        onClick={() => removeMilestone(idx)}
-                      >
-                        {t("charity.create.removeMilestone")}
-                      </button>
-                    )}
-                  </div>
-                  <div className="cc-milestone-row">
-                    <div className="cc-field cc-field--grow">
-                      <input
-                        className={`cc-input ${
-                          errors[`milestones.${idx}.title`] ? "cc-input--error" : ""
-                        }`}
-                        value={m.title}
-                        onChange={(e) => setMilestoneField(idx, "title", e.target.value)}
-                        placeholder={t("charity.create.milestoneTitle")}
-                        maxLength={200}
-                      />
-                      {errors[`milestones.${idx}.title`] && (
-                        <div className="cc-error">{errors[`milestones.${idx}.title`]}</div>
+              {milestones.map((m, idx) => {
+                const amt = parseFloat(m.amountEth) || 0;
+                const percent =
+                  goal > 0 && amt > 0 ? (amt / goal) * 100 : null;
+                const percentExceeds =
+                  percent !== null && percent > MAX_MILESTONE_PERCENT;
+                return (
+                  <div key={idx} className="cc-milestone">
+                    <div className="cc-milestone-toprow">
+                      <span className="cc-milestone-num">#{idx + 1}</span>
+                      {percent !== null && (
+                        <span
+                          className={`cc-milestone-percent ${
+                            percentExceeds ? "cc-milestone-percent--error" : ""
+                          }`}
+                        >
+                          {percent.toFixed(1)}%{" "}
+                          {t("charity.create.percentOfGoal")}
+                        </span>
+                      )}
+                      {milestones.length > MIN_MILESTONES && (
+                        <button
+                          type="button"
+                          className="cc-remove-btn"
+                          onClick={() => removeMilestone(idx)}
+                        >
+                          {t("charity.create.removeMilestone")}
+                        </button>
                       )}
                     </div>
-                    <div className="cc-field cc-field--amount">
-                      <div className="cc-input-wrap">
+                    <div className="cc-milestone-row">
+                      <div className="cc-field cc-field--grow">
                         <input
                           className={`cc-input ${
-                            errors[`milestones.${idx}.amountEth`] ? "cc-input--error" : ""
+                            errors[`milestones.${idx}.title`]
+                              ? "cc-input--error"
+                              : ""
                           }`}
-                          type="number"
-                          min="0.001"
-                          step="0.001"
-                          value={m.amountEth}
-                          onChange={(e) => setMilestoneField(idx, "amountEth", e.target.value)}
-                          placeholder="ETH"
+                          value={m.title}
+                          onChange={(e) =>
+                            setMilestoneField(idx, "title", e.target.value)
+                          }
+                          placeholder={t("charity.create.milestoneTitle")}
+                          maxLength={200}
                         />
-                        <span className="cc-input-unit">ETH</span>
+                        {errors[`milestones.${idx}.title`] && (
+                          <div className="cc-error">
+                            {errors[`milestones.${idx}.title`]}
+                          </div>
+                        )}
                       </div>
-                      {errors[`milestones.${idx}.amountEth`] && (
-                        <div className="cc-error">{errors[`milestones.${idx}.amountEth`]}</div>
-                      )}
+                      <div className="cc-field cc-field--amount">
+                        <div className="cc-input-wrap">
+                          <input
+                            className={`cc-input ${
+                              errors[`milestones.${idx}.amountEth`]
+                                ? "cc-input--error"
+                                : ""
+                            }`}
+                            type="number"
+                            min="0.001"
+                            step="0.001"
+                            value={m.amountEth}
+                            onChange={(e) =>
+                              setMilestoneField(idx, "amountEth", e.target.value)
+                            }
+                            placeholder="ETH"
+                          />
+                          <span className="cc-input-unit">ETH</span>
+                        </div>
+                        {errors[`milestones.${idx}.amountEth`] && (
+                          <div className="cc-error">
+                            {errors[`milestones.${idx}.amountEth`]}
+                          </div>
+                        )}
+                      </div>
                     </div>
+                    <input
+                      className="cc-input cc-input--desc"
+                      value={m.description}
+                      onChange={(e) =>
+                        setMilestoneField(idx, "description", e.target.value)
+                      }
+                      placeholder={t("charity.create.milestoneDescription")}
+                      maxLength={1000}
+                    />
                   </div>
-                  <input
-                    className="cc-input cc-input--desc"
-                    value={m.description}
-                    onChange={(e) => setMilestoneField(idx, "description", e.target.value)}
-                    placeholder={t("charity.create.milestoneDescription")}
-                    maxLength={1000}
-                  />
+                );
+              })}
+
+              {errors.milestonesCount && (
+                <div className="cc-error cc-error--sum">
+                  {errors.milestonesCount}
                 </div>
-              ))}
+              )}
 
               {errors.milestonesSum && (
                 <div className="cc-error cc-error--sum">{errors.milestonesSum}</div>

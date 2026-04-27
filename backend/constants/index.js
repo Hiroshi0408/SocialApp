@@ -71,6 +71,11 @@ const CHARITY_CATEGORIES = [
   "other",
 ];
 const MAX_CHARITY_MILESTONES = 10; // khớp MAX_MILESTONES trong contract
+// Min 2: chống case "1 milestone gom 100% goal" — pattern scam phổ biến.
+// Max 50%: buộc có ít nhất 2 mốc thực sự, không lệch về 1 mốc lớn.
+// Cả 2 cũng được enforce trong contract (Charity.sol) khi redeploy.
+const MIN_CHARITY_MILESTONES = 2;
+const MAX_MILESTONE_PERCENT = 50;
 const MIN_CAMPAIGN_DURATION_DAYS = 1;
 const MAX_CAMPAIGN_DURATION_DAYS = 90;
 const DEFAULT_CAMPAIGN_LIMIT = 12;
@@ -125,6 +130,8 @@ module.exports = {
   CHARITY_STATUS_NAMES,
   CHARITY_CATEGORIES,
   MAX_CHARITY_MILESTONES,
+  MIN_CHARITY_MILESTONES,
+  MAX_MILESTONE_PERCENT,
   MIN_CAMPAIGN_DURATION_DAYS,
   MAX_CAMPAIGN_DURATION_DAYS,
   DEFAULT_CAMPAIGN_LIMIT,
