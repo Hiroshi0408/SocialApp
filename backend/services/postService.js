@@ -1,3 +1,4 @@
+const { ethers } = require("ethers");
 const postDAO = require("../dao/postDAO");
 const likeDAO = require("../dao/likeDAO");
 const saveDAO = require("../dao/saveDAO");
@@ -7,6 +8,8 @@ const followDAO = require("../dao/followDAO");
 const friendDAO = require("../dao/friendDAO");
 const notificationDAO = require("../dao/notificationDAO");
 const groupDAO = require("../dao/groupDAO");
+const campaignDAO = require("../dao/campaignDAO");
+const organizationDAO = require("../dao/organizationDAO");
 const notificationService = require("./notificationService");
 const AppError = require("../utils/AppError");
 const logger = require("../utils/logger");
@@ -15,6 +18,8 @@ const { validateMentions } = require("../utils/mentionHelper");
 const { formatPostsWithMetadata } = require("../helpers/postHelper");
 const { moderateText } = require("./geminiModeration");
 const contentRegistryService = require("./contentRegistryService");
+
+const SEPOLIA_ETHERSCAN_BASE = "https://sepolia.etherscan.io";
 const {
   DEFAULT_POST_LIMIT,
   MAX_POST_LIMIT,
@@ -547,6 +552,95 @@ class PostService {
         hasMore: skip + posts.length < total,
       },
     };
+  }
+
+  // ========== AUTO MILESTONE POST ==========
+  // Tự build + đăng 1 post báo cáo khi Charity unlock 1 milestone. Caller là
+  // charityService.unlockMilestone — chỉ gọi khi admin KHÔNG truyền reportPostId
+  // thủ công. Idempotent qua unique index (campaignId, milestoneIdx) ở Post model.
+  // - Author = org owner (Post yêu cầu userId là User, chưa có khái niệm "post của Org")
+  // - Group = official group của org (auto-spawn khi org verified) → member nhận
+  //   noti tự nhiên qua group post flow, không cần noti type mới.
+  // - Skip moderation: nội dung do BE tự build từ data đã verified, không có UGC.
+  // - Skip ContentRegistry: caption đã embed unlockTxHash → user verify được,
+  //   tránh tốn gas Sepolia gấp đôi cho mỗi milestone.
+  async createAutoMilestonePost({ campaignId, milestoneIdx, txHash }) {
+    // 1. Idempotent — milestone đã có auto-post → trả về luôn
+    const existing = await postDAO.findByMilestoneRef(campaignId, milestoneIdx);
+    if (existing) {
+      logger.info(
+        `Auto milestone post already exists: post=${existing._id} campaign=${campaignId} idx=${milestoneIdx}`
+      );
+      return existing;
+    }
+
+    // 2. Re-fetch để lấy state mới nhất (markMilestoneUnlocked đã chạy trước đó)
+    const campaign = await campaignDAO.findById(campaignId);
+    if (!campaign) throw new AppError("Campaign not found for auto post", 404);
+    const milestone = campaign.milestones?.[milestoneIdx];
+    if (!milestone) {
+      throw new AppError("Milestone index out of range for auto post", 400);
+    }
+
+    // 3. Lấy org để biết owner + officialGroupId
+    const org = await organizationDAO.findById(campaign.organizationId, {
+      lean: true,
+    });
+    if (!org) {
+      throw new AppError("Organization not found for auto post", 404);
+    }
+
+    // 4. Build caption từ data có sẵn — tiếng Việt vì user app chính là VN
+    let amountEth = "0";
+    try {
+      amountEth = ethers.formatEther(milestone.amountWei || "0");
+    } catch {
+      // Nếu amountWei lạ/không parse được, vẫn cho post chạy với "0"
+      amountEth = "0";
+    }
+    const total = campaign.milestones.length;
+    const unlockedCount = campaign.milestones.filter((m) => m.unlocked).length;
+    const txUrl = `${SEPOLIA_ETHERSCAN_BASE}/tx/${txHash}`;
+
+    const lines = [
+      `🎯 ${campaign.title} — Milestone ${milestoneIdx + 1} hoàn thành`,
+      ``,
+      `Tổ chức vừa nhận ${amountEth} ETH cho giai đoạn: ${milestone.title}`,
+    ];
+    if (milestone.description) {
+      lines.push(``, milestone.description);
+    }
+    lines.push(
+      ``,
+      `📊 Tiến độ: ${unlockedCount}/${total} milestone hoàn thành`,
+      `🔗 Xem on-chain: ${txUrl}`,
+      ``,
+      `#milestone #charity`
+    );
+    const caption = lines.join("\n");
+
+    // 5. Tạo post trực tiếp qua DAO — bypass createPost service để skip
+    //    moderation/registerOnChain/membership check. Owner luôn là member của
+    //    official group của chính họ (Group.creator = owner khi auto-spawn).
+    const post = await postDAO.create({
+      userId: org.owner,
+      groupId: org.groupId || null,
+      image: campaign.coverImage || "",
+      caption,
+      campaignMilestoneRef: {
+        campaignId: campaign._id,
+        milestoneIdx,
+      },
+    });
+
+    await userDAO.incrementPostsCount(org.owner);
+
+    logger.info(
+      `Auto milestone post created: post=${post._id} campaign=${campaignId} idx=${milestoneIdx} group=${
+        org.groupId || "none"
+      }`
+    );
+    return post;
   }
 }
 

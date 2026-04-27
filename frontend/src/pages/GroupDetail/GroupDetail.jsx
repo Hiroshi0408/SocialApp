@@ -38,7 +38,7 @@ function GroupDetail() {
       if (res?.success) setGroup(res.group);
     } catch (err) {
       showError(err?.response?.data?.message || t("groupDetail.loadFailed"));
-      if (err?.response?.status === 404) navigate("/groups");
+      if (err?.response?.status === 404) navigate("/communities?tab=groups");
     } finally {
       setLoading(false);
     }
@@ -97,7 +97,7 @@ function GroupDetail() {
           const res = await groupService.leaveGroup(groupId);
           if (res?.success) {
             showSuccess(t("groupDetail.leftGroup"));
-            if (res.deleted) navigate("/groups");
+            if (res.deleted) navigate("/communities?tab=groups");
             else fetchGroup();
           }
         } catch (err) {
@@ -117,7 +117,7 @@ function GroupDetail() {
           const res = await groupService.deleteGroup(groupId);
           if (res?.success) {
             showSuccess(t("groupDetail.deleted"));
-            navigate("/groups");
+            navigate("/communities?tab=groups");
           }
         } catch (err) {
           showError(err?.response?.data?.message || t("groupDetail.deleteFailed"));

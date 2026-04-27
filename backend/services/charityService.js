@@ -1,5 +1,6 @@
 const { ethers } = require("ethers");
 const blockchainService = require("./blockchainService");
+const postService = require("./postService");
 const campaignDAO = require("../dao/campaignDAO");
 const donationDAO = require("../dao/donationDAO");
 const organizationDAO = require("../dao/organizationDAO");
@@ -815,6 +816,31 @@ class CharityService {
       }
     } catch (err) {
       logger.warn(`Charity: syncChainCache after unlockMilestone failed: ${err.message}`);
+    }
+
+    // Auto-tạo 1 post báo cáo trên feed của org owner + official group nếu admin
+    // KHÔNG truyền reportPostId thủ công. Idempotent qua unique index ở Post model
+    // (campaignId + milestoneIdx) — retry an toàn. Không throw nếu fail: milestone
+    // đã unlock thành công on-chain rồi, post chỉ là phần social broadcast.
+    if (!reportPostId) {
+      try {
+        const autoPost = await postService.createAutoMilestonePost({
+          campaignId,
+          milestoneIdx: idx,
+          txHash,
+        });
+        if (autoPost?._id) {
+          await campaignDAO.setMilestoneReportPostId(
+            campaignId,
+            idx,
+            autoPost._id
+          );
+        }
+      } catch (err) {
+        logger.warn(
+          `Charity: auto milestone post failed campaign=${campaignId} idx=${idx}: ${err.message}`
+        );
+      }
     }
 
     const fresh = await campaignDAO.findById(campaignId, { populate: POPULATE_ORG });

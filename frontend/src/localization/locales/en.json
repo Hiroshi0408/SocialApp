@@ -28,6 +28,7 @@
     "profile": "Profile",
     "groups": "Groups",
     "organizations": "Organizations",
+    "communities": "Communities",
     "charity": "Charity"
   },
   "emailVerificationBanner": {
@@ -74,6 +75,7 @@
     "copyright": "© 2025 SOCIALAPP FROM HIROSHI"
   },
   "postCard": {
+    "milestoneBanner": "Milestone #{{idx}} report — View campaign",
     "updateLikeError": "Failed to update like",
     "saveError": "Failed to save post",
     "shareTitle": "Post by {{username}}",
@@ -506,16 +508,55 @@
   "common": {
     "loading": "Loading..."
   },
+  "communities": {
+    "title": "Communities",
+    "subtitle": {
+      "groups": "Join groups around shared interests and chat with people who care.",
+      "orgs": "Browse verified organizations behind charity campaigns on SocialApp."
+    },
+    "tabs": {
+      "groups": "Groups",
+      "orgs": "Organizations"
+    }
+  },
   "group": {
     "createGroup": "Create Group",
     "myGroups": "My Groups",
     "suggestedGroups": "Suggested Groups",
+    "suggestedSubtitle": "Discover new groups that match your interests",
+    "searchPlaceholder": "Search groups by name...",
+    "noSearchResults": "No matching groups found.",
     "members": "members",
     "join": "Join",
     "joining": "Joining...",
+    "joinedToast": "Joined group successfully",
+    "joinFailed": "Failed to join group",
+    "loadFailed": "Failed to load groups",
     "noJoinedGroups": "You haven't joined any groups yet.",
     "noSuggestions": "No more groups to suggest.",
-    "officialBadge": "Official verified organization group"
+    "officialBadge": "Official verified organization group",
+    "guest": {
+      "title": "Log in to see groups",
+      "description": "Groups are where the SocialApp community chats and shares. Log in to browse and join.",
+      "cta": "Log in"
+    }
+  },
+  "organizations": {
+    "searchPlaceholder": "Search organizations by name...",
+    "allCategories": "All categories",
+    "applyCta": "Apply as organization",
+    "loadFailed": "Failed to load organizations",
+    "category": {
+      "education": "Education",
+      "disaster-relief": "Disaster relief",
+      "health": "Health",
+      "environment": "Environment",
+      "animal": "Animal welfare"
+    },
+    "empty": {
+      "title": "No verified organizations yet",
+      "description": "Represent a charity? Apply to get verified and start launching on-chain donation campaigns."
+    }
   },
   "groupDetail": {
     "loadFailed": "Failed to load group",

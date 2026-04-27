@@ -28,6 +28,7 @@
     "profile": "Trang cá nhân",
     "groups": "Nhóm",
     "organizations": "Tổ chức",
+    "communities": "Cộng đồng",
     "charity": "Quỹ từ thiện"
   },
   "emailVerificationBanner": {
@@ -74,6 +75,7 @@
     "copyright": "© 2025 SOCIALAPP TỪ HIROSHI"
   },
   "postCard": {
+    "milestoneBanner": "Báo cáo milestone #{{idx}} — Xem chiến dịch",
     "updateLikeError": "Không thể cập nhật lượt thích",
     "saveError": "Không thể lưu bài viết",
     "shareTitle": "Bài viết của {{username}}",
@@ -506,16 +508,55 @@
   "common": {
     "loading": "Đang tải..."
   },
+  "communities": {
+    "title": "Cộng đồng",
+    "subtitle": {
+      "groups": "Tham gia nhóm chia sẻ sở thích chung và trò chuyện với mọi người.",
+      "orgs": "Khám phá các tổ chức đã được xác minh, đứng sau các chiến dịch từ thiện trên SocialApp."
+    },
+    "tabs": {
+      "groups": "Nhóm",
+      "orgs": "Tổ chức"
+    }
+  },
   "group": {
     "createGroup": "Tạo nhóm",
     "myGroups": "Nhóm của tôi",
     "suggestedGroups": "Nhóm gợi ý",
+    "suggestedSubtitle": "Khám phá nhóm mới phù hợp với bạn",
+    "searchPlaceholder": "Tìm nhóm theo tên...",
+    "noSearchResults": "Không tìm thấy nhóm phù hợp.",
     "members": "thành viên",
     "join": "Tham gia",
     "joining": "Đang tham gia...",
+    "joinedToast": "Đã tham gia nhóm",
+    "joinFailed": "Tham gia nhóm thất bại",
+    "loadFailed": "Tải danh sách nhóm thất bại",
     "noJoinedGroups": "Bạn chưa tham gia nhóm nào.",
     "noSuggestions": "Không còn nhóm gợi ý.",
-    "officialBadge": "Nhóm chính thức của tổ chức đã xác minh"
+    "officialBadge": "Nhóm chính thức của tổ chức đã xác minh",
+    "guest": {
+      "title": "Đăng nhập để xem nhóm",
+      "description": "Nhóm là nơi cộng đồng SocialApp trò chuyện và chia sẻ. Đăng nhập để khám phá và tham gia.",
+      "cta": "Đăng nhập"
+    }
+  },
+  "organizations": {
+    "searchPlaceholder": "Tìm tổ chức theo tên...",
+    "allCategories": "Tất cả danh mục",
+    "applyCta": "Đăng ký làm tổ chức",
+    "loadFailed": "Tải danh sách tổ chức thất bại",
+    "category": {
+      "education": "Giáo dục",
+      "disaster-relief": "Cứu trợ thiên tai",
+      "health": "Y tế",
+      "environment": "Môi trường",
+      "animal": "Bảo vệ động vật"
+    },
+    "empty": {
+      "title": "Chưa có tổ chức nào được xác minh",
+      "description": "Bạn đại diện cho một tổ chức từ thiện? Đăng ký xác minh để bắt đầu mở chiến dịch quyên góp on-chain."
+    }
   },
   "groupDetail": {
     "loadFailed": "Tải thông tin nhóm thất bại",
