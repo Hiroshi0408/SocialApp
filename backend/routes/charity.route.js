@@ -5,6 +5,7 @@ const authMiddleware = require("../middlewares/auth.middleware");
 const { requireRole } = require("../middlewares/role.middleware");
 const {
   createCampaignValidation,
+  recordCampaignValidation,
   recordDonationValidation,
   recordRefundValidation,
   listCampaignsValidation,
@@ -28,11 +29,21 @@ router.get(
 router.post("/campaigns/:id/sync", mongoIdValidation, charityController.syncFromChain);
 
 // ════════════ Auth (org owner) ════════════
+// FE-signed flow: org tự ký tx createCampaign trên ví của họ.
+// /prepare → BE validate + return params chuẩn cho FE truyền vào contract.
+// /record → BE verify receipt + lưu Mongo sau khi tx confirm on-chain.
 router.post(
-  "/campaigns",
+  "/campaigns/prepare",
   authMiddleware,
   createCampaignValidation,
-  charityController.createCampaign
+  charityController.prepareCampaign
+);
+
+router.post(
+  "/campaigns/record",
+  authMiddleware,
+  recordCampaignValidation,
+  charityController.recordCampaign
 );
 
 router.post(

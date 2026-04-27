@@ -35,8 +35,14 @@ const charityService = {
     return response.data;
   },
 
-  createCampaign: async (payload) => {
-    const response = await axios.post("/charity/campaigns", payload);
+  // FE-signed flow: 2 step. prepare lấy params, record lưu Mongo sau khi tx confirm.
+  prepareCampaign: async (payload) => {
+    const response = await axios.post("/charity/campaigns/prepare", payload);
+    return response.data;
+  },
+
+  recordCampaign: async (payload) => {
+    const response = await axios.post("/charity/campaigns/record", payload);
     return response.data;
   },
 

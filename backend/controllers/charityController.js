@@ -42,11 +42,22 @@ exports.listDonations = async (req, res, next) => {
   }
 };
 
-// [POST] /api/charity/campaigns — auth, org owner verified
-exports.createCampaign = async (req, res, next) => {
+// [POST] /api/charity/campaigns/prepare — auth, BE validate + return params cho FE ký tx
+exports.prepareCampaign = async (req, res, next) => {
   try {
-    logger.info(`Charity createCampaign - user=${req.user.username}`);
-    const campaign = await charityService.createCampaign(req.user.id, req.body);
+    logger.info(`Charity prepareCampaign - user=${req.user.username}`);
+    const params = await charityService.prepareCampaignCreate(req.user.id, req.body);
+    res.json({ success: true, ...params });
+  } catch (error) {
+    next(error);
+  }
+};
+
+// [POST] /api/charity/campaigns/record — auth, FE call sau khi tx createCampaign confirm
+exports.recordCampaign = async (req, res, next) => {
+  try {
+    logger.info(`Charity recordCampaign - user=${req.user.username}, tx=${req.body.txHash}`);
+    const campaign = await charityService.recordCampaignCreate(req.user.id, req.body);
     res.status(201).json({ success: true, campaign });
   } catch (error) {
     next(error);

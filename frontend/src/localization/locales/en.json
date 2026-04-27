@@ -709,7 +709,12 @@
       "noOrgDesc": "Only admin-verified organizations can create fundraising campaigns.",
       "noOrgCta": "Apply for an organization",
       "pendingOrgDesc": "Your organization is pending admin review. Please wait for verification before creating a campaign.",
-      "pendingOrgCta": "View organization status"
+      "pendingOrgCta": "View organization status",
+      "txTitle": "Create campaign on-chain",
+      "connectWalletHint": "Please connect MetaMask using the wallet registered for your organization to sign the create-campaign transaction.",
+      "wrongWallet": "Connected wallet does not match the organization's wallet.",
+      "wrongWalletHint": "Current wallet ({{got}}) is not the organization's wallet ({{expected}}). Please switch accounts in MetaMask.",
+      "walletReady": "Ready to sign with organization wallet ({{address}})"
     },
     "tx": {
       "title": "Transaction status",
