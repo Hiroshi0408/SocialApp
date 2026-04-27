@@ -1,5 +1,9 @@
 import axios from "./axios";
 
+// Các endpoint mà BE gọi contract.method() rồi await tx.wait() — Sepolia block ~12s
+// nên cần timeout dài hơn 10s default. 90s cho buffer 5-7 block.
+const CHAIN_TX_TIMEOUT = 90000;
+
 // Tất cả endpoint mount tại /api/charity (xem backend/routes/charity.route.js).
 // Public: list, detail, donations list, sync.
 // Auth: create campaign, recordDonation (FE call sau khi user ký tx donate).
@@ -67,27 +71,40 @@ const charityService = {
     return response.data;
   },
 
-  // Admin actions
+  // Admin actions — BE await tx.wait() trên các action dưới đây nên cần timeout dài
   markExecuting: async (id) => {
-    const response = await axios.post(`/charity/campaigns/${id}/execute`);
+    const response = await axios.post(
+      `/charity/campaigns/${id}/execute`,
+      {},
+      { timeout: CHAIN_TX_TIMEOUT }
+    );
     return response.data;
   },
 
   unlockMilestone: async (id, idx, reportPostId = null) => {
     const response = await axios.post(
       `/charity/campaigns/${id}/milestones/${idx}/unlock`,
-      { reportPostId }
+      { reportPostId },
+      { timeout: CHAIN_TX_TIMEOUT }
     );
     return response.data;
   },
 
   adminForceFail: async (id) => {
-    const response = await axios.post(`/charity/admin/force-fail/${id}`);
+    const response = await axios.post(
+      `/charity/admin/force-fail/${id}`,
+      {},
+      { timeout: CHAIN_TX_TIMEOUT }
+    );
     return response.data;
   },
 
   adminWhitelistOrg: async (orgId) => {
-    const response = await axios.post("/charity/admin/whitelist-org", { orgId });
+    const response = await axios.post(
+      "/charity/admin/whitelist-org",
+      { orgId },
+      { timeout: CHAIN_TX_TIMEOUT }
+    );
     return response.data;
   },
 };

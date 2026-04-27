@@ -1,5 +1,9 @@
 import axios from "./axios";
 
+// adminVerify trigger BE gọi charityService.whitelistOrgOnChain → await tx.wait().
+// Cần timeout dài hơn 10s default, tương tự admin chain action khác.
+const CHAIN_TX_TIMEOUT = 90000;
+
 const organizationService = {
   // Public — guest cũng gọi được
   list: async (params = {}) => {
@@ -34,7 +38,11 @@ const organizationService = {
   },
 
   adminVerify: async (id) => {
-    const response = await axios.patch(`/admin/organizations/${id}/verify`);
+    const response = await axios.patch(
+      `/admin/organizations/${id}/verify`,
+      {},
+      { timeout: CHAIN_TX_TIMEOUT }
+    );
     return response.data;
   },
 
