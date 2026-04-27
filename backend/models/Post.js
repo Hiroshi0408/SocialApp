@@ -98,6 +98,18 @@ const postSchema = new mongoose.Schema(
       txHash: { type: String, default: null },
       blockNumber: { type: Number, default: null },
     },
+    // Set khi BE auto-tạo post báo cáo cho 1 milestone unlock của Charity Campaign.
+    // Null = post bình thường do user tự đăng. FE dùng để render badge "Milestone
+    // unlock" + link sang /charity/:id. Unique (campaignId, milestoneIdx) đảm bảo
+    // idempotent: lỡ unlock retry không tạo trùng post.
+    campaignMilestoneRef: {
+      campaignId: {
+        type: mongoose.Schema.Types.ObjectId,
+        ref: "Campaign",
+        default: null,
+      },
+      milestoneIdx: { type: Number, default: null },
+    },
     deleted: {
       type: Boolean,
       default: false,
@@ -125,6 +137,21 @@ postSchema.index({ likesCount: -1 });
 postSchema.index({ deleted: 1 });
 postSchema.index({ hashtags: 1 });
 postSchema.index({ taggedUsers: 1, createdAt: -1 });
+// Unique partial: chỉ áp dụng khi campaignMilestoneRef.campaignId tồn tại — đảm bảo
+// 1 milestone chỉ có 1 auto-post (idempotent khi unlockMilestone retry). Post user
+// thường (campaignId = null) không bị ảnh hưởng.
+postSchema.index(
+  {
+    "campaignMilestoneRef.campaignId": 1,
+    "campaignMilestoneRef.milestoneIdx": 1,
+  },
+  {
+    unique: true,
+    partialFilterExpression: {
+      "campaignMilestoneRef.campaignId": { $type: "objectId" },
+    },
+  }
+);
 
 // Extract hashtags from caption
 postSchema.methods.extractHashtags = function () {

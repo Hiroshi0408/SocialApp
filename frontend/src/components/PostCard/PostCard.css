@@ -803,3 +803,60 @@
   animation: spin-badge 1s linear infinite;
   display: block;
 }
+
+/* ─── Milestone banner ─── */
+/* Hiển thị giữa header và caption khi post là auto-post báo cáo milestone của
+   1 Charity Campaign. Click → /charity/:id để user thấy đủ context (org + tx). */
+.post-milestone-banner {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin: 0 12px 8px;
+  padding: 8px 12px;
+  background: linear-gradient(
+    90deg,
+    rgba(29, 155, 240, 0.08) 0%,
+    rgba(16, 185, 129, 0.08) 100%
+  );
+  border: 1px solid rgba(29, 155, 240, 0.25);
+  border-radius: 10px;
+  text-decoration: none;
+  color: var(--text-primary);
+  font-size: 0.88rem;
+  font-weight: 600;
+  transition: background 0.15s ease, transform 0.1s ease,
+    border-color 0.15s ease;
+}
+
+.post-milestone-banner:hover {
+  background: linear-gradient(
+    90deg,
+    rgba(29, 155, 240, 0.14) 0%,
+    rgba(16, 185, 129, 0.14) 100%
+  );
+  border-color: var(--primary-color);
+  transform: translateY(-1px);
+}
+
+.post-milestone-icon {
+  font-size: 1rem;
+  line-height: 1;
+}
+
+.post-milestone-text {
+  flex: 1;
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.post-milestone-arrow {
+  color: var(--primary-color);
+  font-size: 1rem;
+  transition: transform 0.15s ease;
+}
+
+.post-milestone-banner:hover .post-milestone-arrow {
+  transform: translateX(3px);
+}

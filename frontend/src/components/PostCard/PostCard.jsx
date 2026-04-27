@@ -6,6 +6,7 @@ import React, {
   memo,
   useRef,
 } from "react";
+import { Link } from "react-router-dom";
 import { useTranslation } from "react-i18next";
 import postService from "../../api/postService";
 import web3Service from "../../api/web3Service";
@@ -617,6 +618,28 @@ function PostCard({ post, onPostDeleted }) {
           )}
         </div>
       </div>
+      {/* Banner: post auto từ Charity milestone unlock — link sang campaign detail */}
+      {post.campaignMilestoneRef?.campaignId && (
+        <Link
+          to={`/charity/${post.campaignMilestoneRef.campaignId}`}
+          className="post-milestone-banner"
+        >
+          <span className="post-milestone-icon" aria-hidden>
+            🎯
+          </span>
+          <span className="post-milestone-text">
+            {t("postCard.milestoneBanner", {
+              idx:
+                typeof post.campaignMilestoneRef.milestoneIdx === "number"
+                  ? post.campaignMilestoneRef.milestoneIdx + 1
+                  : "?",
+            })}
+          </span>
+          <span className="post-milestone-arrow" aria-hidden>
+            →
+          </span>
+        </Link>
+      )}
       <p className="post-caption">
         <TextWithMentions text={caption} />
       </p>

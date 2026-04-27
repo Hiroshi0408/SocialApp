@@ -124,6 +124,16 @@ class PostDAO {
     if (lean) query = query.lean();
     return await query.exec();
   }
+
+  // Lookup auto-post báo cáo của 1 milestone — dùng để đảm bảo idempotent
+  // khi unlockMilestone retry.
+  async findByMilestoneRef(campaignId, milestoneIdx) {
+    return await Post.findOne({
+      "campaignMilestoneRef.campaignId": campaignId,
+      "campaignMilestoneRef.milestoneIdx": milestoneIdx,
+      deleted: false,
+    }).exec();
+  }
 }
 
 module.exports = new PostDAO();

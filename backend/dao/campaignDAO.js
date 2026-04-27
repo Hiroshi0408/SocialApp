@@ -113,6 +113,17 @@ class CampaignDAO {
     return await Campaign.findByIdAndUpdate(id, update, { new: true });
   }
 
+  // Tách riêng vì charityService.unlockMilestone cần set reportPostId SAU khi
+  // BE tự tạo auto-post (post id chỉ có sau markMilestoneUnlocked đã chạy).
+  // Không reuse markMilestoneUnlocked để khỏi đụng unlockedAt.
+  async setMilestoneReportPostId(id, idx, reportPostId) {
+    return await Campaign.findByIdAndUpdate(
+      id,
+      { [`milestones.${idx}.reportPostId`]: reportPostId },
+      { new: true }
+    );
+  }
+
   // delta = 1 khi donor lần đầu, 0 nếu donor đã có trong Donation trước đó
   async incrementDonorsCount(id, delta = 1) {
     if (!delta) return null;
