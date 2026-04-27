@@ -1,23 +1,34 @@
-/* global BigInt */
-import React, { useEffect, useState } from "react";
+import React, { useEffect, useState, useCallback } from "react";
 import { useNavigate, Link } from "react-router-dom";
 import { useTranslation } from "react-i18next";
 import toast from "react-hot-toast";
+import { ethers } from "ethers";
 import Header from "../../components/Header/Header";
 import Sidebar from "../../components/Sidebar/Sidebar";
+import TxStatusModal from "../../components/TxStatusModal/TxStatusModal";
 import organizationService from "../../api/organizationService";
 import charityService from "../../api/charityService";
 import uploadService from "../../api/uploadService";
+import { useWeb3 } from "../../contexts/Web3Context";
+import { parseWeb3Error, assertSepolia } from "../../utils/web3Errors";
 import "./CreateCampaign.css";
 
 const CATEGORIES = ["education", "medical", "disaster", "animal", "other"];
 const MAX_MILESTONES = 10;
+
+// Human-readable ABI — chỉ cần createCampaign
+const CHARITY_ABI = [
+  "function createCampaign(uint256 goal, uint256 durationSec, uint256[] milestoneAmounts, bytes32 metadataHash) external returns (uint256)",
+];
+
+const CHARITY_ADDRESS = process.env.REACT_APP_CHARITY_ADDRESS || "";
 
 const emptyMilestone = () => ({ title: "", description: "", amountEth: "" });
 
 function CreateCampaign() {
   const { t } = useTranslation();
   const navigate = useNavigate();
+  const { signer, walletAddress, connectWallet, isConnecting } = useWeb3();
 
   const [orgLoading, setOrgLoading] = useState(true);
   const [org, setOrg] = useState(null);
@@ -34,8 +45,13 @@ function CreateCampaign() {
   const [milestones, setMilestones] = useState([emptyMilestone()]);
   const [coverPreview, setCoverPreview] = useState(null);
   const [uploading, setUploading] = useState(false);
-  const [submitting, setSubmitting] = useState(false);
   const [errors, setErrors] = useState({});
+
+  // Tx state cho on-chain sign/wait flow
+  const [txStatus, setTxStatus] = useState("idle"); // idle|signing|pending|success|failed|rejected
+  const [txHash, setTxHash] = useState(null);
+  const [txError, setTxError] = useState(null);
+  const submitting = ["signing", "pending"].includes(txStatus);
 
   useEffect(() => {
     organizationService
@@ -125,6 +141,27 @@ function CreateCampaign() {
     return errs;
   };
 
+  const resetTx = useCallback(() => {
+    setTxStatus("idle");
+    setTxHash(null);
+    setTxError(null);
+  }, []);
+
+  const buildPayload = () => ({
+    organizationId: org.id || org._id,
+    title: form.title.trim(),
+    description: form.description.trim() || undefined,
+    coverImage: form.coverImage || undefined,
+    category: form.category || undefined,
+    goalEth: String(parseFloat(form.goalEth)),
+    durationDays: parseInt(form.durationDays, 10),
+    milestones: milestones.map((m) => ({
+      title: m.title.trim(),
+      description: m.description.trim() || undefined,
+      amountEth: String(parseFloat(m.amountEth)),
+    })),
+  });
+
   const handleSubmit = async (e) => {
     e.preventDefault();
     const errs = validate();
@@ -133,30 +170,76 @@ function CreateCampaign() {
       return;
     }
 
-    setSubmitting(true);
-    try {
-      const payload = {
-        organizationId: org.id || org._id,
-        title: form.title.trim(),
-        description: form.description.trim() || undefined,
-        coverImage: form.coverImage || undefined,
-        category: form.category || undefined,
-        goalEth: String(parseFloat(form.goalEth)),
-        durationDays: parseInt(form.durationDays, 10),
-        milestones: milestones.map((m) => ({
-          title: m.title.trim(),
-          description: m.description.trim() || undefined,
-          amountEth: String(parseFloat(m.amountEth)),
-        })),
-      };
+    // Pre-flight: ví đang connect phải khớp ví của org
+    const orgWallet = (org.walletAddress || "").toLowerCase();
+    if (!walletAddress || walletAddress.toLowerCase() !== orgWallet) {
+      toast.error(t("charity.create.wrongWallet"));
+      return;
+    }
+    if (!CHARITY_ADDRESS) {
+      toast.error("Charity contract address not configured");
+      return;
+    }
 
-      const res = await charityService.createCampaign(payload);
+    const payload = buildPayload();
+    resetTx();
+
+    try {
+      // Step 1: BE validate + return params
+      setTxStatus("signing");
+      const prep = await charityService.prepareCampaign(payload);
+
+      // Pre-flight network
+      await assertSepolia();
+
+      // Step 2: ký tx với ví org
+      const provider = new ethers.BrowserProvider(window.ethereum);
+      const signerInstance = signer || (await provider.getSigner());
+      const contract = new ethers.Contract(CHARITY_ADDRESS, CHARITY_ABI, signerInstance);
+
+      const tx = await contract.createCampaign(
+        prep.goalWei,
+        prep.durationSec,
+        prep.milestoneAmountsWei,
+        prep.metadataHash
+      );
+      setTxHash(tx.hash);
+      setTxStatus("pending");
+
+      await tx.wait(1);
+
+      // Step 3: BE verify receipt + lưu Mongo
+      const res = await charityService.recordCampaign({ ...payload, txHash: tx.hash });
+
+      setTxStatus("success");
       toast.success(t("charity.create.successToast"));
-      navigate(`/charity/${res.campaign.id || res.campaign._id}`);
+      // Delay nhẹ để user thấy success state trong modal trước khi điều hướng
+      setTimeout(() => {
+        navigate(`/charity/${res.campaign.id || res.campaign._id}`);
+      }, 800);
     } catch (err) {
-      toast.error(err?.response?.data?.message || t("charity.create.errorFailed"));
-    } finally {
-      setSubmitting(false);
+      // BE-side error (prepare/record) → response.data.message
+      if (err?.response?.data?.message) {
+        setTxStatus("failed");
+        setTxError(err.response.data.message);
+        return;
+      }
+      // Web3 errors (sign / network)
+      if (err.code === "WRONG_NETWORK") {
+        setTxStatus("failed");
+        setTxError(t("web3.wrongNetwork"));
+        return;
+      }
+      const { type, rawMessage } = parseWeb3Error(err);
+      if (type === "rejected") {
+        setTxStatus("rejected");
+      } else if (type === "insufficient") {
+        setTxStatus("failed");
+        setTxError(t("web3.error.insufficient"));
+      } else {
+        setTxStatus("failed");
+        setTxError(rawMessage || t("charity.create.errorFailed"));
+      }
     }
   };
 
@@ -229,6 +312,12 @@ function CreateCampaign() {
   const goal = parseFloat(form.goalEth) || 0;
   const sum = milestones.reduce((acc, m) => acc + (parseFloat(m.amountEth) || 0), 0);
   const sumOk = goal > 0 && Math.abs(sum - goal) < 0.000001;
+
+  // Wallet pre-check — chỉ ví ORG mới có quyền tạo (contract enforce)
+  const orgWallet = (org.walletAddress || "").toLowerCase();
+  const connectedWallet = (walletAddress || "").toLowerCase();
+  const walletMatches = !!walletAddress && connectedWallet === orgWallet;
+  const walletConnected = !!walletAddress;
 
   return (
     <div className="create-campaign-page">
@@ -452,6 +541,47 @@ function CreateCampaign() {
               )}
             </div>
 
+            {/* Wallet status — org phải tự ký tx tạo campaign */}
+            <div className="cc-section">
+              {!walletConnected && (
+                <div className="cc-wallet-banner cc-wallet-banner--warn">
+                  <p className="cc-wallet-banner-text">
+                    {t("charity.create.connectWalletHint")}
+                  </p>
+                  <button
+                    type="button"
+                    className="cc-wallet-banner-btn"
+                    onClick={connectWallet}
+                    disabled={isConnecting}
+                  >
+                    {isConnecting
+                      ? t("charity.donate.connecting")
+                      : t("charity.donate.connectWallet")}
+                  </button>
+                </div>
+              )}
+              {walletConnected && !walletMatches && (
+                <div className="cc-wallet-banner cc-wallet-banner--error">
+                  <p className="cc-wallet-banner-text">
+                    {t("charity.create.wrongWalletHint", {
+                      expected: orgWallet.slice(0, 6) + "..." + orgWallet.slice(-4),
+                      got: connectedWallet.slice(0, 6) + "..." + connectedWallet.slice(-4),
+                    })}
+                  </p>
+                </div>
+              )}
+              {walletMatches && (
+                <div className="cc-wallet-banner cc-wallet-banner--ok">
+                  <p className="cc-wallet-banner-text">
+                    {t("charity.create.walletReady", {
+                      address:
+                        connectedWallet.slice(0, 6) + "..." + connectedWallet.slice(-4),
+                    })}
+                  </p>
+                </div>
+              )}
+            </div>
+
             <div className="cc-form-footer">
               <Link to="/charity" className="cc-cancel-btn">
                 {t("charity.create.cancel")}
@@ -459,7 +589,7 @@ function CreateCampaign() {
               <button
                 type="submit"
                 className="cc-submit-btn"
-                disabled={submitting || uploading}
+                disabled={submitting || uploading || !walletMatches}
               >
                 {submitting ? t("charity.create.submitting") : t("charity.create.submit")}
               </button>
@@ -467,6 +597,16 @@ function CreateCampaign() {
           </form>
         </main>
       </div>
+
+      <TxStatusModal
+        isOpen={txStatus !== "idle"}
+        onClose={resetTx}
+        status={txStatus}
+        txHash={txHash}
+        errorMsg={txError}
+        title={t("charity.create.txTitle")}
+        onRetry={resetTx}
+      />
     </div>
   );
 }

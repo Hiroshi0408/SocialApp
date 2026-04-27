@@ -709,7 +709,12 @@
       "noOrgDesc": "Chỉ tổ chức được admin xác minh mới có thể tạo chiến dịch gây quỹ.",
       "noOrgCta": "Đăng ký tổ chức",
       "pendingOrgDesc": "Tổ chức của bạn đang chờ admin xét duyệt. Vui lòng chờ xác minh trước khi tạo chiến dịch.",
-      "pendingOrgCta": "Xem trạng thái tổ chức"
+      "pendingOrgCta": "Xem trạng thái tổ chức",
+      "txTitle": "Tạo chiến dịch on-chain",
+      "connectWalletHint": "Vui lòng kết nối MetaMask bằng ví đã đăng ký cho tổ chức để ký giao dịch tạo chiến dịch.",
+      "wrongWallet": "Ví đang kết nối không khớp với ví của tổ chức.",
+      "wrongWalletHint": "Ví hiện tại ({{got}}) không phải ví của tổ chức ({{expected}}). Hãy chuyển account trong MetaMask.",
+      "walletReady": "Sẵn sàng ký bằng ví tổ chức ({{address}})"
     },
     "tx": {
       "title": "Trạng thái giao dịch",

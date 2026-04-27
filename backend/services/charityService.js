@@ -195,21 +195,35 @@ class CharityService {
     };
   }
 
-  // ────────────── createCampaign ──────────────
+  // ────────────── createCampaign (FE-signed flow) ──────────────
+  //
+  // Flow:
+  //  1. FE call prepareCampaignCreate → BE validate, return { goalWei, durationSec,
+  //     milestoneAmountsWei, metadataHash } để FE truyền vào contract.createCampaign.
+  //  2. FE dùng signer ví ORG ký tx (msg.sender = ví org → beneficiary đúng + role
+  //     check pass vì ví đã được admin whitelist on-chain qua organizationService.verify).
+  //  3. FE call recordCampaignCreate với { ...payload, txHash } sau khi tx confirm.
+  //     BE re-validate, recompute hash, fetch receipt, parse event CampaignCreated,
+  //     verify hash + beneficiary khớp với ví org, lưu Mongo (onChainStatus="confirmed").
+  //
+  // Lý do tách 2 step thay vì BE tự call: contract `createCampaign` đặt
+  // beneficiary = msg.sender + require CAMPAIGN_CREATOR_ROLE. Nếu BE wallet sign,
+  // beneficiary sẽ là ví BE → milestone disburse về sai ví. Phải để org tự ký.
 
-  async createCampaign(userId, payload) {
+  // Validate + parse common — dùng cho cả prepare và record.
+  // Trả về object đã parse sẵn để caller dùng ngay.
+  async _validateAndParseCampaignPayload(userId, payload) {
     const {
       organizationId,
       title,
       description = "",
       coverImage = "",
       category = "other",
-      goalEth, // string ETH "0.5"
+      goalEth,
       durationDays,
-      milestones, // [{ amountEth, title, description }]
+      milestones,
     } = payload;
 
-    // 1. validate org + ownership + verified
     if (!organizationId) throw new AppError("organizationId is required", 400);
     const org = await organizationDAO.findById(organizationId);
     if (!org) throw new AppError("Organization not found", 404);
@@ -223,7 +237,6 @@ class CharityService {
       throw new AppError("Organization wallet address is missing", 400);
     }
 
-    // 2. validate inputs (depth-2 sanity, validation middleware đã check shape)
     if (!title || !title.trim()) throw new AppError("Title is required", 400);
     if (!goalEth) throw new AppError("Goal is required", 400);
     if (!durationDays) throw new AppError("Duration is required", 400);
@@ -248,7 +261,6 @@ class CharityService {
       throw new AppError("Invalid category", 400);
     }
 
-    // 3. parse goal + milestones về wei + verify sum
     let goalWei;
     try {
       goalWei = ethers.parseEther(String(goalEth));
@@ -283,7 +295,6 @@ class CharityService {
       description: (m.description || "").trim(),
     }));
 
-    // 4. compute metadataHash (commit on-chain)
     const metadataHash = this.computeMetadataHash({
       organizationId: org._id,
       title: title.trim(),
@@ -293,91 +304,151 @@ class CharityService {
       milestones: milestonesEmbedded,
     });
 
-    // 5. lưu Mongo trước (status OPEN, onChainStatus pending) — dù tx fail vẫn giữ
-    // record để audit trail, không xóa Mongo. organizationDAO.incrementCampaigns
-    // chỉ chạy sau khi tx confirm thành công.
     const durationSec = days * 24 * 60 * 60;
-    const deadline = new Date(Date.now() + durationSec * 1000);
 
-    const campaign = await campaignDAO.create({
-      organizationId: org._id,
-      createdBy: userId,
-      title: title.trim(),
-      description: description.trim(),
-      coverImage,
-      category,
-      beneficiary: org.walletAddress,
-      goalWei: goalWei.toString(),
-      deadline,
-      milestones: milestonesEmbedded,
-      metadataHash: metadataHash.toLowerCase(),
-      onChainStatus: "pending",
-    });
+    return {
+      org,
+      goalWei,
+      durationSec,
+      milestoneAmountsWei,
+      milestonesEmbedded,
+      metadataHash,
+      normalized: {
+        title: title.trim(),
+        description: description.trim(),
+        coverImage,
+        category,
+      },
+    };
+  }
 
-    logger.info(`Charity: campaign Mongo created — id=${campaign._id}, org=${org._id}`);
+  // Step 1: FE call để lấy params chuẩn (BigInt → string) gửi vào contract.
+  // KHÔNG tạo Mongo doc — nếu user reject ký, không có rác.
+  async prepareCampaignCreate(userId, payload) {
+    const parsed = await this._validateAndParseCampaignPayload(userId, payload);
+    return {
+      goalWei: parsed.goalWei.toString(),
+      durationSec: parsed.durationSec,
+      milestoneAmountsWei: parsed.milestoneAmountsWei.map((w) => w.toString()),
+      metadataHash: parsed.metadataHash,
+      beneficiary: parsed.org.walletAddress.toLowerCase(),
+    };
+  }
 
-    // 6. gọi contract — KHÔNG fire-and-forget, cần onChainId từ event
-    let txHash = null;
-    try {
-      const contract = this._getContract();
-      const tx = await contract.createCampaign(
-        goalWei,
-        durationSec,
-        milestoneAmountsWei,
-        metadataHash
-      );
-      txHash = tx.hash;
-      logger.info(`Charity: createCampaign tx sent — ${tx.hash}`);
+  // Step 2: FE call sau khi tx confirm. BE verify on-chain rồi mới lưu Mongo.
+  async recordCampaignCreate(userId, payload) {
+    const { txHash } = payload;
+    if (!txHash || !/^0x[0-9a-fA-F]{64}$/.test(txHash)) {
+      throw new AppError("Invalid txHash", 400);
+    }
+    const txHashLower = txHash.toLowerCase();
 
-      const receipt = await tx.wait();
-      logger.info(`Charity: createCampaign confirmed — block=${receipt.blockNumber}`);
-
-      // 7. parse event CampaignCreated → lấy onChainId
-      const iface = contract.interface;
-      const eventTopic = iface.getEvent("CampaignCreated").topicHash;
-      const log = receipt.logs.find((l) => l.topics[0] === eventTopic);
-      if (!log) {
-        throw new AppError("CampaignCreated event not found in receipt", 500);
-      }
-      const parsed = iface.parseLog({ topics: log.topics, data: log.data });
-      const onChainId = Number(parsed.args.id);
-
-      // 8. update Mongo: onChainId + tx meta + sync chain cache (raised/status)
-      await campaignDAO.updateOnChainMeta(campaign._id, {
-        onChainId,
-        createTxHash: receipt.hash,
-        createBlockNumber: receipt.blockNumber,
-        onChainStatus: "confirmed",
-      });
-      // raised/unlocked vẫn 0 ngay sau create, gọi syncChainCache cho chuẩn
-      const chain = await this._readChainState(onChainId);
-      if (chain) {
-        await campaignDAO.syncChainCache(campaign._id, {
-          raisedWei: chain.raisedWei,
-          unlockedTotalWei: chain.unlockedTotalWei,
-          status: chain.status,
-        });
-      }
-
-      // 9. tăng campaignsCount của org
-      await organizationDAO.incrementCampaigns(org._id);
-
-      const fresh = await campaignDAO.findById(campaign._id, { populate: POPULATE_ORG });
+    // Idempotent: FE retry với cùng txHash → trả doc đã có
+    const existing = await campaignDAO.findByCreateTxHash(txHashLower);
+    if (existing) {
+      const fresh = await campaignDAO.findById(existing._id, { populate: POPULATE_ORG });
       return formatCampaign(fresh);
-    } catch (err) {
-      // Nếu là AppError đã rõ ràng thì throw thẳng
-      // Còn lại: tx revert / RPC lỗi → đánh dấu failed, giữ Mongo để retry/audit
-      logger.error("Charity: createCampaign on-chain failed:", err.message);
-      await campaignDAO.updateOnChainMeta(campaign._id, {
-        onChainStatus: "failed",
-        createTxHash: txHash,
-      });
-      if (err instanceof AppError) throw err;
+    }
+
+    // Re-validate payload + parse (BE source of truth, không tin FE đã tính sẵn)
+    const parsed = await this._validateAndParseCampaignPayload(userId, payload);
+
+    // Fetch receipt + verify on-chain
+    const provider = blockchainService.getProvider();
+    const receipt = await provider.getTransactionReceipt(txHashLower);
+    if (!receipt) {
+      throw new AppError("Transaction not found or not mined yet", 404);
+    }
+    if (receipt.status !== 1) {
+      throw new AppError("Transaction reverted on-chain", 400);
+    }
+    if (receipt.to?.toLowerCase() !== process.env.CHARITY_ADDRESS.toLowerCase()) {
+      throw new AppError("Transaction not sent to Charity contract", 400);
+    }
+
+    // Parse event CampaignCreated
+    const contract = this._getReadOnlyContract();
+    const iface = contract.interface;
+    const eventTopic = iface.getEvent("CampaignCreated").topicHash;
+    const log = receipt.logs.find(
+      (l) =>
+        l.topics[0] === eventTopic &&
+        l.address.toLowerCase() === process.env.CHARITY_ADDRESS.toLowerCase()
+    );
+    if (!log) {
+      throw new AppError("CampaignCreated event not found in receipt", 400);
+    }
+    const evt = iface.parseLog({ topics: log.topics, data: log.data });
+    const onChainId = Number(evt.args.id);
+    const eventBeneficiary = evt.args.beneficiary.toLowerCase();
+    const eventGoal = evt.args.goal.toString();
+    const eventMetadataHash = evt.args.metadataHash.toLowerCase();
+
+    // Strict verify: ví ký tx phải khớp ví org (anti-spoof: kẻ khác ký để spam Mongo)
+    if (eventBeneficiary !== parsed.org.walletAddress.toLowerCase()) {
       throw new AppError(
-        "Failed to create campaign on-chain. Mongo record kept for audit.",
-        502
+        "Transaction beneficiary does not match organization wallet",
+        400
       );
     }
+    if (eventGoal !== parsed.goalWei.toString()) {
+      throw new AppError("On-chain goal does not match payload", 400);
+    }
+    if (eventMetadataHash !== parsed.metadataHash.toLowerCase()) {
+      throw new AppError("On-chain metadataHash does not match payload", 400);
+    }
+
+    // Đọc deadline từ chain — block timestamp khi tx mined ≠ Date.now() từ payload
+    const chain = await this._readChainState(onChainId);
+    if (!chain) throw new AppError("Campaign not found on-chain", 500);
+
+    // Lưu Mongo với data verified — onChainStatus thẳng "confirmed", bỏ qua "pending"
+    let campaign;
+    try {
+      campaign = await campaignDAO.create({
+        organizationId: parsed.org._id,
+        createdBy: userId,
+        title: parsed.normalized.title,
+        description: parsed.normalized.description,
+        coverImage: parsed.normalized.coverImage,
+        category: parsed.normalized.category,
+        beneficiary: parsed.org.walletAddress,
+        goalWei: parsed.goalWei.toString(),
+        deadline: chain.deadline,
+        milestones: parsed.milestonesEmbedded,
+        metadataHash: parsed.metadataHash.toLowerCase(),
+        onChainId,
+        onChainStatus: "confirmed",
+        createTxHash: txHashLower,
+        createBlockNumber: receipt.blockNumber,
+      });
+    } catch (err) {
+      // Race: 2 record call cùng lúc (cùng txHash) → unique onChainId trip
+      if (err.code === 11000) {
+        const dup = await campaignDAO.findByCreateTxHash(txHashLower);
+        if (dup) {
+          const fresh = await campaignDAO.findById(dup._id, { populate: POPULATE_ORG });
+          return formatCampaign(fresh);
+        }
+      }
+      throw err;
+    }
+
+    // Sync cache (raised/unlocked vẫn 0 ngay sau create nhưng ghi cho chuẩn)
+    await campaignDAO.syncChainCache(campaign._id, {
+      raisedWei: chain.raisedWei,
+      unlockedTotalWei: chain.unlockedTotalWei,
+      status: chain.status,
+    });
+
+    await organizationDAO.incrementCampaigns(parsed.org._id);
+
+    logger.info(
+      `Charity: campaign recorded — id=${campaign._id}, onChainId=${onChainId}, tx=${txHashLower}`
+    );
+
+    const fresh = await campaignDAO.findById(campaign._id, { populate: POPULATE_ORG });
+    return formatCampaign(fresh);
   }
 
   // ────────────── list / detail ──────────────

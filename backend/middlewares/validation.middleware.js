@@ -344,6 +344,17 @@ const createCampaignValidation = [
   handleValidationErrors,
 ];
 
+// recordCampaign: kế thừa shape của createCampaign + thêm txHash
+const recordCampaignValidation = [
+  ...createCampaignValidation.slice(0, -1), // bỏ handleValidationErrors cuối cùng
+  body("txHash")
+    .notEmpty()
+    .withMessage("txHash is required")
+    .matches(/^0x[a-fA-F0-9]{64}$/)
+    .withMessage("Invalid txHash format"),
+  handleValidationErrors,
+];
+
 const recordDonationValidation = [
   param("id").isMongoId().withMessage("Invalid campaign ID"),
 
@@ -465,6 +476,7 @@ module.exports = {
 
   // Charity
   createCampaignValidation,
+  recordCampaignValidation,
   recordDonationValidation,
   recordRefundValidation,
   listCampaignsValidation,

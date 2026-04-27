@@ -424,6 +424,59 @@
   opacity: 0.88;
 }
 
+/* ── Wallet banner ── */
+.cc-wallet-banner {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  padding: 12px 16px;
+  border-radius: 10px;
+  border: 1px solid;
+  background: var(--cc-banner-bg, #fafafa);
+}
+
+.cc-wallet-banner-text {
+  margin: 0;
+  font-size: 0.9rem;
+  line-height: 1.45;
+  flex: 1;
+}
+
+.cc-wallet-banner-btn {
+  padding: 8px 16px;
+  border: none;
+  background: var(--primary-color);
+  color: white;
+  border-radius: 18px;
+  font-weight: 600;
+  font-size: 0.85rem;
+  cursor: pointer;
+}
+
+.cc-wallet-banner-btn:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+}
+
+.cc-wallet-banner--warn {
+  --cc-banner-bg: #fff7ed;
+  border-color: #fdba74;
+  color: #9a3412;
+}
+
+.cc-wallet-banner--error {
+  --cc-banner-bg: #fef2f2;
+  border-color: #f87171;
+  color: #991b1b;
+}
+
+.cc-wallet-banner--ok {
+  --cc-banner-bg: #f0fdf4;
+  border-color: #86efac;
+  color: #166534;
+}
+
 @media (max-width: 600px) {
   .cc-row {
     grid-template-columns: 1fr;

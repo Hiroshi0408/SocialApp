@@ -12,6 +12,15 @@ class CampaignDAO {
     return await query.exec();
   }
 
+  async findByCreateTxHash(txHash, options = {}) {
+    const { select = "", populate = "", lean = false } = options;
+    let query = Campaign.findOne({ createTxHash: txHash, ...ACTIVE_FILTER });
+    if (select) query = query.select(select);
+    if (populate) query = query.populate(populate);
+    if (lean) query = query.lean();
+    return await query.exec();
+  }
+
   async findByOnChainId(onChainId, options = {}) {
     const { select = "", populate = "", lean = false } = options;
     let query = Campaign.findOne({ onChainId, ...ACTIVE_FILTER });
