@@ -130,6 +130,53 @@ class CampaignDAO {
       { new: true }
     );
   }
+
+  // Đếm số campaign theo (org, status) cho admin dashboard track record.
+  // 1 query aggregate cho nhiều org → tránh N+1. Chỉ tính campaign đã confirmed
+  // on-chain (pending/failed register là noise, không phản ánh hoạt động thật).
+  async aggregateStatusCountsByOrg(orgIds = []) {
+    if (!Array.isArray(orgIds) || orgIds.length === 0) return {};
+    const mongoose = require("mongoose");
+    const objectIds = orgIds.map((id) =>
+      typeof id === "string" || !id?._bsontype
+        ? new mongoose.Types.ObjectId(id)
+        : id
+    );
+    const rows = await Campaign.aggregate([
+      {
+        $match: {
+          organizationId: { $in: objectIds },
+          onChainStatus: "confirmed",
+          deleted: { $ne: true },
+        },
+      },
+      {
+        $group: {
+          _id: { org: "$organizationId", status: "$status" },
+          count: { $sum: 1 },
+        },
+      },
+    ]);
+    const out = {};
+    const empty = () => ({
+      OPEN: 0,
+      FUNDED: 0,
+      EXECUTING: 0,
+      COMPLETED: 0,
+      FAILED: 0,
+      REFUNDED: 0,
+      total: 0,
+    });
+    for (const id of objectIds) out[id.toString()] = empty();
+    for (const row of rows) {
+      const key = row._id.org.toString();
+      if (!out[key]) out[key] = empty();
+      const status = row._id.status || "OPEN";
+      if (status in out[key]) out[key][status] = row.count;
+      out[key].total += row.count;
+    }
+    return out;
+  }
 }
 
 module.exports = new CampaignDAO();

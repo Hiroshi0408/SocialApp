@@ -10,6 +10,7 @@ const {
   MAX_FULLNAME_LENGTH,
   CHARITY_CATEGORIES,
   MAX_CHARITY_MILESTONES,
+  MIN_CHARITY_MILESTONES,
   MIN_CAMPAIGN_DURATION_DAYS,
   MAX_CAMPAIGN_DURATION_DAYS,
 } = require("../constants");
@@ -319,8 +320,10 @@ const createCampaignValidation = [
     ),
 
   body("milestones")
-    .isArray({ min: 1, max: MAX_CHARITY_MILESTONES })
-    .withMessage(`Milestones must be 1-${MAX_CHARITY_MILESTONES} items`),
+    .isArray({ min: MIN_CHARITY_MILESTONES, max: MAX_CHARITY_MILESTONES })
+    .withMessage(
+      `Milestones must be ${MIN_CHARITY_MILESTONES}-${MAX_CHARITY_MILESTONES} items`
+    ),
 
   body("milestones.*.title")
     .trim()

@@ -216,7 +216,27 @@ class OrganizationService {
   // ==================== ADMIN ACTIONS ====================
 
   async adminList(query = {}) {
-    return this.list(query, { isAdmin: true });
+    const result = await this.list(query, { isAdmin: true });
+    // Inject track record (số campaign theo từng status) cho admin dashboard.
+    // 1 aggregate query cho toàn bộ orgs trong page — không N+1.
+    const orgIds = result.organizations.map((o) => o.id).filter(Boolean);
+    if (orgIds.length > 0) {
+      const campaignDAO = require("../dao/campaignDAO");
+      const statsByOrg = await campaignDAO.aggregateStatusCountsByOrg(orgIds);
+      result.organizations = result.organizations.map((o) => ({
+        ...o,
+        campaignStats: statsByOrg[o.id.toString()] || {
+          OPEN: 0,
+          FUNDED: 0,
+          EXECUTING: 0,
+          COMPLETED: 0,
+          FAILED: 0,
+          REFUNDED: 0,
+          total: 0,
+        },
+      }));
+    }
+    return result;
   }
 
   // Admin verify — auto-create official group chat cho org, link 2 chiều.

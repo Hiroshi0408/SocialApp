@@ -9,6 +9,7 @@ import { useAuth } from "../../contexts/AuthContext";
 import { SEPOLIA_ETHERSCAN_BASE } from "../../constants";
 import "./AdminDashboard.css";
 
+/* global BigInt */
 const formatDateTime = (d) => {
   if (!d) return "—";
   try {
@@ -18,6 +19,29 @@ const formatDateTime = (d) => {
     return "—";
   }
 };
+
+// Detect Cloudinary/standard URLs theo extension. Cloudinary có thể append
+// query string transformations → tách `?` và `#` trước khi match.
+const isImageUrl = (url) =>
+  /\.(jpe?g|png|gif|webp|bmp|svg)(\?|#|$)/i.test(url || "");
+const isPdfUrl = (url) => /\.pdf(\?|#|$)/i.test(url || "");
+
+// % milestone trên goal — BigInt math để khỏi mất precision khi goal lớn.
+// Trả Number 2 chữ số thập phân, vd 33.33.
+const milestonePercent = (amountWei, goalWei) => {
+  try {
+    const a = BigInt(amountWei || "0");
+    const g = BigInt(goalWei || "0");
+    if (g === 0n) return 0;
+    return Number((a * 10000n) / g) / 100;
+  } catch {
+    return 0;
+  }
+};
+
+// MAX % per milestone — mirror với backend constants. Tránh import BE constant
+// trực tiếp; nếu rule đổi thì sửa ở cả 2 nơi (CLAUDE.md đã ghi).
+const MAX_MILESTONE_PERCENT = 50;
 
 function StatCard({ title, value, hint }) {
   return (
@@ -163,6 +187,11 @@ export default function AdminDashboard() {
     items: [],
     total: 0,
   });
+
+  // Inline expand panel: 1 org đang mở giấy tờ, 1 campaign đang xem milestone
+  // plan. Cùng dùng pattern Set/state để mở nhiều cái 1 lúc nếu cần debug.
+  const [expandedOrgId, setExpandedOrgId] = useState(null);
+  const [expandedCampaignId, setExpandedCampaignId] = useState(null);
 
   // Audit
   const [audit, setAudit] = useState([]);
@@ -974,11 +1003,12 @@ export default function AdminDashboard() {
           </div>
 
           <div className="admin-table">
-            <div className="admin-row admin-head">
+            <div className="admin-row admin-head organizations">
               <div>Name</div>
               <div>Owner</div>
               <div>Wallet</div>
               <div>Status</div>
+              <div>Track record</div>
               <div>Applied</div>
               <div>Action</div>
             </div>
@@ -986,61 +1016,193 @@ export default function AdminDashboard() {
             {orgsState.items.length === 0 ? (
               <div className="admin-row admin-empty">No organizations</div>
             ) : (
-              orgsState.items.map((o) => (
-                <div className="admin-row organizations" key={o.id}>
-                  <div className="admin-cell">
-                    <div className="admin-ellipsis">{o.name}</div>
-                    <div className="admin-muted">/{o.slug}</div>
-                  </div>
-                  <div className="admin-ellipsis">
-                    {o.owner?.username || "—"}
-                  </div>
-                  <div className="admin-ellipsis" title={o.walletAddress}>
-                    <code style={{ fontSize: 11 }}>
-                      {o.walletAddress
-                        ? `${o.walletAddress.slice(0, 6)}...${o.walletAddress.slice(-4)}`
-                        : "—"}
-                    </code>
-                  </div>
-                  <div>
-                    <span
-                      className={`admin-pill ${
-                        o.status === "verified"
-                          ? "ok"
-                          : o.status === "rejected"
-                            ? "danger"
-                            : ""
-                      }`}
-                    >
-                      {o.status}
-                    </span>
-                  </div>
-                  <div>{formatDateTime(o.createdAt)}</div>
-                  <div style={{ display: "flex", gap: 6 }}>
-                    {o.status === "pending" && (
-                      <>
+              orgsState.items.map((o) => {
+                const docs = Array.isArray(o.proofDocuments) ? o.proofDocuments : [];
+                const docCount = docs.length;
+                const isExpanded = expandedOrgId === o.id;
+                const stats = o.campaignStats || null;
+                return (
+                  <React.Fragment key={o.id}>
+                    <div className="admin-row organizations">
+                      <div className="admin-cell">
+                        <div className="admin-ellipsis">{o.name}</div>
+                        <div className="admin-muted">/{o.slug}</div>
+                      </div>
+                      <div className="admin-ellipsis">
+                        {o.owner?.username || "—"}
+                      </div>
+                      <div className="admin-ellipsis" title={o.walletAddress}>
+                        <code style={{ fontSize: 11 }}>
+                          {o.walletAddress
+                            ? `${o.walletAddress.slice(0, 6)}...${o.walletAddress.slice(-4)}`
+                            : "—"}
+                        </code>
+                      </div>
+                      <div>
+                        <span
+                          className={`admin-pill ${
+                            o.status === "verified"
+                              ? "ok"
+                              : o.status === "rejected"
+                                ? "danger"
+                                : ""
+                          }`}
+                        >
+                          {o.status}
+                        </span>
+                      </div>
+                      <div className="admin-trackrecord">
+                        {stats ? (
+                          stats.total === 0 ? (
+                            <span className="admin-muted" style={{ fontSize: 12 }}>
+                              No campaigns yet
+                            </span>
+                          ) : (
+                            <div className="admin-trackrecord-line">
+                              <span title="Total campaigns" className="admin-pill">
+                                {stats.total} total
+                              </span>
+                              {stats.COMPLETED > 0 && (
+                                <span className="admin-pill ok" title="Completed">
+                                  ✓ {stats.COMPLETED}
+                                </span>
+                              )}
+                              {stats.EXECUTING > 0 && (
+                                <span className="admin-pill" title="Executing">
+                                  ⚙ {stats.EXECUTING}
+                                </span>
+                              )}
+                              {(stats.OPEN + stats.FUNDED) > 0 && (
+                                <span className="admin-pill" title="Open + Funded">
+                                  ◷ {stats.OPEN + stats.FUNDED}
+                                </span>
+                              )}
+                              {(stats.FAILED + stats.REFUNDED) > 0 && (
+                                <span
+                                  className="admin-pill danger"
+                                  title="Failed + Refunded"
+                                >
+                                  ✕ {stats.FAILED + stats.REFUNDED}
+                                </span>
+                              )}
+                            </div>
+                          )
+                        ) : (
+                          <span className="admin-muted" style={{ fontSize: 12 }}>
+                            —
+                          </span>
+                        )}
+                      </div>
+                      <div>{formatDateTime(o.createdAt)}</div>
+                      <div style={{ display: "flex", gap: 6, flexWrap: "wrap" }}>
                         <button
                           className="admin-btn"
-                          onClick={() => onVerifyOrg(o)}
+                          onClick={() =>
+                            setExpandedOrgId(isExpanded ? null : o.id)
+                          }
+                          disabled={docCount === 0}
+                          title={
+                            docCount === 0
+                              ? "No proof documents uploaded"
+                              : isExpanded
+                                ? "Hide documents"
+                                : "View documents inline"
+                          }
                         >
-                          Verify
+                          {isExpanded ? "Hide" : "Docs"} ({docCount})
                         </button>
-                        <button
-                          className="admin-btn danger"
-                          onClick={() => onRejectOrg(o)}
-                        >
-                          Reject
-                        </button>
-                      </>
+                        {o.status === "pending" && (
+                          <>
+                            <button
+                              className="admin-btn"
+                              onClick={() => onVerifyOrg(o)}
+                            >
+                              Verify
+                            </button>
+                            <button
+                              className="admin-btn danger"
+                              onClick={() => onRejectOrg(o)}
+                            >
+                              Reject
+                            </button>
+                          </>
+                        )}
+                        {o.status === "rejected" && (
+                          <span className="admin-muted" style={{ fontSize: 12 }}>
+                            {o.rejectedReason || "No reason"}
+                          </span>
+                        )}
+                      </div>
+                    </div>
+
+                    {isExpanded && (
+                      <div className="admin-row admin-expand-row">
+                        <div className="admin-expand-panel">
+                          <div className="admin-expand-title">
+                            Proof documents ({docCount})
+                            <span className="admin-muted" style={{ marginLeft: 8 }}>
+                              — review inline before verifying. Uploads are
+                              Cloudinary-hosted; PDFs render in &lt;iframe&gt;,
+                              images inline.
+                            </span>
+                          </div>
+                          {docCount === 0 ? (
+                            <div className="admin-muted">
+                              No proof documents uploaded by this organization.
+                            </div>
+                          ) : (
+                            <div className="admin-doc-grid">
+                              {docs.map((url, i) => {
+                                const img = isImageUrl(url);
+                                const pdf = isPdfUrl(url);
+                                return (
+                                  <div className="admin-doc-card" key={i}>
+                                    <div className="admin-doc-card-head">
+                                      <span className="admin-doc-card-label">
+                                        #{i + 1} {img ? "Image" : pdf ? "PDF" : "File"}
+                                      </span>
+                                      <a
+                                        href={url}
+                                        target="_blank"
+                                        rel="noopener noreferrer"
+                                        className="admin-link"
+                                        style={{ fontSize: 12 }}
+                                      >
+                                        Open in new tab ↗
+                                      </a>
+                                    </div>
+                                    <div className="admin-doc-card-body">
+                                      {img ? (
+                                        <img
+                                          src={url}
+                                          alt={`Proof ${i + 1}`}
+                                          loading="lazy"
+                                        />
+                                      ) : pdf ? (
+                                        <iframe
+                                          src={url}
+                                          title={`Proof ${i + 1}`}
+                                          width="100%"
+                                          height="500"
+                                        />
+                                      ) : (
+                                        <div className="admin-muted">
+                                          Unsupported preview format. Use the
+                                          link above to download.
+                                        </div>
+                                      )}
+                                    </div>
+                                  </div>
+                                );
+                              })}
+                            </div>
+                          )}
+                        </div>
+                      </div>
                     )}
-                    {o.status === "rejected" && (
-                      <span className="admin-muted" style={{ fontSize: 12 }}>
-                        {o.rejectedReason || "No reason"}
-                      </span>
-                    )}
-                  </div>
-                </div>
-              ))
+                  </React.Fragment>
+                );
+              })
             )}
           </div>
 
@@ -1111,54 +1273,217 @@ export default function AdminDashboard() {
                   const isExecuting = charityState.processingKey === executingKey;
                   const isFailing = charityState.processingKey === failKey;
                   const anyProcessing = !!charityState.processingKey;
+                  const isExpanded = expandedCampaignId === c.id;
+                  const milestones = c.milestones || [];
+
+                  // Tính warning trên milestone plan — legacy campaign (tạo
+                  // trước khi thêm rule MIN/MAX %) có thể vi phạm; hiển thị
+                  // warning để admin biết rủi ro trước khi markExecuting.
+                  let sumPct = 0;
+                  let hasOverPercent = false;
+                  for (const m of milestones) {
+                    const p = milestonePercent(m.amountWei, c.goalWei);
+                    sumPct += p;
+                    if (p > MAX_MILESTONE_PERCENT + 0.001) hasOverPercent = true;
+                  }
+                  const sumOff = Math.abs(sumPct - 100) > 0.05;
+                  const tooFew = milestones.length < 2;
+                  const hasWarning = hasOverPercent || sumOff || tooFew;
+
                   return (
-                    <div
-                      className="admin-row"
-                      key={c.id}
-                      style={{ gridTemplateColumns: "2fr 1.5fr 1fr 1fr 1fr 1.6fr" }}
-                    >
-                      <div className="admin-cell">
-                        <Link to={`/charity/${c.id}`} className="admin-link">
-                          <div className="admin-ellipsis">{c.title}</div>
-                        </Link>
-                        <div className="admin-muted">
-                          #{String(c.id).slice(-8)}
+                    <React.Fragment key={c.id}>
+                      <div
+                        className="admin-row"
+                        style={{ gridTemplateColumns: "2fr 1.5fr 1fr 1fr 1fr 1.6fr" }}
+                      >
+                        <div className="admin-cell">
+                          <Link to={`/charity/${c.id}`} className="admin-link">
+                            <div className="admin-ellipsis">{c.title}</div>
+                          </Link>
+                          <div className="admin-muted">
+                            #{String(c.id).slice(-8)} • {milestones.length} milestone(s)
+                            {hasWarning && (
+                              <span
+                                className="admin-pill danger"
+                                style={{ marginLeft: 6, fontSize: 10 }}
+                                title="Milestone plan has issues — click View milestones"
+                              >
+                                ⚠ check plan
+                              </span>
+                            )}
+                          </div>
+                        </div>
+                        <div className="admin-ellipsis">
+                          {c.organization?.name || "—"}
+                        </div>
+                        <div>{goalEth}</div>
+                        <div>{raisedEth}</div>
+                        <div>
+                          <span className="admin-pill">{c.status}</span>
+                        </div>
+                        <div style={{ display: "flex", gap: 6, flexWrap: "wrap" }}>
+                          <button
+                            className="admin-btn"
+                            onClick={() =>
+                              setExpandedCampaignId(isExpanded ? null : c.id)
+                            }
+                            disabled={milestones.length === 0}
+                          >
+                            {isExpanded ? "Hide plan" : "View plan"}
+                          </button>
+                          {isFunded && (
+                            <>
+                              <button
+                                className="admin-btn"
+                                onClick={() => onMarkExecuting(c)}
+                                disabled={anyProcessing}
+                              >
+                                {isExecuting ? "Processing..." : "Mark Executing"}
+                              </button>
+                              <button
+                                className="admin-btn danger"
+                                onClick={() => onForceFail(c)}
+                                disabled={anyProcessing}
+                              >
+                                {isFailing ? "Processing..." : "Force Fail"}
+                              </button>
+                            </>
+                          )}
+                          {!isFunded && (
+                            <span className="admin-muted" style={{ fontSize: 12 }}>
+                              No actions for {c.status}
+                            </span>
+                          )}
                         </div>
                       </div>
-                      <div className="admin-ellipsis">
-                        {c.organization?.name || "—"}
-                      </div>
-                      <div>{goalEth}</div>
-                      <div>{raisedEth}</div>
-                      <div>
-                        <span className="admin-pill">{c.status}</span>
-                      </div>
-                      <div style={{ display: "flex", gap: 6, flexWrap: "wrap" }}>
-                        {isFunded && (
-                          <>
-                            <button
-                              className="admin-btn"
-                              onClick={() => onMarkExecuting(c)}
-                              disabled={anyProcessing}
-                            >
-                              {isExecuting ? "Processing..." : "Mark Executing"}
-                            </button>
-                            <button
-                              className="admin-btn danger"
-                              onClick={() => onForceFail(c)}
-                              disabled={anyProcessing}
-                            >
-                              {isFailing ? "Processing..." : "Force Fail"}
-                            </button>
-                          </>
-                        )}
-                        {!isFunded && (
-                          <span className="admin-muted" style={{ fontSize: 12 }}>
-                            No actions for {c.status}
-                          </span>
-                        )}
-                      </div>
-                    </div>
+
+                      {isExpanded && (
+                        <div className="admin-row admin-expand-row">
+                          <div className="admin-expand-panel">
+                            <div className="admin-expand-title">
+                              Milestone plan ({milestones.length})
+                              <span className="admin-muted" style={{ marginLeft: 8 }}>
+                                — verify the breakdown before unlocking funds.
+                                Rule: ≥ 2 mốc, ≤ {MAX_MILESTONE_PERCENT}% per
+                                mốc, sum = 100%.
+                              </span>
+                            </div>
+
+                            {hasWarning && (
+                              <div className="admin-warn-banner">
+                                <b>⚠ Plan does not match safe milestone rules:</b>
+                                <ul style={{ margin: "6px 0 0", paddingLeft: 18 }}>
+                                  {tooFew && (
+                                    <li>
+                                      Only {milestones.length} milestone — rule
+                                      requires at least 2.
+                                    </li>
+                                  )}
+                                  {hasOverPercent && (
+                                    <li>
+                                      One or more milestones exceed{" "}
+                                      {MAX_MILESTONE_PERCENT}% of the goal.
+                                    </li>
+                                  )}
+                                  {sumOff && (
+                                    <li>
+                                      Sum of milestone amounts is{" "}
+                                      {sumPct.toFixed(2)}% of goal (expected
+                                      100%). Likely a legacy campaign created
+                                      before the milestone rules were enforced.
+                                    </li>
+                                  )}
+                                </ul>
+                              </div>
+                            )}
+
+                            <div className="admin-table">
+                              <div
+                                className="admin-row admin-head"
+                                style={{
+                                  gridTemplateColumns: "0.4fr 2.5fr 1fr 1fr 1.4fr",
+                                }}
+                              >
+                                <div>#</div>
+                                <div>Title</div>
+                                <div>Amount (ETH)</div>
+                                <div>% of goal</div>
+                                <div>Bar</div>
+                              </div>
+                              {milestones.map((m, idx) => {
+                                const amountEth = ethers.formatEther(
+                                  m.amountWei || "0"
+                                );
+                                const pct = milestonePercent(
+                                  m.amountWei,
+                                  c.goalWei
+                                );
+                                const over = pct > MAX_MILESTONE_PERCENT + 0.001;
+                                return (
+                                  <div
+                                    className="admin-row"
+                                    key={idx}
+                                    style={{
+                                      gridTemplateColumns: "0.4fr 2.5fr 1fr 1fr 1.4fr",
+                                    }}
+                                  >
+                                    <div>#{idx + 1}</div>
+                                    <div className="admin-cell">
+                                      <div className="admin-ellipsis">{m.title}</div>
+                                      {m.description && (
+                                        <div
+                                          className="admin-muted"
+                                          style={{ fontSize: 11 }}
+                                        >
+                                          {m.description}
+                                        </div>
+                                      )}
+                                    </div>
+                                    <div>{amountEth}</div>
+                                    <div>
+                                      <span
+                                        className={`admin-pill ${over ? "danger" : ""}`}
+                                      >
+                                        {pct.toFixed(2)}%
+                                      </span>
+                                    </div>
+                                    <div className="admin-pct-bar">
+                                      <div
+                                        className={`admin-pct-bar-fill ${over ? "danger" : ""}`}
+                                        style={{
+                                          width: `${Math.min(100, pct * 2)}%`,
+                                        }}
+                                      />
+                                    </div>
+                                  </div>
+                                );
+                              })}
+                              <div
+                                className="admin-row"
+                                style={{
+                                  gridTemplateColumns: "0.4fr 2.5fr 1fr 1fr 1.4fr",
+                                  fontWeight: 600,
+                                }}
+                              >
+                                <div>Σ</div>
+                                <div className="admin-muted">Total</div>
+                                <div>{ethers.formatEther(c.goalWei || "0")}</div>
+                                <div>
+                                  <span
+                                    className={`admin-pill ${sumOff ? "danger" : "ok"}`}
+                                  >
+                                    {sumPct.toFixed(2)}%
+                                  </span>
+                                </div>
+                                <div className="admin-muted">
+                                  {sumOff ? "≠ 100%" : "= 100% ✓"}
+                                </div>
+                              </div>
+                            </div>
+                          </div>
+                        </div>
+                      )}
+                    </React.Fragment>
                   );
                 })
               )}

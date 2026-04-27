@@ -249,3 +249,109 @@
   text-align: center;
   color: var(--text-secondary);
 }
+
+/* Campaigns tab — grid của CampaignCard, responsive 1/2/3 cột */
+.org-campaigns-grid {
+  display: grid;
+  grid-template-columns: 1fr;
+  gap: 16px;
+}
+
+@media (min-width: 720px) {
+  .org-campaigns-grid {
+    grid-template-columns: 1fr 1fr;
+  }
+}
+
+@media (min-width: 1080px) {
+  .org-campaigns-grid {
+    grid-template-columns: 1fr 1fr 1fr;
+  }
+}
+
+/* Updates tab — timeline đứng các milestone đã giải ngân */
+.org-updates-list {
+  list-style: none;
+  padding: 0;
+  margin: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 18px;
+}
+
+.org-update-item {
+  display: flex;
+  gap: 14px;
+  align-items: flex-start;
+  position: relative;
+  padding-left: 4px;
+}
+
+.org-update-dot {
+  width: 12px;
+  height: 12px;
+  border-radius: 50%;
+  background: var(--primary-color, #1d9bf0);
+  margin-top: 6px;
+  flex-shrink: 0;
+  box-shadow: 0 0 0 4px rgba(29, 155, 240, 0.15);
+}
+
+.org-update-body {
+  flex: 1;
+  min-width: 0;
+}
+
+.org-update-title {
+  font-size: 14px;
+  line-height: 1.5;
+}
+
+.org-update-title a {
+  color: var(--primary-color, #1d9bf0);
+  text-decoration: none;
+  font-weight: 600;
+}
+
+.org-update-title a:hover {
+  text-decoration: underline;
+}
+
+.org-update-muted {
+  color: var(--text-secondary);
+}
+
+.org-update-desc {
+  margin-top: 4px;
+  font-size: 13px;
+  color: var(--text-secondary);
+  line-height: 1.5;
+}
+
+.org-update-meta {
+  margin-top: 6px;
+  font-size: 12px;
+  color: var(--text-secondary);
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+  align-items: center;
+}
+
+.org-update-amount {
+  font-weight: 600;
+  color: var(--text-primary, inherit);
+}
+
+.org-update-sep {
+  opacity: 0.6;
+}
+
+.org-update-link {
+  color: var(--primary-color, #1d9bf0);
+  text-decoration: none;
+}
+
+.org-update-link:hover {
+  text-decoration: underline;
+}
