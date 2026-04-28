@@ -130,7 +130,18 @@ class PostDAO {
   async findByMilestoneRef(campaignId, milestoneIdx) {
     return await Post.findOne({
       "campaignMilestoneRef.campaignId": campaignId,
+      "campaignMilestoneRef.kind": "milestone",
       "campaignMilestoneRef.milestoneIdx": milestoneIdx,
+      deleted: false,
+    }).exec();
+  }
+
+  // Lookup auto-post của 1 campaign event (kickoff/funded/completed).
+  // Idempotent: caller check tồn tại trước khi tạo, hoặc dựa vào unique index.
+  async findByCampaignEvent(campaignId, kind) {
+    return await Post.findOne({
+      "campaignMilestoneRef.campaignId": campaignId,
+      "campaignMilestoneRef.kind": kind,
       deleted: false,
     }).exec();
   }

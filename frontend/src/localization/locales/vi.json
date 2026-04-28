@@ -75,7 +75,12 @@
     "copyright": "© 2025 SOCIALAPP TỪ HIROSHI"
   },
   "postCard": {
-    "milestoneBanner": "Báo cáo milestone #{{idx}} — Xem chiến dịch",
+    "milestoneBanner": "Báo cáo cột mốc #{{idx}} — Xem chiến dịch",
+    "campaignBanner": {
+      "kickoff": "Khởi động chiến dịch — Xem chi tiết",
+      "funded": "Chiến dịch đã đạt mục tiêu — Xem chi tiết",
+      "completed": "Chiến dịch đã hoàn tất — Xem chi tiết"
+    },
     "updateLikeError": "Không thể cập nhật lượt thích",
     "saveError": "Không thể lưu bài viết",
     "shareTitle": "Bài viết của {{username}}",
@@ -250,6 +255,7 @@
     "acceptedFriendRequest": "đã chấp nhận lời mời kết bạn của bạn",
     "mentionedYou": "đã nhắc đến bạn: {{text}}",
     "interactedWithYourContent": "đã tương tác với nội dung của bạn",
+    "autoPostCreated": "Hệ thống vừa đăng một bài viết tự động cho chiến dịch của bạn",
     "title": "Thông báo",
     "markAllAsReadButton": "Đánh dấu tất cả đã đọc",
     "noNotifications": "Chưa có thông báo nào",

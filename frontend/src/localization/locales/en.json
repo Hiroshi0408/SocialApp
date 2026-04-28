@@ -76,6 +76,11 @@
   },
   "postCard": {
     "milestoneBanner": "Milestone #{{idx}} report — View campaign",
+    "campaignBanner": {
+      "kickoff": "Campaign launched — View details",
+      "funded": "Goal reached — View details",
+      "completed": "Campaign completed — View details"
+    },
     "updateLikeError": "Failed to update like",
     "saveError": "Failed to save post",
     "shareTitle": "Post by {{username}}",
@@ -250,6 +255,7 @@
     "acceptedFriendRequest": "accepted your friend request",
     "mentionedYou": "mentioned you: {{text}}",
     "interactedWithYourContent": "interacted with your content",
+    "autoPostCreated": "An automatic post has been published for your campaign",
     "title": "Notifications",
     "markAllAsReadButton": "Mark all as read",
     "noNotifications": "No notifications yet",

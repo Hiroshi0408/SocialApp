@@ -85,18 +85,23 @@ export const SocketProvider = ({ children }) => {
       setUnreadNotifications((prev) => prev + 1);
 
       if (window.Notification && Notification.permission === "granted") {
+        // auto_post: text BE đã build sẵn, hiển thị nguyên không prefix sender
+        const body =
+          notification.type === "auto_post"
+            ? notification.text || t("notificationsPage.autoPostCreated")
+            : `${notification.sender?.username || t("notificationsPage.someone")} ${
+                notification.type === "like"
+                  ? t("notificationsPage.likedYourPost")
+                  : notification.type === "comment"
+                    ? t("notificationsPage.commentedOnYourPost")
+                    : notification.type === "friend_request"
+                      ? t("notificationsPage.sentFriendRequest")
+                      : notification.type === "friend_accept"
+                        ? t("notificationsPage.acceptedFriendRequest")
+                        : t("notificationsPage.startedFollowingYou")
+              }`;
         new window.Notification(t("notificationsPage.browserTitle"), {
-          body: `${notification.sender?.username || t("notificationsPage.someone")} ${
-            notification.type === "like"
-              ? t("notificationsPage.likedYourPost")
-              : notification.type === "comment"
-                ? t("notificationsPage.commentedOnYourPost")
-                : notification.type === "friend_request"
-                  ? t("notificationsPage.sentFriendRequest")
-                  : notification.type === "friend_accept"
-                    ? t("notificationsPage.acceptedFriendRequest")
-                    : t("notificationsPage.startedFollowingYou")
-          }`,
+          body,
           icon: notification.sender?.avatar || "/default-avatar.png",
         });
       }

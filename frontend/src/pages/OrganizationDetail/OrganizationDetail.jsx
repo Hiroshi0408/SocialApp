@@ -38,7 +38,8 @@ function OrganizationDetail() {
   const { slug } = useParams();
   const [org, setOrg] = useState(null);
   const [loading, setLoading] = useState(true);
-  const [tab, setTab] = useState("about");
+  // Default = Campaigns vì org page tồn tại chính để khoe charity. About đặt cuối.
+  const [tab, setTab] = useState("campaigns");
 
   // Campaigns + Updates dùng chung 1 nguồn data — list campaigns của org.
   // Updates flatten unlocked milestones từ cùng response, không cần API riêng.
@@ -67,19 +68,20 @@ function OrganizationDetail() {
     };
   }, [slug]);
 
-  // Lazy-load campaigns lần đầu user click Campaigns hoặc Updates.
-  // Tránh fetch ngay khi vào trang nếu user chỉ đọc About.
+  // Eager-fetch campaigns NGAY khi org load xong, không chờ tab click.
+  // Lý do: cả 2 tab Campaigns + Updates đều cần list này; user chuyển tab Updates
+  // không phải chờ thêm. Trade-off: tốn 1 request nếu user chỉ đọc About — chấp
+  // nhận vì org typically có ít campaigns (limit 50, payload nhẹ).
+  // QUAN TRỌNG: deps CHỈ chứa org?.id. Không được put campaignsLoading/Loaded
+  // vào deps vì effect này tự set chúng → effect re-fire → cleanup cũ flip
+  // mounted=false → fetch xong skip hết setState → UI kẹt "Loading...".
   useEffect(() => {
     if (!org?.id) return;
-    if (tab !== "campaigns" && tab !== "updates") return;
-    if (campaignsLoaded || campaignsLoading) return;
 
     let mounted = true;
     async function fetchCampaigns() {
       try {
         setCampaignsLoading(true);
-        // Lấy tối đa 50 campaign mới nhất — đủ cho phần Updates flatten.
-        // Pagination thật không cần thiết vì 1 org rare khi có >50 campaign.
         const res = await charityService.listCampaigns({
           organizationId: org.id,
           limit: 50,
@@ -101,7 +103,7 @@ function OrganizationDetail() {
     return () => {
       mounted = false;
     };
-  }, [org?.id, tab, campaignsLoaded, campaignsLoading]);
+  }, [org?.id]);
 
   // Flatten các milestone đã unlocked thành 1 timeline duy nhất, sort theo
   // unlockedAt giảm dần. Mỗi entry kèm campaign context để render link tới

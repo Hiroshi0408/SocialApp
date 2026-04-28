@@ -69,8 +69,14 @@ class NotificationService {
   async createNotification(data) {
     const { recipientId, senderId, type, targetType, targetId, text } = data;
 
-    // Không tạo self-notification
-    if (recipientId.toString() === senderId.toString()) {
+    // Không tạo self-notification — TRỪ type "auto_post":
+    // post do hệ thống tạo thay org owner, owner cần được noti để review/edit
+    // (kickoff post được tạo ngay sau khi chính owner ký tx createCampaign nên
+    // sender = recipient = owner; vẫn cần noti có ý nghĩa).
+    if (
+      recipientId.toString() === senderId.toString() &&
+      type !== "auto_post"
+    ) {
       return;
     }
 
