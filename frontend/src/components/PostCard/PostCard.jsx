@@ -95,10 +95,14 @@ function PostCard({ post, onPostDeleted }) {
     setCommentsCount(normalizeCount(post.comments));
   }, [post.isLiked, post.likes, post.isSaved, post.comments]);
 
-  // Poll BE mỗi 5s nếu onChain tồn tại nhưng TX chưa confirm
-  // Dừng sau 60s (12 lần) để tránh poll vô tận nếu TX fail
+  // Poll BE mỗi 5s nếu post đang chờ register on-chain.
+  // Phân biệt "đang pending" vs "không liên quan blockchain" qua contentHash:
+  // BE pre-write contentHash ngay khi user chọn register → có contentHash
+  // = đang trong tiến trình. Auto-post (Charity milestone) không set contentHash
+  // → không poll, không spinner.
+  // Dừng sau 60s (12 lần) để tránh poll vô tận nếu TX fail.
   useEffect(() => {
-    if (!onChainStatus || onChainStatus.registered) return;
+    if (!onChainStatus?.contentHash || onChainStatus.registered) return;
 
     let attempts = 0;
     const MAX_ATTEMPTS = 12;
@@ -541,8 +545,10 @@ function PostCard({ post, onPostDeleted }) {
             className="post-avatar"
           />
           <span className="post-username">{post.user.username}</span>
-          {onChainStatus && !onChainStatus.registered && (
-            // TX đang pending — hiện spinner nhỏ
+          {onChainStatus?.contentHash && !onChainStatus.registered && (
+            // TX đang pending — hiện spinner nhỏ. Check contentHash để loại bỏ
+            // post không liên quan blockchain (sub-doc onChain mặc định luôn tồn
+            // tại với registered=false, không phải lúc nào cũng = "đang pending").
             <span className="onchain-badge onchain-pending" title="Đang đăng ký lên blockchain...">
               <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" className="onchain-spinner" aria-hidden="true">
                 <path d="M12 2v4M12 18v4M4.93 4.93l2.83 2.83M16.24 16.24l2.83 2.83M2 12h4M18 12h4M4.93 19.07l2.83-2.83M16.24 7.76l2.83-2.83"/>
@@ -618,28 +624,38 @@ function PostCard({ post, onPostDeleted }) {
           )}
         </div>
       </div>
-      {/* Banner: post auto từ Charity milestone unlock — link sang campaign detail */}
-      {post.campaignMilestoneRef?.campaignId && (
-        <Link
-          to={`/charity/${post.campaignMilestoneRef.campaignId}`}
-          className="post-milestone-banner"
-        >
-          <span className="post-milestone-icon" aria-hidden>
-            🎯
-          </span>
-          <span className="post-milestone-text">
-            {t("postCard.milestoneBanner", {
-              idx:
-                typeof post.campaignMilestoneRef.milestoneIdx === "number"
-                  ? post.campaignMilestoneRef.milestoneIdx + 1
-                  : "?",
-            })}
-          </span>
-          <span className="post-milestone-arrow" aria-hidden>
-            →
-          </span>
-        </Link>
-      )}
+      {/* Banner: post auto từ Charity event — link sang campaign detail.
+          kind quyết định text + icon. Fallback "milestone" cho legacy data
+          (post auto cũ chưa có field kind). */}
+      {post.campaignMilestoneRef?.campaignId && (() => {
+        const ref = post.campaignMilestoneRef;
+        const kind = ref.kind || "milestone";
+        const iconMap = { kickoff: "🚀", funded: "🎉", milestone: "📍", completed: "✅" };
+        const icon = iconMap[kind] || "📍";
+        const text =
+          kind === "milestone"
+            ? t("postCard.milestoneBanner", {
+                idx:
+                  typeof ref.milestoneIdx === "number"
+                    ? ref.milestoneIdx + 1
+                    : "?",
+              })
+            : t(`postCard.campaignBanner.${kind}`);
+        return (
+          <Link
+            to={`/charity/${ref.campaignId}`}
+            className={`post-milestone-banner post-milestone-${kind}`}
+          >
+            <span className="post-milestone-icon" aria-hidden>
+              {icon}
+            </span>
+            <span className="post-milestone-text">{text}</span>
+            <span className="post-milestone-arrow" aria-hidden>
+              →
+            </span>
+          </Link>
+        );
+      })()}
       <p className="post-caption">
         <TextWithMentions text={caption} />
       </p>

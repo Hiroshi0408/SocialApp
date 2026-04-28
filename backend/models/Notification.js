@@ -22,6 +22,9 @@ const notificationSchema = new mongoose.Schema(
         "mention",
         "friend_request",
         "friend_accept",
+        // Hệ thống tự tạo post thay org owner (kickoff/funded/milestone của Charity).
+        // Recipient = org owner để họ vào xem/chỉnh sửa caption nếu cần.
+        "auto_post",
       ],
       required: true,
     },

@@ -113,6 +113,10 @@ function Notifications() {
         return `${sender} ${t("notificationsPage.sentFriendRequest")}`;
       case "friend_accept":
         return `${sender} ${t("notificationsPage.acceptedFriendRequest")}`;
+      case "auto_post":
+        // Hệ thống tạo post thay org owner — text đã được BE build sẵn theo loại
+        // event (kickoff/funded/milestone). Không prefix sender vì recipient = sender.
+        return notification.text || t("notificationsPage.autoPostCreated");
       default:
         return `${sender} ${t("notificationsPage.interactedWithYourContent")}`;
     }
@@ -127,6 +131,7 @@ function Notifications() {
       case "like":
       case "comment":
       case "mention":
+      case "auto_post":
         if (notification.targetId) {
           navigate(`/post/${notification.targetId}`);
         }

@@ -19,7 +19,6 @@ const { formatPostsWithMetadata } = require("../helpers/postHelper");
 const { moderateText } = require("./geminiModeration");
 const contentRegistryService = require("./contentRegistryService");
 
-const SEPOLIA_ETHERSCAN_BASE = "https://sepolia.etherscan.io";
 const {
   DEFAULT_POST_LIMIT,
   MAX_POST_LIMIT,
@@ -298,17 +297,38 @@ class PostService {
     // Đóng dấu on-chain nếu user chọn — fire-and-forget không block response
     // Dùng fire-and-forget vì tx Sepolia có thể mất 10-30s, không nên bắt user chờ
     if (registerOnChain === true) {
+      // Pre-write contentHash + version SYNCHRONOUSLY trước khi fire tx, lý do:
+      // mọi post mới đều có sub-doc onChain {registered:false, ...} mặc định
+      // (Mongoose default), nên FE không thể phân biệt "post đang chờ register"
+      // vs "post không liên quan blockchain" chỉ từ field `registered`. Set
+      // contentHash + version ngay = signal cho FE biết post này có trong
+      // tiến trình → hiện spinner; post không có contentHash → không spinner.
+      const version = "v2";
+      const contentHash = contentRegistryService.computeContentHash(post, {
+        version,
+        authorId: userId,
+      });
+      await postDAO.updateById(post._id, {
+        "onChain.version": version,
+        "onChain.contentHash": contentHash,
+      });
+      post.onChain = {
+        ...(post.onChain?.toObject?.() || post.onChain || {}),
+        version,
+        contentHash,
+      };
+
       contentRegistryService
         .registerPost(post._id.toString(), post, userId)
-        .then(async ({ contentHash, txHash, blockNumber, version }) => {
+        .then(async ({ contentHash: confirmedHash, txHash, blockNumber, version: v }) => {
           await postDAO.updateById(post._id, {
             "onChain.registered": true,
-            "onChain.version": version,
-            "onChain.contentHash": contentHash,
+            "onChain.version": v,
+            "onChain.contentHash": confirmedHash,
             "onChain.txHash": txHash,
             "onChain.blockNumber": blockNumber,
           });
-          logger.info(`Post ${post._id} registered on-chain (${version}): tx=${txHash}`);
+          logger.info(`Post ${post._id} registered on-chain (${v}): tx=${txHash}`);
         })
         .catch((err) =>
           logger.error(`On-chain registration failed for post ${post._id}:`, err.message),
@@ -554,18 +574,160 @@ class PostService {
     };
   }
 
-  // ========== AUTO MILESTONE POST ==========
-  // Tự build + đăng 1 post báo cáo khi Charity unlock 1 milestone. Caller là
-  // charityService.unlockMilestone — chỉ gọi khi admin KHÔNG truyền reportPostId
-  // thủ công. Idempotent qua unique index (campaignId, milestoneIdx) ở Post model.
-  // - Author = org owner (Post yêu cầu userId là User, chưa có khái niệm "post của Org")
-  // - Group = official group của org (auto-spawn khi org verified) → member nhận
-  //   noti tự nhiên qua group post flow, không cần noti type mới.
-  // - Skip moderation: nội dung do BE tự build từ data đã verified, không có UGC.
-  // - Skip ContentRegistry: caption đã embed unlockTxHash → user verify được,
-  //   tránh tốn gas Sepolia gấp đôi cho mỗi milestone.
+  // ========== AUTO CHARITY POSTS ==========
+  // BE tự đăng 3 loại post liên quan Charity Campaign:
+  //   - kickoff:   khi org tạo xong campaign (recordCampaignCreate)
+  //   - funded:    khi đạt mục tiêu (donate đẩy status OPEN→FUNDED)
+  //   - milestone: khi admin unlock 1 milestone
+  // Mọi post đều:
+  // - Author = org owner (Post schema yêu cầu userId là User)
+  // - Group = official group của org (member tự nhận noti qua group post flow)
+  // - Bypass moderation/registerOnChain (data BE tự build, đã verified)
+  // - Idempotent qua unique index (campaignId, kind, milestoneIdx)
+  // - Fire noti type "auto_post" cho org owner để họ vào xem/edit caption
+
+  // Helper: format số wei → "0.025 ETH" (4 chữ số thập phân)
+  _formatEth(wei) {
+    try {
+      const n = parseFloat(ethers.formatEther(wei || "0"));
+      if (Number.isNaN(n)) return "0 ETH";
+      return `${n.toLocaleString("vi-VN", { maximumFractionDigits: 4 })} ETH`;
+    } catch {
+      return "0 ETH";
+    }
+  }
+
+  // Helper: tạo post + tăng counter + fire noti cho owner — dùng chung 3 loại
+  async _createAutoCampaignPost(campaign, org, { kind, milestoneIdx, caption }) {
+    const post = await postDAO.create({
+      userId: org.owner,
+      groupId: org.groupId || null,
+      image: campaign.coverImage || "",
+      caption,
+      campaignMilestoneRef: {
+        campaignId: campaign._id,
+        milestoneIdx: milestoneIdx ?? null,
+        kind,
+      },
+    });
+
+    await userDAO.incrementPostsCount(org.owner);
+
+    // Noti cho org owner — text ngắn để FE render trực tiếp dòng tiêu đề
+    const notiTextMap = {
+      kickoff: `Đã đăng bài khởi động cho chiến dịch "${campaign.title}". Bạn có thể chỉnh sửa nếu cần.`,
+      funded: `Chiến dịch "${campaign.title}" đã đạt mục tiêu — bài thông báo đã được đăng tự động.`,
+      milestone: `Đã đăng bài cập nhật cột mốc cho "${campaign.title}". Bạn có thể chỉnh sửa nếu cần.`,
+      completed: `Chiến dịch "${campaign.title}" đã hoàn tất — bài tổng kết đã được đăng tự động.`,
+    };
+    notificationService
+      .createNotification({
+        recipientId: org.owner,
+        senderId: org.owner,
+        type: "auto_post",
+        targetType: "post",
+        targetId: post._id,
+        text: notiTextMap[kind] || "",
+      })
+      .catch((err) =>
+        logger.error(`Auto-post notification failed (${kind}):`, err.message)
+      );
+
+    logger.info(
+      `Auto post created kind=${kind} post=${post._id} campaign=${campaign._id}` +
+        ` idx=${milestoneIdx ?? "null"} group=${org.groupId || "none"}`
+    );
+    return post;
+  }
+
+  // ─── Kickoff post ─── khi org tạo campaign thành công (onChain confirmed)
+  async createAutoKickoffPost({ campaignId }) {
+    const existing = await postDAO.findByCampaignEvent(campaignId, "kickoff");
+    if (existing) {
+      logger.info(
+        `Auto kickoff post already exists: post=${existing._id} campaign=${campaignId}`
+      );
+      return existing;
+    }
+
+    const campaign = await campaignDAO.findById(campaignId);
+    if (!campaign) throw new AppError("Campaign not found for kickoff post", 404);
+
+    const org = await organizationDAO.findById(campaign.organizationId, { lean: true });
+    if (!org) throw new AppError("Organization not found for kickoff post", 404);
+
+    const goal = this._formatEth(campaign.goalWei);
+    const deadlineStr = campaign.deadline
+      ? new Date(campaign.deadline).toLocaleDateString("vi-VN", {
+          day: "2-digit",
+          month: "2-digit",
+          year: "numeric",
+        })
+      : "—";
+    const milestoneCount = campaign.milestones?.length || 0;
+
+    const lines = [
+      `${org.name} vừa khởi động chiến dịch "${campaign.title}".`,
+      ``,
+      `Mục tiêu: ${goal}`,
+      `Hạn đóng góp: ${deadlineStr}`,
+      `Số cột mốc giải ngân: ${milestoneCount}`,
+    ];
+    if (campaign.description) {
+      lines.push(``, campaign.description.trim().slice(0, 400));
+    }
+    lines.push(
+      ``,
+      `Mọi đóng góp được ghi nhận on-chain trên Sepolia và chỉ giải ngân theo từng cột mốc đã cam kết.`
+    );
+
+    return this._createAutoCampaignPost(campaign, org, {
+      kind: "kickoff",
+      milestoneIdx: null,
+      caption: lines.join("\n"),
+    });
+  }
+
+  // ─── Funded post ─── khi campaign đạt goal (recordDonation phát hiện status FUNDED)
+  async createAutoFundedPost({ campaignId, txHash = null }) {
+    const existing = await postDAO.findByCampaignEvent(campaignId, "funded");
+    if (existing) {
+      logger.info(
+        `Auto funded post already exists: post=${existing._id} campaign=${campaignId}`
+      );
+      return existing;
+    }
+
+    const campaign = await campaignDAO.findById(campaignId);
+    if (!campaign) throw new AppError("Campaign not found for funded post", 404);
+
+    const org = await organizationDAO.findById(campaign.organizationId, { lean: true });
+    if (!org) throw new AppError("Organization not found for funded post", 404);
+
+    const goal = this._formatEth(campaign.goalWei);
+    const raised = this._formatEth(campaign.raisedWei);
+    const donors = campaign.donorsCount || 0;
+
+    const lines = [
+      `Chiến dịch "${campaign.title}" đã đạt mục tiêu ${goal}.`,
+      ``,
+      `Cảm ơn ${donors} người đã đóng góp tổng cộng ${raised}.`,
+      `Quỹ sẽ được giải ngân theo từng cột mốc đã cam kết, mỗi đợt đều có báo cáo công khai.`,
+    ];
+    if (txHash) {
+      const shortTx = `${txHash.slice(0, 10)}...${txHash.slice(-8)}`;
+      lines.push(``, `Giao dịch đạt mục tiêu: ${shortTx}`);
+    }
+
+    return this._createAutoCampaignPost(campaign, org, {
+      kind: "funded",
+      milestoneIdx: null,
+      caption: lines.join("\n"),
+    });
+  }
+
+  // ─── Milestone post ─── khi admin unlock 1 milestone (legacy: tên cũ giữ nguyên)
   async createAutoMilestonePost({ campaignId, milestoneIdx, txHash }) {
-    // 1. Idempotent — milestone đã có auto-post → trả về luôn
     const existing = await postDAO.findByMilestoneRef(campaignId, milestoneIdx);
     if (existing) {
       logger.info(
@@ -574,7 +736,6 @@ class PostService {
       return existing;
     }
 
-    // 2. Re-fetch để lấy state mới nhất (markMilestoneUnlocked đã chạy trước đó)
     const campaign = await campaignDAO.findById(campaignId);
     if (!campaign) throw new AppError("Campaign not found for auto post", 404);
     const milestone = campaign.milestones?.[milestoneIdx];
@@ -582,65 +743,37 @@ class PostService {
       throw new AppError("Milestone index out of range for auto post", 400);
     }
 
-    // 3. Lấy org để biết owner + officialGroupId
-    const org = await organizationDAO.findById(campaign.organizationId, {
-      lean: true,
-    });
-    if (!org) {
-      throw new AppError("Organization not found for auto post", 404);
-    }
+    const org = await organizationDAO.findById(campaign.organizationId, { lean: true });
+    if (!org) throw new AppError("Organization not found for auto post", 404);
 
-    // 4. Build caption từ data có sẵn — tiếng Việt vì user app chính là VN
-    let amountEth = "0";
-    try {
-      amountEth = ethers.formatEther(milestone.amountWei || "0");
-    } catch {
-      // Nếu amountWei lạ/không parse được, vẫn cho post chạy với "0"
-      amountEth = "0";
-    }
+    const amount = this._formatEth(milestone.amountWei);
     const total = campaign.milestones.length;
     const unlockedCount = campaign.milestones.filter((m) => m.unlocked).length;
-    const txUrl = `${SEPOLIA_ETHERSCAN_BASE}/tx/${txHash}`;
+    const isFinal = unlockedCount === total;
 
     const lines = [
-      `🎯 ${campaign.title} — Milestone ${milestoneIdx + 1} hoàn thành`,
+      `Cập nhật chiến dịch "${campaign.title}"`,
+      `Cột mốc ${milestoneIdx + 1}/${total}: ${milestone.title}`,
       ``,
-      `Tổ chức vừa nhận ${amountEth} ETH cho giai đoạn: ${milestone.title}`,
+      `${org.name} vừa nhận ${amount} để thực hiện giai đoạn này.`,
     ];
     if (milestone.description) {
-      lines.push(``, milestone.description);
+      lines.push(``, milestone.description.trim());
     }
-    lines.push(
-      ``,
-      `📊 Tiến độ: ${unlockedCount}/${total} milestone hoàn thành`,
-      `🔗 Xem on-chain: ${txUrl}`,
-      ``,
-      `#milestone #charity`
-    );
-    const caption = lines.join("\n");
+    lines.push(``, `Đã hoàn thành ${unlockedCount}/${total} cột mốc.`);
+    if (isFinal) {
+      lines.push(`Toàn bộ quỹ đã được giải ngân — chiến dịch hoàn tất.`);
+    }
+    if (txHash) {
+      const shortTx = `${txHash.slice(0, 10)}...${txHash.slice(-8)}`;
+      lines.push(``, `Giao dịch giải ngân: ${shortTx}`);
+    }
 
-    // 5. Tạo post trực tiếp qua DAO — bypass createPost service để skip
-    //    moderation/registerOnChain/membership check. Owner luôn là member của
-    //    official group của chính họ (Group.creator = owner khi auto-spawn).
-    const post = await postDAO.create({
-      userId: org.owner,
-      groupId: org.groupId || null,
-      image: campaign.coverImage || "",
-      caption,
-      campaignMilestoneRef: {
-        campaignId: campaign._id,
-        milestoneIdx,
-      },
+    return this._createAutoCampaignPost(campaign, org, {
+      kind: "milestone",
+      milestoneIdx,
+      caption: lines.join("\n"),
     });
-
-    await userDAO.incrementPostsCount(org.owner);
-
-    logger.info(
-      `Auto milestone post created: post=${post._id} campaign=${campaignId} idx=${milestoneIdx} group=${
-        org.groupId || "none"
-      }`
-    );
-    return post;
   }
 }
 

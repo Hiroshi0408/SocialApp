@@ -470,6 +470,16 @@ class CharityService {
       `Charity: campaign recorded — id=${campaign._id}, onChainId=${onChainId}, tx=${txHashLower}`
     );
 
+    // Auto-tạo bài "kickoff" trên feed của org owner + official group.
+    // Fire-and-forget: thất bại không ảnh hưởng campaign vừa được tạo trên chain.
+    postService
+      .createAutoKickoffPost({ campaignId: campaign._id })
+      .catch((err) =>
+        logger.warn(
+          `Charity: auto kickoff post failed campaign=${campaign._id}: ${err.message}`
+        )
+      );
+
     const fresh = await campaignDAO.findById(campaign._id, { populate: POPULATE_ORG });
     return formatCampaign(fresh);
   }
@@ -666,7 +676,10 @@ class CharityService {
       throw err;
     }
 
-    // Sync raised/status từ chain (nguồn sự thật) thay vì tự cộng BigInt
+    // Sync raised/status từ chain (nguồn sự thật) thay vì tự cộng BigInt.
+    // Capture status TRƯỚC sync để phát hiện flip OPEN→FUNDED → trigger funded post.
+    const prevStatus = campaign.status;
+    let newStatus = prevStatus;
     try {
       const chain = await this._readChainState(campaign.onChainId);
       if (chain) {
@@ -675,6 +688,7 @@ class CharityService {
           unlockedTotalWei: chain.unlockedTotalWei,
           status: chain.status,
         });
+        newStatus = chain.status;
       }
     } catch (err) {
       logger.warn(`Charity: syncChainCache after donation failed: ${err.message}`);
@@ -687,6 +701,18 @@ class CharityService {
     logger.info(
       `Charity: donation recorded — campaign=${campaign._id}, donor=${eventDonor}, amount=${eventAmountWei}, tx=${txHashLower}`
     );
+
+    // Donation cuối đẩy campaign đạt goal (OPEN→FUNDED) → auto-tạo post thông báo.
+    // Fire-and-forget: post là phần social, không ảnh hưởng donation đã ghi nhận.
+    if (prevStatus === "OPEN" && newStatus === "FUNDED") {
+      postService
+        .createAutoFundedPost({ campaignId: campaign._id, txHash: txHashLower })
+        .catch((err) =>
+          logger.warn(
+            `Charity: auto funded post failed campaign=${campaign._id}: ${err.message}`
+          )
+        );
+    }
 
     return formatDonation(donation);
   }
