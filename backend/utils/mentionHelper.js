@@ -1,3 +1,5 @@
+const userDAO = require("../dao/userDAO");
+
 const extractMentions = (text) => {
   if (!text) return [];
 
@@ -15,15 +17,14 @@ const extractMentions = (text) => {
   return mentions;
 };
 
-// Remove duplicate mentions and validate against existing users
-const validateMentions = async (mentions, User) => {
+// Validate mentions against existing users — không cần truyền User model từ ngoài vào
+const validateMentions = async (mentions) => {
   if (!mentions || mentions.length === 0) return [];
 
-  const users = await User.find({
-    username: { $in: mentions },
-  }).select("_id username");
-
-  return users;
+  return await userDAO.findMany(
+    { username: { $in: mentions } },
+    { select: "_id username", lean: true }
+  );
 };
 
 module.exports = {

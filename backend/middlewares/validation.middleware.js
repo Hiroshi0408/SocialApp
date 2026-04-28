@@ -8,6 +8,11 @@ const {
   MAX_CAPTION_LENGTH,
   MAX_COMMENT_LENGTH,
   MAX_FULLNAME_LENGTH,
+  CHARITY_CATEGORIES,
+  MAX_CHARITY_MILESTONES,
+  MIN_CHARITY_MILESTONES,
+  MIN_CAMPAIGN_DURATION_DAYS,
+  MAX_CAMPAIGN_DURATION_DAYS,
 } = require("../constants");
 const { ethers } = require("ethers");
 
@@ -266,6 +271,168 @@ const walletLoginValidation = [
   body("message").notEmpty().withMessage("Message is required"),
   handleValidationErrors,
 ];
+// CHARITY VALIDATIONS
+
+// Goal/amount nhập dạng ETH (string thập phân, vd "0.5"). BE convert sang wei.
+// Pattern chấp nhận tối đa 18 số thập phân (giới hạn của ether).
+const ETH_AMOUNT_REGEX = /^\d+(\.\d{1,18})?$/;
+
+const createCampaignValidation = [
+  body("organizationId")
+    .isMongoId()
+    .withMessage("Invalid organization ID"),
+
+  body("title")
+    .trim()
+    .notEmpty()
+    .withMessage("Title is required")
+    .isLength({ max: 200 })
+    .withMessage("Title cannot exceed 200 characters"),
+
+  body("description")
+    .optional({ values: "falsy" })
+    .trim()
+    .isLength({ max: 5000 })
+    .withMessage("Description cannot exceed 5000 characters"),
+
+  body("coverImage")
+    .optional({ values: "falsy" })
+    .isURL()
+    .withMessage("Cover image must be a valid URL"),
+
+  body("category")
+    .optional({ values: "falsy" })
+    .isIn(CHARITY_CATEGORIES)
+    .withMessage("Invalid category"),
+
+  body("goalEth")
+    .notEmpty()
+    .withMessage("Goal is required")
+    .matches(ETH_AMOUNT_REGEX)
+    .withMessage("Goal must be a positive decimal number (ETH)"),
+
+  body("durationDays")
+    .notEmpty()
+    .withMessage("Duration is required")
+    .isInt({ min: MIN_CAMPAIGN_DURATION_DAYS, max: MAX_CAMPAIGN_DURATION_DAYS })
+    .withMessage(
+      `Duration must be between ${MIN_CAMPAIGN_DURATION_DAYS} and ${MAX_CAMPAIGN_DURATION_DAYS} days`
+    ),
+
+  body("milestones")
+    .isArray({ min: MIN_CHARITY_MILESTONES, max: MAX_CHARITY_MILESTONES })
+    .withMessage(
+      `Milestones must be ${MIN_CHARITY_MILESTONES}-${MAX_CHARITY_MILESTONES} items`
+    ),
+
+  body("milestones.*.title")
+    .trim()
+    .notEmpty()
+    .withMessage("Milestone title is required")
+    .isLength({ max: 200 })
+    .withMessage("Milestone title cannot exceed 200 characters"),
+
+  body("milestones.*.description")
+    .optional({ values: "falsy" })
+    .trim()
+    .isLength({ max: 1000 })
+    .withMessage("Milestone description cannot exceed 1000 characters"),
+
+  body("milestones.*.amountEth")
+    .notEmpty()
+    .withMessage("Milestone amount is required")
+    .matches(ETH_AMOUNT_REGEX)
+    .withMessage("Milestone amount must be a positive decimal number (ETH)"),
+
+  handleValidationErrors,
+];
+
+// recordCampaign: kế thừa shape của createCampaign + thêm txHash
+const recordCampaignValidation = [
+  ...createCampaignValidation.slice(0, -1), // bỏ handleValidationErrors cuối cùng
+  body("txHash")
+    .notEmpty()
+    .withMessage("txHash is required")
+    .matches(/^0x[a-fA-F0-9]{64}$/)
+    .withMessage("Invalid txHash format"),
+  handleValidationErrors,
+];
+
+const recordDonationValidation = [
+  param("id").isMongoId().withMessage("Invalid campaign ID"),
+
+  body("onChainCampaignId")
+    .exists({ checkNull: true })
+    .withMessage("onChainCampaignId is required")
+    .isInt({ min: 0 })
+    .withMessage("onChainCampaignId must be a non-negative integer"),
+
+  body("txHash")
+    .notEmpty()
+    .withMessage("txHash is required")
+    .matches(/^0x[a-fA-F0-9]{64}$/)
+    .withMessage("Invalid txHash format"),
+
+  handleValidationErrors,
+];
+
+const listCampaignsValidation = [
+  query("status")
+    .optional()
+    .isIn(["OPEN", "FUNDED", "EXECUTING", "COMPLETED", "FAILED", "REFUNDED"])
+    .withMessage("Invalid status"),
+  query("category")
+    .optional()
+    .isIn(CHARITY_CATEGORIES)
+    .withMessage("Invalid category"),
+  query("organizationId")
+    .optional()
+    .isMongoId()
+    .withMessage("Invalid organization ID"),
+  query("page").optional().isInt({ min: 1 }).withMessage("page must be >= 1"),
+  query("limit").optional().isInt({ min: 1, max: 50 }).withMessage("limit 1-50"),
+  query("sort")
+    .optional()
+    .isIn(["newest", "ending-soon", "most-funded"])
+    .withMessage("Invalid sort"),
+  handleValidationErrors,
+];
+
+const recordRefundValidation = [
+  param("id").isMongoId().withMessage("Invalid campaign ID"),
+
+  body("onChainCampaignId")
+    .exists({ checkNull: true })
+    .withMessage("onChainCampaignId is required")
+    .isInt({ min: 0 })
+    .withMessage("onChainCampaignId must be a non-negative integer"),
+
+  body("txHash")
+    .notEmpty()
+    .withMessage("txHash is required")
+    .matches(/^0x[a-fA-F0-9]{64}$/)
+    .withMessage("Invalid txHash format"),
+
+  handleValidationErrors,
+];
+
+// ── Charity admin validations ──
+
+const unlockMilestoneValidation = [
+  param("id").isMongoId().withMessage("Invalid campaign ID"),
+  param("idx").isInt({ min: 0 }).withMessage("Milestone index must be a non-negative integer"),
+  body("reportPostId")
+    .optional({ nullable: true })
+    .isMongoId()
+    .withMessage("reportPostId must be a valid Mongo ID"),
+  handleValidationErrors,
+];
+
+const whitelistOrgValidation = [
+  body("orgId").isMongoId().withMessage("orgId must be a valid Mongo ID"),
+  handleValidationErrors,
+];
+
 // PARAM VALIDATIONS
 
 const mongoIdValidation = [
@@ -309,6 +476,15 @@ module.exports = {
   updateProfileValidation,
   uploadAvatarValidation,
   searchUsersValidation,
+
+  // Charity
+  createCampaignValidation,
+  recordCampaignValidation,
+  recordDonationValidation,
+  recordRefundValidation,
+  listCampaignsValidation,
+  unlockMilestoneValidation,
+  whitelistOrgValidation,
 
   // Common
   mongoIdValidation,

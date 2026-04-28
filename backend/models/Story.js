@@ -40,32 +40,20 @@ const storySchema = new mongoose.Schema(
       default: () => new Date(Date.now() + 24 * 60 * 60 * 1000),
       index: true,
     },
-    isActive: {
-      type: Boolean,
-      default: true,
-    },
   },
   {
     timestamps: true,
+    toJSON: {
+      transform: (doc, ret) => {
+        delete ret.__v;
+        return ret;
+      },
+    },
   }
 );
 
 storySchema.index({ userId: 1, createdAt: -1 });
 storySchema.index({ createdAt: 1 }, { expireAfterSeconds: 86400 });
-
-storySchema.methods.toJSON = function () {
-  const story = this.toObject();
-  delete story.__v;
-  return story;
-};
-
-// Set expiration to 24 hours from now
-storySchema.pre("save", function (next) {
-  if (this.isNew && !this.expiresAt) {
-    this.expiresAt = new Date(Date.now() + 24 * 60 * 60 * 1000);
-  }
-  next();
-});
 
 const Story = mongoose.model("Story", storySchema, "stories");
 

@@ -350,3 +350,227 @@
 .admin-row.audit {
   grid-template-columns: 1.1fr 1fr 1fr 1fr 2fr;
 }
+
+/* organizations: name | owner | wallet | status | trackrecord | applied | action */
+.admin-row.organizations {
+  grid-template-columns: 1.6fr 1fr 1fr 0.7fr 1.6fr 1fr 1.4fr;
+}
+
+/* Track record stats — gom các pill nhỏ thành 1 dòng */
+.admin-trackrecord {
+  display: flex;
+  align-items: center;
+}
+
+.admin-trackrecord-line {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 4px;
+  align-items: center;
+}
+
+.admin-trackrecord-line .admin-pill {
+  font-size: 11px;
+  padding: 2px 6px;
+}
+
+/* Expand panel — full-width row dưới mỗi org/campaign khi user mở */
+.admin-row.admin-expand-row {
+  grid-template-columns: 1fr;
+  background: rgba(0, 0, 0, 0.06);
+  padding: 0;
+}
+
+.admin-expand-panel {
+  padding: 14px;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.admin-expand-title {
+  font-size: 13px;
+  font-weight: 700;
+}
+
+/* Document inline viewer (PDF + image) */
+.admin-doc-grid {
+  display: grid;
+  grid-template-columns: 1fr;
+  gap: 12px;
+}
+
+@media (min-width: 980px) {
+  .admin-doc-grid {
+    grid-template-columns: 1fr 1fr;
+  }
+}
+
+.admin-doc-card {
+  border: 1px solid rgba(255, 255, 255, 0.12);
+  border-radius: 10px;
+  background: rgba(255, 255, 255, 0.04);
+  overflow: hidden;
+  display: flex;
+  flex-direction: column;
+}
+
+.admin-doc-card-head {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 8px 10px;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.08);
+  font-size: 12px;
+}
+
+.admin-doc-card-label {
+  font-weight: 600;
+}
+
+.admin-doc-card-body {
+  padding: 0;
+  background: rgba(0, 0, 0, 0.18);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.admin-doc-card-body img {
+  max-width: 100%;
+  max-height: 500px;
+  object-fit: contain;
+  display: block;
+}
+
+.admin-doc-card-body iframe {
+  border: none;
+  display: block;
+}
+
+/* Milestone plan warning banner */
+.admin-warn-banner {
+  border: 1px solid rgba(255, 0, 0, 0.3);
+  background: rgba(255, 0, 0, 0.08);
+  color: inherit;
+  padding: 10px 12px;
+  border-radius: 8px;
+  font-size: 13px;
+  line-height: 1.5;
+}
+
+/* Bar dùng cho % milestone plan */
+.admin-pct-bar {
+  width: 100%;
+  height: 8px;
+  border-radius: 999px;
+  background: rgba(255, 255, 255, 0.08);
+  overflow: hidden;
+}
+
+.admin-pct-bar-fill {
+  height: 100%;
+  background: linear-gradient(90deg, #6366f1, #8b5cf6);
+  border-radius: 999px;
+}
+
+.admin-pct-bar-fill.danger {
+  background: linear-gradient(90deg, #ef4444, #f97316);
+}
+
+/* ── Charity admin tab ── */
+.admin-link {
+  color: var(--primary, #6366f1);
+  text-decoration: none;
+}
+.admin-link:hover {
+  text-decoration: underline;
+}
+
+/* Unlock milestone modal */
+.admin-modal-backdrop {
+  position: fixed;
+  inset: 0;
+  background: rgba(0, 0, 0, 0.5);
+  z-index: 1000;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.admin-modal {
+  background: var(--bg, #fff);
+  border: 1px solid var(--border, #e5e7eb);
+  border-radius: 10px;
+  padding: 24px;
+  width: 100%;
+  max-width: 480px;
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+}
+
+.admin-modal-title {
+  font-size: 18px;
+  font-weight: 700;
+}
+
+.admin-modal-subtitle {
+  font-size: 14px;
+  color: var(--text-secondary, #6b7280);
+  line-height: 1.6;
+}
+
+.admin-modal-field {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.admin-modal-label {
+  font-size: 13px;
+  font-weight: 500;
+}
+
+.admin-modal-note {
+  font-size: 12px;
+  color: var(--text-secondary, #6b7280);
+  background: var(--bg-secondary, #f9fafb);
+  border: 1px solid var(--border, #e5e7eb);
+  border-radius: 6px;
+  padding: 10px 12px;
+  line-height: 1.6;
+}
+
+.admin-modal-actions {
+  display: flex;
+  justify-content: flex-end;
+  gap: 10px;
+}
+
+/* Campaign group — gom nhiều milestone của 1 campaign EXECUTING */
+.admin-campaign-group {
+  border: 1px solid var(--border, #e5e7eb);
+  border-radius: 8px;
+  padding: 12px 14px;
+  margin-bottom: 14px;
+  background: var(--bg-secondary, #f9fafb);
+}
+
+.admin-campaign-group-header {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 12px;
+  margin-bottom: 10px;
+}
+
+.admin-campaign-group-title {
+  font-size: 15px;
+  font-weight: 600;
+}
+
+.admin-btn:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}

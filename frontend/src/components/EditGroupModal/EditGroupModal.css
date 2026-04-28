@@ -1,0 +1,62 @@
+.edit-group-modal {
+  background: var(--card-bg);
+  border-radius: 12px;
+  padding: 24px;
+  width: 90%;
+  max-width: 480px;
+  max-height: 90vh;
+  overflow-y: auto;
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.edit-group-modal h2 {
+  margin: 0 0 8px 0;
+}
+
+.edit-group-field {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.edit-group-field > span {
+  font-weight: 600;
+  font-size: 0.9rem;
+}
+
+.edit-group-field input[type="text"],
+.edit-group-field textarea {
+  padding: 8px 10px;
+  border: 1px solid var(--border-color);
+  border-radius: 8px;
+  background: var(--bg-color);
+  color: var(--text-primary);
+  font-family: inherit;
+  resize: vertical;
+}
+
+.edit-group-image {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  align-items: flex-start;
+}
+
+.edit-group-image img,
+.edit-group-image-placeholder {
+  width: 120px;
+  height: 120px;
+  border-radius: 8px;
+  object-fit: cover;
+  background: var(--bg-color);
+  border: 1px solid var(--border-color);
+}
+
+.edit-group-actions {
+  display: flex;
+  justify-content: flex-end;
+  gap: 8px;
+  margin-top: 10px;
+}

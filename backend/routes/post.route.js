@@ -1,6 +1,7 @@
 const express = require("express");
 const router = express.Router();
 const postController = require("../controllers/postController");
+const commentController = require("../controllers/commentController");
 const authMiddleware = require("../middlewares/auth.middleware");
 const {
   createPostLimiter,
@@ -20,32 +21,38 @@ router.use(authMiddleware);
 
 router.get("/", postController.getAllPosts);
 router.get("/feed", postController.getFeed);
+router.get("/group/:groupId", postController.getGroupFeed);
 router.get("/tagged", postController.getTaggedPosts);
 router.get("/tagged/:userId", postController.getTaggedPosts);
 router.get(
   "/search/hashtag",
   searchLimiter,
   searchUsersValidation,
-  postController.searchByHashtag
+  postController.searchByHashtag,
 );
 router.get("/:id", mongoIdValidation, postController.getPostById);
 router.post(
   "/",
   createPostLimiter,
   createPostValidation,
-  postController.createPost
+  postController.createPost,
 );
 router.put("/:id", updatePostValidation, postController.updatePost);
 router.delete("/:id", mongoIdValidation, postController.deletePost);
 
 // Interactions
-router.post("/:id/like", likeLimiter, mongoIdValidation, postController.toggleLike);
+router.post(
+  "/:id/like",
+  likeLimiter,
+  mongoIdValidation,
+  postController.toggleLike,
+);
 router.post(
   "/:id/comments",
   commentLimiter,
   addCommentValidation,
-  postController.addComment
+  commentController.addComment,
 );
-router.get("/:id/comments", mongoIdValidation, postController.getComments);
+router.get("/:id/comments", mongoIdValidation, commentController.getComments);
 
 module.exports = router;

@@ -19,7 +19,7 @@ router.get(
   "/search",
   searchLimiter,
   searchUsersValidation,
-  userController.searchUsers
+  userController.searchUsers,
 );
 
 router.get("/profile/:username", userController.getUserProfile);
@@ -30,28 +30,20 @@ router.post(
   "/:userId/follow",
   followLimiter,
   userIdValidation,
-  userController.followUser
+  userController.followUser,
 );
 router.delete(
   "/:userId/follow",
   followLimiter,
   userIdValidation,
-  userController.unfollowUser
+  userController.unfollowUser,
 );
 router.get(
   "/:userId/follow-status",
   userIdValidation,
-  userController.checkFollowStatus
+  userController.checkFollowStatus,
 );
-router.get(
-  "/:userId/followers",
-  userIdValidation,
-  userController.getFollowers
-);
-router.get(
-  "/:userId/following",
-  userIdValidation,
-  userController.getFollowing
-);
+router.get("/:userId/followers", userIdValidation, userController.getFollowers);
+router.get("/:userId/following", userIdValidation, userController.getFollowing);
 
 module.exports = router;

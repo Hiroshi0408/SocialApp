@@ -91,36 +91,35 @@ const setupChatHandlers = (io, socket) => {
       conversation.lastMessage = message._id;
       conversation.lastMessageAt = message.createdAt;
 
-      // Increment unread count for other participant
-      const otherParticipant = conversation.participants.find(
-        (p) => p.toString() !== socket.userId
-      );
-
+      // Increment unread count cho tất cả participant trừ người gửi
       if (!conversation.unreadCount) {
         conversation.unreadCount = new Map();
       }
-      const currentUnread =
-        conversation.unreadCount.get(otherParticipant.toString()) || 0;
-      conversation.unreadCount.set(
-        otherParticipant.toString(),
-        currentUnread + 1
+      const otherParticipants = conversation.participants.filter(
+        (p) => p.toString() !== socket.userId
       );
+      for (const participant of otherParticipants) {
+        const current = conversation.unreadCount.get(participant.toString()) || 0;
+        conversation.unreadCount.set(participant.toString(), current + 1);
+      }
 
       await conversation.save();
 
       const messageData = message.toJSON();
 
-      // Emit to conversation room (real-time to both users if online)
+      // Emit to conversation room (real-time to all members if online)
       io.to(`conversation:${conversationId}`).emit("chat:message", {
         message: messageData,
         conversationId,
       });
 
-      // Also emit to recipient's personal room (for notifications when not in chat)
-      io.to(`user:${otherParticipant}`).emit("message:new", {
-        message: messageData,
-        conversationId,
-      });
+      // Emit to each recipient's personal room (notification khi không mở chat)
+      for (const participant of otherParticipants) {
+        io.to(`user:${participant}`).emit("message:new", {
+          message: messageData,
+          conversationId,
+        });
+      }
 
       logger.info(
         `✓ Message sent in conversation ${conversationId} by ${socket.username}`
@@ -145,37 +144,33 @@ const setupChatHandlers = (io, socket) => {
         return;
       }
 
-      // Mark messages as read
+      // Thêm userId vào readBy của các message chưa đọc (không phải do mình gửi)
       await Message.updateMany(
         {
           conversationId,
           sender: { $ne: socket.userId },
-          read: false,
+          readBy: { $ne: socket.userId },
         },
-        {
-          $set: {
-            read: true,
-            readAt: new Date(),
-          },
-        }
+        { $addToSet: { readBy: socket.userId } }
       );
 
-      // Reset unread count
+      // Reset unread count của user này
       if (!conversation.unreadCount) {
         conversation.unreadCount = new Map();
       }
       conversation.unreadCount.set(socket.userId, 0);
       await conversation.save();
 
-      // Notify other participant
-      const otherParticipant = conversation.participants.find(
+      // Notify các participant còn lại
+      const otherParticipants = conversation.participants.filter(
         (p) => p.toString() !== socket.userId
       );
-
-      io.to(`user:${otherParticipant}`).emit("messages:read", {
-        conversationId,
-        readBy: socket.userId,
-      });
+      for (const participant of otherParticipants) {
+        io.to(`user:${participant}`).emit("messages:read", {
+          conversationId,
+          readBy: socket.userId,
+        });
+      }
 
       logger.info(
         `✓ Messages marked as read in conversation ${conversationId} by ${socket.username}`

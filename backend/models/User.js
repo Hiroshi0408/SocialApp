@@ -17,7 +17,7 @@ const userSchema = new mongoose.Schema(
         /^[a-zA-Z0-9_]+$/,
         "Username can only contain letters, numbers and underscores",
       ],
-      index: true, // Thêm index: true ở đây
+      index: true,
     },
     email: {
       type: String,
@@ -26,11 +26,10 @@ const userSchema = new mongoose.Schema(
       trim: true,
       lowercase: true,
       match: [/^\S+@\S+\.\S+$/, "Please provide a valid email"],
-      index: true, // Thêm index: true ở đây
+      index: true,
     },
     password: {
       type: String,
-      // Password chỉ required nếu KHÔNG phải Google account
       required: function () {
         return !this.isGoogleAccount;
       },
@@ -135,21 +134,26 @@ const userSchema = new mongoose.Schema(
   },
   {
     timestamps: true,
+    toJSON: {
+      transform: (doc, ret) => {
+        delete ret.password;
+        delete ret.emailVerificationToken;
+        delete ret.emailVerificationExpires;
+        delete ret.passwordResetToken;
+        delete ret.passwordResetExpires;
+        delete ret.deleted;
+        delete ret.deletedAt;
+        delete ret.__v;
+        return ret;
+      },
+    },
   },
 );
 
-// Bỏ các index duplicate, chỉ giữ index cho createdAt
 userSchema.index({ createdAt: -1 });
 
-// Encrypt password whenever password is modified and non-empty
 userSchema.pre("save", async function (next) {
-  if (!this.isModified("password") || !this.password) {
-    return next();
-  }
-  if (/^\$2[aby]\$\d{2}\$/.test(this.password)) {
-    return next();
-  }
-
+  if (!this.isModified("password") || !this.password) return next();
   try {
     const salt = await bcrypt.genSalt(10);
     this.password = await bcrypt.hash(this.password, salt);
@@ -159,53 +163,9 @@ userSchema.pre("save", async function (next) {
   }
 });
 
-// Compare password - allow password auth whenever a password exists
 userSchema.methods.comparePassword = async function (candidatePassword) {
-  try {
-    // Cannot compare if account has no stored password
-    if (!this.password) {
-      return false;
-    }
-
-    return await bcrypt.compare(candidatePassword, this.password);
-  } catch (error) {
-    throw new Error("Password comparison failed");
-  }
+  if (!this.password) return false;
+  return await bcrypt.compare(candidatePassword, this.password);
 };
 
-userSchema.methods.toJSON = function () {
-  const user = this.toObject();
-  delete user.password;
-  delete user.deleted;
-  delete user.deletedAt;
-  delete user.emailVerificationToken;
-  delete user.emailVerificationExpires;
-  delete user.passwordResetToken;
-  delete user.passwordResetExpires;
-  delete user.__v;
-  return user;
-};
-
-userSchema.methods.generateEmailVerificationToken = function () {
-  const token = crypto.randomBytes(32).toString("hex");
-  this.emailVerificationToken = crypto
-    .createHash("sha256")
-    .update(token)
-    .digest("hex");
-  this.emailVerificationExpires = Date.now() + 24 * 60 * 60 * 1000;
-  return token;
-};
-
-userSchema.methods.generatePasswordResetToken = function () {
-  const token = crypto.randomBytes(32).toString("hex");
-  this.passwordResetToken = crypto
-    .createHash("sha256")
-    .update(token)
-    .digest("hex");
-  this.passwordResetExpires = Date.now() + 60 * 60 * 1000;
-  return token;
-};
-
-const User = mongoose.model("User", userSchema, "users");
-
-module.exports = User;
+module.exports = mongoose.model("User", userSchema, "users");

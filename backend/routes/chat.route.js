@@ -17,28 +17,28 @@ router.get("/conversations", chatController.getConversations);
 router.get(
   "/conversations/:userId",
   userIdValidation,
-  chatController.getOrCreateConversation
+  chatController.getOrCreateConversation,
 );
 
 // Get messages in a conversation
 router.get(
   "/conversations/:conversationId/messages",
   conversationIdValidation,
-  chatController.getMessages
+  chatController.getMessages,
 );
 
 // Send a message
 router.post(
   "/conversations/:conversationId/messages",
   conversationIdValidation,
-  chatController.sendMessage
+  chatController.sendMessage,
 );
 
 // Mark messages as read
 router.put(
   "/conversations/:conversationId/read",
   conversationIdValidation,
-  chatController.markAsRead
+  chatController.markAsRead,
 );
 
 module.exports = router;

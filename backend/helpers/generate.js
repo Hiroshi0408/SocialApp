@@ -1,5 +1,7 @@
 // Generate random string (for tokens)
 const jwt = require("jsonwebtoken");
+const crypto = require("crypto");
+const { JWT_EXPIRATION } = require("../constants");
 
 const generateRandomString = (length) => {
   const characters =
@@ -26,9 +28,12 @@ const generateToken = (userId, username) => {
     expiresIn: process.env.JWT_EXPIRE || JWT_EXPIRATION,
   });
 };
+// Generate raw token (for email verification, password reset)
+const generateRawToken = () => crypto.randomBytes(32).toString("hex");
 
 module.exports = {
   generateRandomString,
   generateRandomNumber,
   generateToken,
+  generateRawToken,
 };

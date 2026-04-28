@@ -7,6 +7,7 @@ const { apiLimiter } = require("./middlewares/rateLimiter.middleware");
 const { initializeSocket } = require("./config/socket");
 const errorHandler = require("./middlewares/errorHandler");
 const logger = require("./utils/logger.js");
+const { startCharityExpiryCron } = require("./jobs/charityExpiryCron");
 // Load environment variables
 dotenv.config();
 
@@ -68,6 +69,9 @@ connectDatabase();
 // INITIALIZE SOCKET.IO
 initializeSocket(server);
 
+// CRON JOBS
+startCharityExpiryCron();
+
 // ROUTES
 app.use("/api/auth", require("./routes/auth.route"));
 app.use("/api/users", require("./routes/user.route"));
@@ -82,6 +86,8 @@ app.use("/api/stories", require("./routes/story.route"));
 app.use("/api/admin", require("./routes/admin.route"));
 app.use("/api/web3", require("./routes/web3.route"));
 app.use("/api/friends", require("./routes/friend.route"));
+app.use("/api/organizations", require("./routes/organization.route"));
+app.use("/api/charity", require("./routes/charity.route"));
 // Health check
 app.get("/api/health", (req, res) => {
   res.json({

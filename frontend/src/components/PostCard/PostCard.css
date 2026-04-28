@@ -673,3 +673,243 @@
     padding-right: 8px;
   }
 }
+
+/* ===== ON-CHAIN BADGE ===== */
+.onchain-badge {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  background: none;
+  border: none;
+  color: #2563eb;
+  cursor: pointer;
+  padding: 2px;
+  margin-left: 4px;
+  border-radius: 50%;
+  transition: transform 0.15s ease, color 0.15s ease;
+  flex-shrink: 0;
+}
+
+.onchain-badge:hover {
+  transform: scale(1.2);
+  color: #1d4ed8;
+}
+
+/* ===== ON-CHAIN MODAL ===== */
+.onchain-modal {
+  background: var(--bg-primary);
+  border-radius: 12px;
+  width: 380px;
+  max-width: 92vw;
+  box-shadow: 0 8px 32px rgba(0, 0, 0, 0.2);
+  overflow: hidden;
+}
+
+.onchain-modal-header {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 16px 20px;
+  border-bottom: 1px solid var(--border-color);
+  color: #2563eb;
+}
+
+.onchain-modal-header h3 {
+  flex: 1;
+  margin: 0;
+  font-size: 15px;
+  font-weight: 600;
+  color: var(--text-primary);
+}
+
+.onchain-modal-body {
+  padding: 20px;
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+}
+
+.onchain-loading,
+.onchain-error {
+  text-align: center;
+  font-size: 14px;
+  color: var(--text-secondary);
+  padding: 12px 0;
+}
+
+.onchain-error { color: #dc2626; }
+
+.onchain-match-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 6px 14px;
+  border-radius: 20px;
+  font-size: 13px;
+  font-weight: 600;
+  align-self: flex-start;
+}
+
+.onchain-match-badge.match {
+  background: #dcfce7;
+  color: #15803d;
+}
+
+.onchain-match-badge.mismatch {
+  background: #fee2e2;
+  color: #dc2626;
+}
+
+.onchain-detail {
+  display: flex;
+  flex-direction: column;
+  gap: 3px;
+  font-size: 13px;
+}
+
+.onchain-detail-label {
+  color: var(--text-secondary);
+  font-size: 11px;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+}
+
+.onchain-tx-link {
+  color: #2563eb;
+  word-break: break-all;
+  font-family: monospace;
+  font-size: 12px;
+}
+
+.onchain-tx-link:hover { text-decoration: underline; }
+
+.onchain-address {
+  font-family: monospace;
+  font-size: 12px;
+  color: var(--text-primary);
+}
+
+.onchain-badge.onchain-pending {
+  color: #9ca3af;
+  cursor: default;
+  pointer-events: none;
+}
+
+@keyframes spin-badge {
+  to { transform: rotate(360deg); }
+}
+
+.onchain-spinner {
+  animation: spin-badge 1s linear infinite;
+  display: block;
+}
+
+/* ─── Milestone banner ─── */
+/* Hiển thị giữa header và caption khi post là auto-post báo cáo milestone của
+   1 Charity Campaign. Click → /charity/:id để user thấy đủ context (org + tx). */
+.post-milestone-banner {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin: 0 12px 8px;
+  padding: 8px 12px;
+  background: linear-gradient(
+    90deg,
+    rgba(29, 155, 240, 0.08) 0%,
+    rgba(16, 185, 129, 0.08) 100%
+  );
+  border: 1px solid rgba(29, 155, 240, 0.25);
+  border-radius: 10px;
+  text-decoration: none;
+  color: var(--text-primary);
+  font-size: 0.88rem;
+  font-weight: 600;
+  transition: background 0.15s ease, transform 0.1s ease,
+    border-color 0.15s ease;
+}
+
+.post-milestone-banner:hover {
+  background: linear-gradient(
+    90deg,
+    rgba(29, 155, 240, 0.14) 0%,
+    rgba(16, 185, 129, 0.14) 100%
+  );
+  border-color: var(--primary-color);
+  transform: translateY(-1px);
+}
+
+.post-milestone-icon {
+  font-size: 1rem;
+  line-height: 1;
+}
+
+.post-milestone-text {
+  flex: 1;
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.post-milestone-arrow {
+  color: var(--primary-color);
+  font-size: 1rem;
+  transition: transform 0.15s ease;
+}
+
+.post-milestone-banner:hover .post-milestone-arrow {
+  transform: translateX(3px);
+}
+
+/* Variant theo kind: dùng tone màu khác nhau cho từng loại event để user
+   nhận diện nhanh trong feed. Background = gradient nhẹ, border = màu tone. */
+.post-milestone-kickoff {
+  background: linear-gradient(
+    90deg,
+    rgba(99, 102, 241, 0.1) 0%,
+    rgba(168, 85, 247, 0.1) 100%
+  );
+  border-color: rgba(99, 102, 241, 0.3);
+}
+.post-milestone-kickoff:hover {
+  background: linear-gradient(
+    90deg,
+    rgba(99, 102, 241, 0.18) 0%,
+    rgba(168, 85, 247, 0.18) 100%
+  );
+  border-color: #6366f1;
+}
+
+.post-milestone-funded {
+  background: linear-gradient(
+    90deg,
+    rgba(245, 158, 11, 0.1) 0%,
+    rgba(34, 197, 94, 0.1) 100%
+  );
+  border-color: rgba(34, 197, 94, 0.3);
+}
+.post-milestone-funded:hover {
+  background: linear-gradient(
+    90deg,
+    rgba(245, 158, 11, 0.18) 0%,
+    rgba(34, 197, 94, 0.18) 100%
+  );
+  border-color: #22c55e;
+}
+
+.post-milestone-completed {
+  background: linear-gradient(
+    90deg,
+    rgba(34, 197, 94, 0.12) 0%,
+    rgba(16, 185, 129, 0.12) 100%
+  );
+  border-color: rgba(16, 185, 129, 0.35);
+}
+.post-milestone-completed:hover {
+  background: linear-gradient(
+    90deg,
+    rgba(34, 197, 94, 0.2) 0%,
+    rgba(16, 185, 129, 0.2) 100%
+  );
+  border-color: #10b981;
+}

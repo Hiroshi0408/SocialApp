@@ -14,5 +14,9 @@ router.post(
   walletLoginValidation,
   web3Controller.linkWallet,
 );
+router.delete("/link-wallet", authMiddleware, web3Controller.unlinkWallet);
+
+// Public — không cần auth, ai cũng verify được
+router.get("/posts/:postId/verify", web3Controller.verifyPost);
 
 module.exports = router;

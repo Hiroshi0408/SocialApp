@@ -35,6 +35,14 @@ const groupSchema = new mongoose.Schema(
       default: 1,
       min: 1,
     },
+    // Nếu group được tạo bởi verified Organization (auto-create khi verify) → không cho bán
+    // trong GroupMarketplace. Null = group thường của user.
+    organizationId: {
+      type: mongoose.Schema.Types.ObjectId,
+      ref: "Organization",
+      default: null,
+      index: true,
+    },
   },
   {
     timestamps: true,
@@ -44,18 +52,6 @@ const groupSchema = new mongoose.Schema(
 groupSchema.index({ name: 1, createdAt: -1 });
 groupSchema.index({ members: 1 });
 groupSchema.index({ creator: 1, createdAt: -1 });
-
-groupSchema.pre("save", function (next) {
-  if (!this.members || this.members.length === 0) {
-    this.members = [this.creator];
-  }
-
-  const uniqueMemberIds = [...new Set(this.members.map((id) => id.toString()))];
-  this.members = uniqueMemberIds.map((id) => new mongoose.Types.ObjectId(id));
-  this.membersCount = uniqueMemberIds.length;
-
-  next();
-});
 
 const Group = mongoose.model("Group", groupSchema, "groups");
 

@@ -1,200 +1,121 @@
-const mongoose = require("mongoose");
-const Group = require("../models/Group");
+const groupService = require("../services/groupService");
 const logger = require("../utils/logger");
 
-const formatGroup = (group) => ({
-  id: group._id,
-  name: group.name,
-  description: group.description,
-  image: group.image,
-  members: group.membersCount || group.members?.length || 0,
-  creator: group.creator,
-  createdAt: group.createdAt,
-  updatedAt: group.updatedAt,
-});
-
-exports.getJoinedGroups = async (req, res) => {
+// [GET] /api/groups/joined
+exports.getJoinedGroups = async (req, res, next) => {
   try {
-    const userId = req.user.id;
-
-    const groups = await Group.find({ members: userId })
-      .populate("creator", "_id username fullName avatar")
-      .sort({ updatedAt: -1 })
-      .lean();
-
-    res.json({
-      success: true,
-      groups: groups.map(formatGroup),
-    });
+    const groups = await groupService.getJoinedGroups(req.user.id);
+    res.json({ success: true, groups });
   } catch (error) {
-    logger.error("Get joined groups error:", error);
-    res.status(500).json({
-      success: false,
-      message: "Failed to load joined groups",
-    });
+    next(error);
   }
 };
 
-exports.getSuggestedGroups = async (req, res) => {
+// [GET] /api/groups/suggested
+exports.getSuggestedGroups = async (req, res, next) => {
   try {
-    const userId = req.user.id;
-    const limit = Math.min(parseInt(req.query.limit, 10) || 10, 50);
-
-    const groups = await Group.find({ members: { $ne: userId } })
-      .populate("creator", "_id username fullName avatar")
-      .sort({ createdAt: -1 })
-      .limit(limit)
-      .lean();
-
-    res.json({
-      success: true,
-      groups: groups.map(formatGroup),
-    });
+    const groups = await groupService.getSuggestedGroups(req.user.id, req.query);
+    res.json({ success: true, groups });
   } catch (error) {
-    logger.error("Get suggested groups error:", error);
-    res.status(500).json({
-      success: false,
-      message: "Failed to load suggested groups",
-    });
+    next(error);
   }
 };
 
-exports.createGroup = async (req, res) => {
+// [GET] /api/groups/:groupId
+exports.getGroupById = async (req, res, next) => {
   try {
-    const userId = req.user.id;
-    const { name, description = "", image = "" } = req.body;
-
-    if (!name || !name.trim()) {
-      return res.status(400).json({
-        success: false,
-        message: "Group name is required",
-      });
-    }
-
-    const group = await Group.create({
-      name: name.trim(),
-      description: description.trim(),
-      image: image.trim(),
-      creator: userId,
-      members: [userId],
-      membersCount: 1,
-    });
-
-    const populatedGroup = await Group.findById(group._id)
-      .populate("creator", "_id username fullName avatar")
-      .lean();
-
-    res.status(201).json({
-      success: true,
-      group: formatGroup(populatedGroup),
-    });
-  } catch (error) {
-    logger.error("Create group error:", error);
-    res.status(500).json({
-      success: false,
-      message: "Failed to create group",
-    });
-  }
-};
-
-exports.joinGroup = async (req, res) => {
-  try {
-    const userId = req.user.id;
-    const { groupId } = req.params;
-
-    if (!mongoose.Types.ObjectId.isValid(groupId)) {
-      return res.status(400).json({
-        success: false,
-        message: "Invalid group id",
-      });
-    }
-
-    const group = await Group.findById(groupId);
-
-    if (!group) {
-      return res.status(404).json({
-        success: false,
-        message: "Group not found",
-      });
-    }
-
-    const alreadyMember = group.members.some(
-      (memberId) => memberId.toString() === userId.toString(),
+    const group = await groupService.getGroupById(
+      req.user.id,
+      req.params.groupId,
     );
-
-    if (alreadyMember) {
-      return res.json({
-        success: true,
-        group: formatGroup(group.toObject()),
-      });
-    }
-
-    group.members.push(userId);
-    group.membersCount = group.members.length;
-    await group.save();
-
-    const populatedGroup = await Group.findById(group._id)
-      .populate("creator", "_id username fullName avatar")
-      .lean();
-
-    res.json({
-      success: true,
-      group: formatGroup(populatedGroup),
-    });
+    res.json({ success: true, group });
   } catch (error) {
-    logger.error("Join group error:", error);
-    res.status(500).json({
-      success: false,
-      message: "Failed to join group",
-    });
+    next(error);
   }
 };
 
-exports.leaveGroup = async (req, res) => {
+// [POST] /api/groups
+exports.createGroup = async (req, res, next) => {
   try {
-    const userId = req.user.id;
-    const { groupId } = req.params;
-
-    if (!mongoose.Types.ObjectId.isValid(groupId)) {
-      return res.status(400).json({
-        success: false,
-        message: "Invalid group id",
-      });
-    }
-
-    const group = await Group.findById(groupId);
-
-    if (!group) {
-      return res.status(404).json({
-        success: false,
-        message: "Group not found",
-      });
-    }
-
-    group.members = group.members.filter(
-      (memberId) => memberId.toString() !== userId.toString(),
-    );
-
-    if (group.members.length === 0) {
-      await group.deleteOne();
-      return res.json({
-        success: true,
-        deleted: true,
-      });
-    }
-
-    group.membersCount = group.members.length;
-    await group.save();
-
-    res.json({
-      success: true,
-      deleted: false,
-    });
+    logger.info(`Create group - User: ${req.user.username}`);
+    const group = await groupService.createGroup(req.user.id, req.body);
+    res.status(201).json({ success: true, group });
   } catch (error) {
-    logger.error("Leave group error:", error);
-    res.status(500).json({
-      success: false,
-      message: "Failed to leave group",
-    });
+    next(error);
+  }
+};
+
+// [PATCH] /api/groups/:groupId
+exports.updateGroup = async (req, res, next) => {
+  try {
+    const group = await groupService.updateGroup(
+      req.user.id,
+      req.params.groupId,
+      req.body,
+    );
+    res.json({ success: true, group });
+  } catch (error) {
+    next(error);
+  }
+};
+
+// [DELETE] /api/groups/:groupId
+exports.deleteGroup = async (req, res, next) => {
+  try {
+    const result = await groupService.deleteGroup(
+      req.user.id,
+      req.params.groupId,
+    );
+    res.json({ success: true, ...result });
+  } catch (error) {
+    next(error);
+  }
+};
+
+// [POST] /api/groups/:groupId/join
+exports.joinGroup = async (req, res, next) => {
+  try {
+    const result = await groupService.joinGroup(req.user.id, req.params.groupId);
+    res.json({ success: true, ...result });
+  } catch (error) {
+    next(error);
+  }
+};
+
+// [POST] /api/groups/:groupId/leave
+exports.leaveGroup = async (req, res, next) => {
+  try {
+    const result = await groupService.leaveGroup(req.user.id, req.params.groupId);
+    res.json({ success: true, ...result });
+  } catch (error) {
+    next(error);
+  }
+};
+
+// [DELETE] /api/groups/:groupId/members/:userId
+exports.kickMember = async (req, res, next) => {
+  try {
+    const result = await groupService.kickMember(
+      req.user.id,
+      req.params.groupId,
+      req.params.userId,
+    );
+    res.json({ success: true, ...result });
+  } catch (error) {
+    next(error);
+  }
+};
+
+// [POST] /api/groups/:groupId/transfer-ownership
+exports.transferOwnership = async (req, res, next) => {
+  try {
+    const group = await groupService.transferOwnership(
+      req.user.id,
+      req.params.groupId,
+      req.body.targetUserId,
+    );
+    res.json({ success: true, group });
+  } catch (error) {
+    next(error);
   }
 };

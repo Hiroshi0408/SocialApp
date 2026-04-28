@@ -9,13 +9,17 @@ const { mongoIdValidation } = require("../middlewares/validation.middleware");
 router.use(authMiddleware);
 
 // Comment operations
-router.get("/:id/replies", mongoIdValidation, commentController.getCommentReplies);
+router.get(
+  "/:id/replies",
+  mongoIdValidation,
+  commentController.getCommentReplies,
+);
 router.delete("/:id", mongoIdValidation, commentController.deleteComment);
 router.post(
   "/:id/like",
   likeLimiter,
   mongoIdValidation,
-  commentController.toggleCommentLike
+  commentController.toggleCommentLike,
 );
 
 module.exports = router;

@@ -245,3 +245,36 @@
     padding: 20px;
   }
 }
+
+.onchain-toggle {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin: 12px 0;
+  cursor: pointer;
+  font-size: 13px;
+  color: var(--text-secondary);
+  user-select: none;
+}
+
+.onchain-toggle input[type="checkbox"] {
+  width: 16px;
+  height: 16px;
+  accent-color: var(--primary-color);
+  cursor: pointer;
+  flex-shrink: 0;
+}
+
+.onchain-toggle-icon {
+  font-size: 15px;
+}
+
+.onchain-toggle-label {
+  color: var(--text-primary);
+  font-size: 13px;
+}
+
+.onchain-toggle:has(input:checked) .onchain-toggle-label {
+  color: var(--primary-color);
+  font-weight: 500;
+}

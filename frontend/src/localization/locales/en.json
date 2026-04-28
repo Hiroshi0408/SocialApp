@@ -26,7 +26,10 @@
     "notifications": "Notifications",
     "explore": "Explore",
     "profile": "Profile",
-    "groups": "Groups"
+    "groups": "Groups",
+    "organizations": "Organizations",
+    "communities": "Communities",
+    "charity": "Charity"
   },
   "emailVerificationBanner": {
     "success": "Verification email sent! Please check your inbox.",
@@ -72,6 +75,12 @@
     "copyright": "© 2025 SOCIALAPP FROM HIROSHI"
   },
   "postCard": {
+    "milestoneBanner": "Milestone #{{idx}} report — View campaign",
+    "campaignBanner": {
+      "kickoff": "Campaign launched — View details",
+      "funded": "Goal reached — View details",
+      "completed": "Campaign completed — View details"
+    },
     "updateLikeError": "Failed to update like",
     "saveError": "Failed to save post",
     "shareTitle": "Post by {{username}}",
@@ -135,7 +144,15 @@
     "captionPlaceholder": "Write a caption...",
     "locationLabel": "Location",
     "locationPlaceholder": "Add location...",
-    "saving": "Saving..."
+    "saving": "Saving...",
+    "onChainVerified": "On-chain verified",
+    "onChainVerifying": "Verifying on blockchain...",
+    "onChainVerifyFailed": "Verification failed. Please try again.",
+    "onChainMatch": "✓ Content matches — not tampered",
+    "onChainMismatch": "⚠ Content mismatch — may have been edited",
+    "onChainTxHash": "Transaction Hash",
+    "onChainTimestamp": "Registered at",
+    "onChainOwner": "Owner (wallet)"
   },
   "profile": {
     "usernameNotFound": "Username not found",
@@ -213,6 +230,14 @@
     "walletConnectionFailed": "Wallet connection failed",
     "walletLinkedSuccess": "Wallet linked successfully!",
     "walletLinkFailed": "Failed to link wallet",
+    "walletConnectedSuccess": "Wallet connected!",
+    "walletDisconnect": "Unlink wallet",
+    "walletUnlinking": "Unlinking...",
+    "walletUnlinkedSuccess": "Wallet unlinked successfully",
+    "walletUnlinkFailed": "Failed to unlink wallet",
+    "walletBalance": "Balance",
+    "walletBalanceRefresh": "Refresh balance",
+    "walletConnectToSeeBal": "Connect MetaMask to view balance",
     "logout": "Log Out"
   },
   "notificationsPage": {
@@ -230,6 +255,7 @@
     "acceptedFriendRequest": "accepted your friend request",
     "mentionedYou": "mentioned you: {{text}}",
     "interactedWithYourContent": "interacted with your content",
+    "autoPostCreated": "An automatic post has been published for your campaign",
     "title": "Notifications",
     "markAllAsReadButton": "Mark all as read",
     "noNotifications": "No notifications yet",
@@ -426,7 +452,9 @@
     "captionPlaceholder": "Write a caption...",
     "locationPlaceholder": "Add location",
     "sharingButton": "Sharing...",
-    "shareButton": "Share"
+    "shareButton": "Share",
+    "registerOnChain": "Stamp on-chain",
+    "onChainTooltip": "Store a content hash on Sepolia to prove authorship. Anyone can verify it at any time."
   },
   "confirmDialog": {
     "defaultTitle": "Confirm Action",
@@ -466,5 +494,325 @@
     "accept": "Accept",
     "reject": "Reject",
     "end_call": "End Call"
+  },
+  "verifyPost": {
+    "title": "On-chain Post Verification",
+    "postId": "Post ID",
+    "verifying": "Verifying on Sepolia...",
+    "matchTitle": "Content is authentic",
+    "mismatchTitle": "Content has been altered",
+    "matchDesc": "The content hash matches the one registered on the blockchain. This post has not been modified since publishing.",
+    "mismatchDesc": "The current content hash DIFFERS from the on-chain record. The content may have been edited after publishing.",
+    "onChainHash": "On-chain hash",
+    "offChainHash": "Current content hash",
+    "registeredAt": "Registered at",
+    "owner": "Wallet address",
+    "viewOnEtherscan": "View on Sepolia Etherscan",
+    "backToHome": "← Back to home",
+    "unknownError": "An error occurred during verification"
+  },
+  "common": {
+    "loading": "Loading..."
+  },
+  "communities": {
+    "title": "Communities",
+    "subtitle": {
+      "groups": "Join groups around shared interests and chat with people who care.",
+      "orgs": "Browse verified organizations behind charity campaigns on SocialApp."
+    },
+    "tabs": {
+      "groups": "Groups",
+      "orgs": "Organizations"
+    }
+  },
+  "group": {
+    "createGroup": "Create Group",
+    "myGroups": "My Groups",
+    "suggestedGroups": "Suggested Groups",
+    "suggestedSubtitle": "Discover new groups that match your interests",
+    "searchPlaceholder": "Search groups by name...",
+    "noSearchResults": "No matching groups found.",
+    "members": "members",
+    "join": "Join",
+    "joining": "Joining...",
+    "joinedToast": "Joined group successfully",
+    "joinFailed": "Failed to join group",
+    "loadFailed": "Failed to load groups",
+    "noJoinedGroups": "You haven't joined any groups yet.",
+    "noSuggestions": "No more groups to suggest.",
+    "officialBadge": "Official verified organization group",
+    "guest": {
+      "title": "Log in to see groups",
+      "description": "Groups are where the SocialApp community chats and shares. Log in to browse and join.",
+      "cta": "Log in"
+    }
+  },
+  "organizations": {
+    "searchPlaceholder": "Search organizations by name...",
+    "allCategories": "All categories",
+    "applyCta": "Apply as organization",
+    "loadFailed": "Failed to load organizations",
+    "category": {
+      "education": "Education",
+      "disaster-relief": "Disaster relief",
+      "health": "Health",
+      "environment": "Environment",
+      "animal": "Animal welfare"
+    },
+    "empty": {
+      "title": "No verified organizations yet",
+      "description": "Represent a charity? Apply to get verified and start launching on-chain donation campaigns."
+    }
+  },
+  "groupDetail": {
+    "loadFailed": "Failed to load group",
+    "postsLoadFailed": "Failed to load posts",
+    "members": "members",
+    "join": "Join",
+    "leave": "Leave",
+    "joined": "Joined the group",
+    "joinFailed": "Failed to join group",
+    "leaveTitle": "Leave group?",
+    "leaveConfirm": "Are you sure you want to leave this group?",
+    "leftGroup": "Left the group",
+    "leaveFailed": "Failed to leave group",
+    "deleteTitle": "Delete group?",
+    "deleteConfirm": "This action cannot be undone. All posts in the group will be removed.",
+    "deleted": "Group deleted",
+    "deleteFailed": "Failed to delete group",
+    "kickTitle": "Remove member?",
+    "kickConfirm": "Remove {{name}} from the group?",
+    "kicked": "Member removed",
+    "kickFailed": "Failed to remove member",
+    "kick": "Remove",
+    "transferTitle": "Transfer ownership?",
+    "transferConfirm": "Transfer group ownership to {{name}}? You will lose admin rights.",
+    "transferred": "Ownership transferred",
+    "transferFailed": "Failed to transfer ownership",
+    "makeOwner": "Make owner",
+    "edit": "Edit",
+    "delete": "Delete group",
+    "officialBadge": "Official verified organization group",
+    "viewOrganization": "View organization",
+    "createPost": "Create Post",
+    "joinToSeePosts": "Join the group to see posts",
+    "noPosts": "No posts in this group yet.",
+    "owner": "Owner",
+    "description": "Description",
+    "noDescription": "No description.",
+    "createdBy": "Created by",
+    "createdAt": "Created at",
+    "officialNote": "This is an official group for a verified Organization — it cannot be deleted directly.",
+    "tabs": {
+      "posts": "Posts",
+      "members": "Members",
+      "about": "About"
+    }
+  },
+  "charity": {
+    "title": "Transparent Charity Campaigns",
+    "subtitle": "Every transaction is recorded on blockchain — anyone can verify.",
+    "createCampaign": "Create campaign",
+    "myCampaigns": "My campaigns",
+    "loadFailed": "Failed to load campaigns",
+    "by": "by",
+    "anonymousOrg": "Anonymous organization",
+    "raisedOf": "{{raised}} / {{goal}} ETH",
+    "donors_one": "{{count}} donor",
+    "donors_other": "{{count}} donors",
+    "daysLeft_one": "{{count}} day left",
+    "daysLeft_other": "{{count}} days left",
+    "hoursLeft_one": "{{count}} hour left",
+    "hoursLeft_other": "{{count}} hours left",
+    "ended": "Ended",
+    "milestonesCount_one": "{{count}} milestone",
+    "milestonesCount_other": "{{count}} milestones",
+    "filters": {
+      "allStatus": "All",
+      "allCategories": "All categories",
+      "sortLabel": "Sort",
+      "sortNewest": "Newest",
+      "sortEndingSoon": "Ending soon",
+      "sortMostFunded": "Most funded"
+    },
+    "status": {
+      "OPEN": "Open",
+      "FUNDED": "Funded",
+      "EXECUTING": "Executing",
+      "COMPLETED": "Completed",
+      "FAILED": "Failed",
+      "REFUNDED": "Refunded"
+    },
+    "category": {
+      "education": "Education",
+      "medical": "Medical",
+      "disaster": "Disaster relief",
+      "animal": "Animal welfare",
+      "other": "Other"
+    },
+    "empty": {
+      "title": "No campaigns yet",
+      "description": "Be the first to launch a transparent on-chain fundraising campaign.",
+      "cta": "Create the first campaign",
+      "ctaGuest": "Register your organization to create campaigns"
+    },
+    "milestone": {
+      "unlocked": "Unlocked",
+      "pending": "Pending"
+    },
+    "transparency": {
+      "title": "On-chain transparency",
+      "subtitle": "Every record below is public — you can verify it directly on Etherscan.",
+      "contract": "Smart contract",
+      "beneficiary": "Beneficiary wallet",
+      "createTx": "Create tx",
+      "onChainId": "On-chain id",
+      "verifyButton": "Verify on-chain",
+      "verifying": "Verifying...",
+      "match": "Cache matches on-chain ✅",
+      "mismatch": "Synced — cache was just refreshed from chain",
+      "syncFailed": "Verification failed"
+    },
+    "detail": {
+      "loadFailed": "Failed to load campaign",
+      "loading": "Loading...",
+      "notFoundTitle": "Campaign not found",
+      "notFoundDescription": "It may have been removed or the link is incorrect.",
+      "backToList": "Back to campaigns",
+      "donorsLabel": "Donors",
+      "deadlineLabel": "Deadline",
+      "unlockedLabel": "Released",
+      "milestonesLabel": "Milestones",
+      "donateComingSoon": "Donate (coming soon)",
+      "donateComingSoonTooltip": "Donate feature lands on Day 8",
+      "notDonatable": {
+        "FUNDED": "Goal reached — waiting to enter the disbursement phase.",
+        "EXECUTING": "Funds are being released by milestone — donations are closed.",
+        "COMPLETED": "Campaign is fully completed.",
+        "FAILED": "Campaign failed — donors can claim a refund.",
+        "REFUNDED": "All donors have been refunded."
+      },
+      "aboutTitle": "About this campaign",
+      "milestonesTitle": "Milestones",
+      "milestonesSubtitle": "Funds are released to the beneficiary milestone-by-milestone, only after the organization submits a report and an admin approves it.",
+      "milestoneFallbackTitle": "Milestone {{idx}}",
+      "latestDonorsTitle": "Latest donors",
+      "noDonationsYet": "No donations yet.",
+      "noMilestones": "This campaign has no declared milestones.",
+      "viewTx": "View tx",
+      "viewReport": "View report"
+    },
+    "donate": {
+      "title": "Support this campaign",
+      "cta": "Donate now",
+      "amountLabel": "Amount in ETH",
+      "confirm": "Confirm donation",
+      "yourBalance": "Wallet balance",
+      "remainingToGoal": "Remaining to goal",
+      "minError": "Minimum {{min}} ETH",
+      "insufficientBalance": "Insufficient balance (keep ~0.002 ETH for gas)",
+      "connectHint": "Connect your MetaMask wallet to donate to this campaign",
+      "connectWallet": "Connect wallet",
+      "connecting": "Connecting...",
+      "successToast": "Thank you for your donation!",
+      "disclaimer": "This transaction will be recorded on Sepolia testnet and cannot be undone."
+    },
+    "create": {
+      "title": "Create a fundraising campaign",
+      "subtitle": "Your campaign will be registered on-chain after creation — all transactions are public on Sepolia.",
+      "orgLabel": "Organization",
+      "labelCoverImage": "Cover image",
+      "uploadCover": "Upload cover image",
+      "changeCover": "Change cover image",
+      "uploading": "Uploading...",
+      "labelTitle": "Campaign title",
+      "placeholderTitle": "E.g. Scholarship Fund for Highland Students 2025",
+      "labelDescription": "Description",
+      "placeholderDescription": "Describe your goals, story, and how funds will be used...",
+      "labelCategory": "Category",
+      "labelGoal": "Goal",
+      "goalHint": "Minimum 0.001 ETH",
+      "labelDuration": "Duration",
+      "days": "days",
+      "durationHint": "1–90 days",
+      "labelMilestones": "Disbursement milestones",
+      "milestonesHint": "Each milestone is released separately after the organization submits a report and admin approves. The total must equal the goal.",
+      "milestonesRules": "Requirement: at least {{min}} milestones, each at most {{max}}% of the goal.",
+      "percentOfGoal": "of goal",
+      "errorMinMilestones": "At least {{min}} milestones are required",
+      "errorMilestonePercent": "Exceeds {{max}}% of goal (currently {{actual}}%)",
+      "sumLabel": "Total: {{sum}} / {{goal}} ETH",
+      "milestoneTitle": "Milestone title",
+      "milestoneDescription": "Milestone description (optional)",
+      "addMilestone": "Add milestone",
+      "removeMilestone": "Remove",
+      "submit": "Create campaign",
+      "submitting": "Creating...",
+      "cancel": "Cancel",
+      "successToast": "Campaign created and registered on-chain!",
+      "errorRequired": "This field is required",
+      "errorGoalInvalid": "Goal must be a positive number (ETH)",
+      "errorDuration": "Duration must be between 1 and 90 days",
+      "errorAmountInvalid": "Amount must be a positive number (ETH)",
+      "errorSumMismatch": "Milestone total ({{sum}}) must equal the goal ({{goal}} ETH)",
+      "errorFailed": "Failed to create campaign",
+      "noOrgTitle": "You don't have a verified organization",
+      "noOrgDesc": "Only admin-verified organizations can create fundraising campaigns.",
+      "noOrgCta": "Apply for an organization",
+      "pendingOrgDesc": "Your organization is pending admin review. Please wait for verification before creating a campaign.",
+      "pendingOrgCta": "View organization status",
+      "txTitle": "Create campaign on-chain",
+      "connectWalletHint": "Please connect MetaMask using the wallet registered for your organization to sign the create-campaign transaction.",
+      "wrongWallet": "Connected wallet does not match the organization's wallet.",
+      "wrongWalletHint": "Current wallet ({{got}}) is not the organization's wallet ({{expected}}). Please switch accounts in MetaMask.",
+      "walletReady": "Ready to sign with organization wallet ({{address}})"
+    },
+    "tx": {
+      "title": "Transaction status",
+      "signing": "Waiting for MetaMask confirmation...",
+      "signingHint": "Please open MetaMask and confirm the transaction",
+      "pending": "Transaction sent, waiting for confirmation...",
+      "success": "Transaction successful!",
+      "failed": "Transaction failed",
+      "rejected": "You rejected the transaction",
+      "unknownError": "An unknown error occurred",
+      "viewOnEtherscan": "View on Etherscan",
+      "retry": "Try again",
+      "close": "Close"
+    },
+    "claimRefund": {
+      "title": "Claim Your Refund",
+      "cta": "Claim Refund",
+      "desc": "This campaign did not reach its goal. You can claim back the full ETH you contributed.",
+      "amountLabel": "ETH to receive",
+      "noContribution": "This wallet has no contribution to this campaign, or has already been refunded.",
+      "confirm": "Confirm Claim",
+      "successToast": "Refund successful! ETH has been returned to your wallet."
+    }
+  },
+  "web3": {
+    "disconnected": "Wallet disconnected",
+    "accountSwitched": "Wallet account switched",
+    "wrongNetwork": "Please switch to Sepolia network to use blockchain features",
+    "backToSepolia": "Switched back to Sepolia",
+    "connectRejected": "You cancelled the wallet connection",
+    "connectFailed": "Failed to connect wallet, please try again",
+    "noProvider": "Please install MetaMask to use blockchain features",
+    "error": {
+      "insufficient": "Insufficient ETH balance to complete this transaction"
+    }
+  },
+  "editGroup": {
+    "title": "Edit Group",
+    "image": "Image",
+    "name": "Group Name",
+    "description": "Description",
+    "save": "Save",
+    "saving": "Saving...",
+    "cancel": "Cancel",
+    "saved": "Changes saved",
+    "saveFailed": "Save failed",
+    "uploadFailed": "Image upload failed",
+    "nameRequired": "Group name is required"
   }
 }
