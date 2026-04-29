@@ -30,6 +30,8 @@ if (missingEnvVars.length > 0) {
 // Create Express app
 const app = express();
 
+app.set("trust proxy", 1);
+
 // Create HTTP server
 const server = http.createServer(app);
 
