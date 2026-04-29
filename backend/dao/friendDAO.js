@@ -39,7 +39,7 @@ class FriendDAO {
     return await FriendRequest.findByIdAndUpdate(
       requestId,
       { $set: { status, respondedAt: new Date() } },
-      opts
+      opts,
     );
   }
 
@@ -65,7 +65,7 @@ class FriendDAO {
         ],
       },
       { $set: { status: "canceled", respondedAt: new Date() } },
-      opts
+      opts,
     );
   }
 
@@ -88,7 +88,10 @@ class FriendDAO {
   }
 
   async countIncomingRequests(userId) {
-    return await FriendRequest.countDocuments({ toUserId: userId, status: "pending" });
+    return await FriendRequest.countDocuments({
+      toUserId: userId,
+      status: "pending",
+    });
   }
 
   async findOutgoingRequests(userId, options = {}) {
@@ -102,7 +105,10 @@ class FriendDAO {
   }
 
   async countOutgoingRequests(userId) {
-    return await FriendRequest.countDocuments({ fromUserId: userId, status: "pending" });
+    return await FriendRequest.countDocuments({
+      fromUserId: userId,
+      status: "pending",
+    });
   }
 
   // ==================== FRIENDSHIP ====================
@@ -113,10 +119,11 @@ class FriendDAO {
 
   async createFriendship(userId1, userId2, session = null) {
     const pair = buildPair(userId1, userId2);
-    const opts = session ? [{ ...pair }, { session }] : [{ ...pair }];
-    const docs = await Friendship.create(opts);
-    // Friendship.create trả mảng nếu truyền array, object nếu truyền object
-    return Array.isArray(docs) ? docs[0] : docs;
+    if (session) {
+      const docs = await Friendship.create([pair], { session });
+      return docs[0];
+    }
+    return await Friendship.create(pair);
   }
 
   async deleteFriendship(userId1, userId2, session = null) {
@@ -148,7 +155,9 @@ class FriendDAO {
   async findFriendIds(userId) {
     const friendships = await Friendship.find({
       $or: [{ userA: userId }, { userB: userId }],
-    }).select("userA userB").lean();
+    })
+      .select("userA userB")
+      .lean();
 
     return friendships.map((f) => {
       return f.userA.toString() === userId.toString() ? f.userB : f.userA;
@@ -174,15 +183,35 @@ class FriendDAO {
     ]);
 
     if (friendship) {
-      return { status: "friends", isFriend: true, hasOutgoingRequest: false, hasIncomingRequest: false };
+      return {
+        status: "friends",
+        isFriend: true,
+        hasOutgoingRequest: false,
+        hasIncomingRequest: false,
+      };
     }
     if (outgoingRequest) {
-      return { status: "outgoing_request", isFriend: false, hasOutgoingRequest: true, hasIncomingRequest: false };
+      return {
+        status: "outgoing_request",
+        isFriend: false,
+        hasOutgoingRequest: true,
+        hasIncomingRequest: false,
+      };
     }
     if (incomingRequest) {
-      return { status: "incoming_request", isFriend: false, hasOutgoingRequest: false, hasIncomingRequest: true };
+      return {
+        status: "incoming_request",
+        isFriend: false,
+        hasOutgoingRequest: false,
+        hasIncomingRequest: true,
+      };
     }
-    return { status: "none", isFriend: false, hasOutgoingRequest: false, hasIncomingRequest: false };
+    return {
+      status: "none",
+      isFriend: false,
+      hasOutgoingRequest: false,
+      hasIncomingRequest: false,
+    };
   }
 }
 

@@ -85,9 +85,9 @@ class UserDAO {
   }
 
   async createWalletUser(data) {
+    // Schema email đã required:false + sparse index — không cần bypass validate nữa
     const user = new User(data);
-    // validateBeforeSave: false vì wallet user không có email (schema yêu cầu email)
-    return await user.save({ validateBeforeSave: false });
+    return await user.save();
   }
 
   async findByVerificationToken(rawToken) {
