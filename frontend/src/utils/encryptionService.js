@@ -107,7 +107,12 @@ class EncryptionService {
       // Convert to string
       return this.decoder.decode(decryptedBuffer);
     } catch (error) {
-      console.error("Decryption error:", error);
+      // InvalidCharacterError xảy ra khi content không phải base64 hợp lệ
+      // (vd: legacy plaintext bị mark isEncrypted=true) — không log để khỏi spam console.
+      // Caller đã handle fallback "[Encrypted message...]" rồi.
+      if (error?.name !== "InvalidCharacterError") {
+        console.error("Decryption error:", error);
+      }
       return "[Encrypted message - Unable to decrypt]";
     }
   }
