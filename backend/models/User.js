@@ -29,8 +29,9 @@ const userSchema = new mongoose.Schema(
     },
     password: {
       type: String,
+      // Wallet-only user và Google account không cần password
       required: function () {
-        return !this.isGoogleAccount;
+        return !this.isGoogleAccount && !this.walletAddress;
       },
       minlength: [6, "Password must be at least 6 characters"],
       select: false,
