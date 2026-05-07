@@ -160,9 +160,26 @@
     display: none;
   }
 
-  .sidebar-logo h1 {
-    font-size: var(--font-3xl);
+  /* Mobile: text "SocialApp" font cursive bị tràn sidebar collapsed.
+     Ẩn text gốc, render chỉ chữ "S" qua pseudo-element — vẫn giữ nhận diện
+     brand mà không tràn. font-family + color inherit từ rule desktop. */
+  .sidebar-logo {
+    padding: var(--spacing-md) 0;
     text-align: center;
+    overflow: hidden;
+  }
+
+  .sidebar-logo h1 {
+    font-size: 0;
+    line-height: 0;
+  }
+
+  .sidebar-logo h1::before {
+    content: "S";
+    font-size: var(--font-4xl);
+    line-height: 1;
+    font-family: inherit;
+    color: inherit;
   }
 
   .sidebar-item {

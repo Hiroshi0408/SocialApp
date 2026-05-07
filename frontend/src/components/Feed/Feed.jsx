@@ -12,7 +12,7 @@ function Feed() {
   const [loading, setLoading] = useState(true);
   const [loadingMore, setLoadingMore] = useState(false);
   const [error, setError] = useState(null);
-  const [feedType, setFeedType] = useState("friends");
+  const [feedType, setFeedType] = useState("all");
   const [page, setPage] = useState(1);
   const [hasMore, setHasMore] = useState(true);
   const observerTarget = useRef(null);
@@ -124,10 +124,10 @@ function Feed() {
     <div className="feed-container">
       <div className="feed-tabs">
         <button
-          className={`feed-tab ${feedType === "friends" ? "active" : ""}`}
-          onClick={() => handleFeedTypeChange("friends")}
+          className={`feed-tab ${feedType === "all" ? "active" : ""}`}
+          onClick={() => handleFeedTypeChange("all")}
         >
-          {t("feed.friends")}
+          {t("feed.explore")}
         </button>
         <button
           className={`feed-tab ${feedType === "following" ? "active" : ""}`}
@@ -136,10 +136,10 @@ function Feed() {
           {t("feed.following")}
         </button>
         <button
-          className={`feed-tab ${feedType === "all" ? "active" : ""}`}
-          onClick={() => handleFeedTypeChange("all")}
+          className={`feed-tab ${feedType === "friends" ? "active" : ""}`}
+          onClick={() => handleFeedTypeChange("friends")}
         >
-          {t("feed.explore")}
+          {t("feed.friends")}
         </button>
       </div>
 
