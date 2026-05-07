@@ -884,6 +884,18 @@
     "connectRejected": "You cancelled the wallet connection",
     "connectFailed": "Failed to connect wallet, please try again",
     "noProvider": "Please install MetaMask to use blockchain features",
+    "walletChangedMustRelogin": "MetaMask account changed. You will be logged out — please sign in again with the new wallet.",
+    "walletDisconnectedNotLinked": "MetaMask account changed. Wallet disconnected — link this wallet in Settings to use Web3 features.",
+    "switchUser": {
+      "title": "Switch account?",
+      "messageWalletOnly": "MetaMask account changed. Sign in with this wallet? Your current account will be signed out.",
+      "messageEmail": "MetaMask account changed. Sign in with this wallet? Your current email session will be replaced.",
+      "confirm": "Sign in with new wallet",
+      "cancelWalletOnly": "Logout",
+      "cancelEmail": "Just disconnect wallet",
+      "success": "Signed in as {{username}}",
+      "failed": "Failed to switch account — please try again"
+    },
     "error": {
       "insufficient": "Insufficient ETH balance to complete this transaction"
     }

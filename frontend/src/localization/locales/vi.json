@@ -884,6 +884,18 @@
     "connectRejected": "Bạn đã hủy kết nối ví",
     "connectFailed": "Kết nối ví thất bại, vui lòng thử lại",
     "noProvider": "Vui lòng cài MetaMask để dùng tính năng blockchain",
+    "walletChangedMustRelogin": "Đã đổi ví trong MetaMask. Bạn sẽ bị đăng xuất — vui lòng đăng nhập lại bằng ví mới.",
+    "walletDisconnectedNotLinked": "Đã đổi ví trong MetaMask. Đã ngắt kết nối — vào Settings để liên kết ví mới nếu muốn dùng tính năng Web3.",
+    "switchUser": {
+      "title": "Đổi tài khoản?",
+      "messageWalletOnly": "Đã đổi ví trong MetaMask. Đăng nhập bằng ví này? Tài khoản hiện tại sẽ bị đăng xuất.",
+      "messageEmail": "Đã đổi ví trong MetaMask. Đăng nhập bằng ví này? Phiên email hiện tại sẽ bị thay thế.",
+      "confirm": "Đăng nhập bằng ví mới",
+      "cancelWalletOnly": "Đăng xuất",
+      "cancelEmail": "Chỉ ngắt kết nối ví",
+      "success": "Đã đăng nhập dưới tên {{username}}",
+      "failed": "Đổi tài khoản thất bại — vui lòng thử lại"
+    },
     "error": {
       "insufficient": "Số dư ETH không đủ để thực hiện giao dịch"
     }
