@@ -57,7 +57,7 @@
 
 .search-input:focus {
   outline: none;
-  border-color: var(--text-secondary);
+  border-color: var(--primary-color);
   background-color: var(--card-bg);
 }
 
@@ -174,28 +174,39 @@
   color: var(--primary-light);
 }
 
-/* Notification Badge */
+/* Notification Badge — cap 99+ ở JSX, badge có viền ngoài cho tách icon */
 .notification-badge {
   position: absolute;
-  top: 2px;
-  right: 2px;
+  top: -2px;
+  right: -2px;
   background: var(--error-color);
   color: var(--white);
-  font-size: var(--font-xs);
+  font-size: 10px;
   font-weight: 700;
-  min-width: var(--spacing-base);
-  height: var(--spacing-base);
-  border-radius: var(--radius-lg);
-  display: flex;
+  line-height: 1;
+  min-width: 18px;
+  height: 18px;
+  border-radius: 9px;
+  border: 2px solid var(--header-gradient-start);
+  box-sizing: border-box;
+  display: inline-flex;
   align-items: center;
   justify-content: center;
-  padding: 0 var(--spacing-xs);
+  padding: 0 5px;
+  pointer-events: none;
 }
 
-/* Avatar */
+/* Avatar — default plain. Gradient ring CHỈ khi active. */
 .avatar-wrapper {
-  padding: 2px;
+  padding: 0;
   border-radius: var(--radius-full);
+  display: inline-block;
+  transition: padding 0.15s ease, background 0.15s ease;
+}
+
+/* avatar-wrapper là chính button (cùng element với .nav-icon), không phải con */
+.avatar-wrapper.active {
+  padding: 2px;
   background: linear-gradient(
     45deg,
     var(--gradient-start),
@@ -204,14 +215,14 @@
     var(--gradient-step-3),
     var(--gradient-end)
   );
-  display: inline-block;
 }
- 
+
 .avatar-small {
   width: var(--avatar-md);
   height: var(--avatar-md);
   border-radius: var(--radius-full);
   display: block;
+  overflow: hidden;
 }
 
 .avatar-small img {
@@ -219,19 +230,7 @@
   height: 100%;
   border-radius: 50%;
   object-fit: cover;
-}
-/* Avatar active state */
-.avatar-small.avatar-active {
-  border-color: var(--primary-color);
-  border-width: 2px;
-}
-
-.avatar-small.avatar-active::after {
-  content: "";
-  position: absolute;
-  inset: -3px;
-  border: 2px solid var(--color-primary);
-  border-radius: 50%;
+  display: block;
 }
 
 /* Profile Menu Dropdown */
@@ -327,6 +326,19 @@
   cursor: default;
 }
 
+/* Tablet — search width co lại để các nav icon không bị nén */
+@media (max-width: 1023px) {
+  .header-search {
+    width: 220px;
+    max-width: 240px;
+  }
+
+  .header-container {
+    gap: var(--spacing-base);
+    padding: 0 var(--spacing-base);
+  }
+}
+
 /* Responsive - Mobile */
 @media (max-width: 768px) {
   .header {
@@ -343,6 +355,31 @@
   }
 
   .header-nav {
-    gap: var(--spacing-base);
+    gap: var(--spacing-sm);
+  }
+
+  /* Wallet chip: thu nhỏ trên mobile để khỏi tràn header */
+  .wallet-balance-chip {
+    padding: 4px 8px;
+    font-size: 10px;
+    gap: 4px;
+  }
+
+  .wallet-balance-chip svg {
+    width: 12px;
+    height: 12px;
+  }
+
+  /* Profile menu: thu nhỏ + neo phải để không tràn viewport */
+  .profile-menu {
+    min-width: 200px;
+    max-width: calc(100vw - var(--sidebar-width-collapsed) - var(--spacing-md));
+  }
+}
+
+/* Mobile rất hẹp (<420px) — ẩn hẳn wallet chip, ưu tiên các nav icon chính */
+@media (max-width: 420px) {
+  .wallet-balance-chip {
+    display: none;
   }
 }

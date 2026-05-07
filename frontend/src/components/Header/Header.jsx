@@ -23,7 +23,6 @@ function Header() {
   const { t, i18n } = useTranslation();
   const [searchQuery, setSearchQuery] = useState("");
   const [showMenu, setShowMenu] = useState(false);
-  const [unreadCount, setUnreadCount] = useState(0);
   const navigate = useNavigate();
   const location = useLocation();
   const { user, logout } = useAuth();
@@ -37,32 +36,22 @@ function Header() {
   const [loadingSuggest, setLoadingSuggest] = useState(false);
 
   const userAvatar = useMemo(() => getUserAvatar(user), [user]);
+  const badgeText = unreadNotifications > 99 ? "99+" : unreadNotifications;
 
   useEffect(() => {
     const loadUnreadCount = async () => {
       try {
         const response = await notificationService.getUnreadCount();
-        if (response.success) {
-          const count = response.count || 0;
-          setUnreadCount(count);
-          if (setUnreadNotifications) {
-            setUnreadNotifications(count);
-          }
+        if (response.success && setUnreadNotifications) {
+          setUnreadNotifications(response.count || 0);
         }
-      } catch (err) {
-        setUnreadCount(0);
-        if (setUnreadNotifications) {
-          setUnreadNotifications(0);
-        }
+      } catch {
+        if (setUnreadNotifications) setUnreadNotifications(0);
       }
     };
 
     loadUnreadCount();
   }, [setUnreadNotifications]);
-
-  useEffect(() => {
-    setUnreadCount(unreadNotifications);
-  }, [unreadNotifications]);
 
   useEffect(() => {
     const handleClickOutside = (event) => {
@@ -85,7 +74,9 @@ function Header() {
       return;
     }
 
-    const t = setTimeout(async () => {
+    // KHÔNG đặt tên biến `t` — sẽ shadow t() từ useTranslation, dễ gây nhầm
+    // khi sau này thêm t("...") trong block này.
+    const timer = setTimeout(async () => {
       try {
         setLoadingSuggest(true);
         setOpenSuggest(true);
@@ -99,7 +90,7 @@ function Header() {
       }
     }, 300);
 
-    return () => clearTimeout(t);
+    return () => clearTimeout(timer);
   }, [searchQuery]);
 
   useEffect(() => {
@@ -225,8 +216,8 @@ function Header() {
             }`}
             onClick={() => navigate("/notifications")}
             aria-label={
-              unreadCount > 0
-                ? `${t("header.notifications")}, ${unreadCount} unread`
+              unreadNotifications > 0
+                ? `${t("header.notifications")}, ${unreadNotifications} unread`
                 : t("header.notifications")
             }
             aria-current={isActive("/notifications") ? "page" : undefined}
@@ -242,9 +233,9 @@ function Header() {
             >
               <path d="M18 8A6 6 0 0 0 6 8c0 7-3 9-3 9h18s-3-2-3-9M13.73 21a2 2 0 0 1-3.46 0" />
             </svg>
-            {unreadCount > 0 && (
+            {unreadNotifications > 0 && (
               <span className="notification-badge" aria-hidden="true">
-                {unreadCount}
+                {badgeText}
               </span>
             )}
           </button>
@@ -320,11 +311,7 @@ function Header() {
               aria-expanded={showMenu}
               aria-haspopup="true"
             >
-              <div
-                className={`avatar-small ${
-                  isActive("/profile") ? "avatar-active" : ""
-                }`}
-              >
+              <div className="avatar-small">
                 <img src={userAvatar} alt={t("header.profile")} />
               </div>
             </button>
