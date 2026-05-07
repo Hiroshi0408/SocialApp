@@ -18,10 +18,23 @@ function Sidebar() {
 
   const handlePostCreated = (newPost) => {
     setShowCreateModal(false);
-    if (location.pathname === "/home" || location.pathname === "/profile") {
-      navigate(0);
-    } else {
+    // Broadcast tới Feed/Profile để prepend post mới vào list — thay cho
+    // navigate(0) (soft reload) trước đây làm mất scroll position + flicker.
+    window.dispatchEvent(new CustomEvent("post:created", { detail: newPost }));
+
+    // Chỉ giữ route hiện tại nếu user đang ở /home hoặc profile CỦA CHÍNH MÌNH
+    // (các route khác — kể cả profile người khác — không listen event nên UI
+    // sẽ không có gì đổi → confusing. Navigate về /home cho rõ ràng.)
+    const onHome = location.pathname === "/home";
+    const onOwnProfile =
+      location.pathname === "/profile" ||
+      (user?.username &&
+        location.pathname === `/profile/${user.username}`);
+    if (!onHome && !onOwnProfile) {
       navigate("/home");
+    } else {
+      // Cùng route → scroll top để user thấy post vừa tạo ở đầu feed.
+      window.scrollTo({ top: 0, behavior: "smooth" });
     }
   };
 

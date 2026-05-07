@@ -95,6 +95,24 @@ function Profile() {
     fetchProfileData();
   }, [targetUsername, currentUser, t]);
 
+  // Lắng nghe event "post:created" từ Sidebar — prepend vào tab Posts của
+  // chính mình. Profile của user khác không nhận (post của mình không hiện
+  // trên profile họ).
+  useEffect(() => {
+    if (!isOwnProfile) return;
+    const handleNewPost = (e) => {
+      const newPost = e.detail;
+      if (!newPost) return;
+      setUserPosts((prev) => {
+        const newId = getId(newPost);
+        if (prev.some((p) => getId(p) === newId)) return prev;
+        return [newPost, ...prev];
+      });
+    };
+    window.addEventListener("post:created", handleNewPost);
+    return () => window.removeEventListener("post:created", handleNewPost);
+  }, [isOwnProfile]);
+
   const loadSavedPosts = useCallback(async () => {
     try {
       const response = await saveService.getSavedPosts();

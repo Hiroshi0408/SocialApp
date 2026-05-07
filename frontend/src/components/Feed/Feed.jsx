@@ -63,6 +63,23 @@ function Feed() {
     fetchPosts(1, false);
   }, [feedType, fetchPosts]);
 
+  // Lắng nghe event từ Sidebar khi user vừa tạo post xong — prepend vào đầu list
+  // thay vì navigate(0) (full page reload). Tránh dedup theo id để khỏi sót khi
+  // BE cache chưa kịp sync — nếu user đã có post đó từ fetch nền thì rất hiếm.
+  useEffect(() => {
+    const handleNewPost = (e) => {
+      const newPost = e.detail;
+      if (!newPost) return;
+      setPosts((prev) => {
+        const newId = getId(newPost);
+        if (prev.some((p) => getId(p) === newId)) return prev;
+        return [newPost, ...prev];
+      });
+    };
+    window.addEventListener("post:created", handleNewPost);
+    return () => window.removeEventListener("post:created", handleNewPost);
+  }, []);
+
   const loadMore = useCallback(() => {
     if (!loadingMore && hasMore) {
       const nextPage = page + 1;
