@@ -10,4 +10,5 @@
 @.claude/rules/backend-conventions.md
 @.claude/rules/frontend-conventions.md
 @.claude/rules/language.md
+@.claude/rules/code-style.md
 @.claude/rules/git-workflow.md
