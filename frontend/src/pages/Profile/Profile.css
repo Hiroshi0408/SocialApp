@@ -54,6 +54,7 @@
   display: flex;
   align-items: center;
   gap: var(--spacing-lg);
+  flex-wrap: wrap;
 }
 
 .profile-username {
@@ -63,73 +64,116 @@
   margin: 0;
 }
 
-.profile-edit-btn {
-  padding: var(--spacing-sm) var(--spacing-base);
-  background: var(--primary-color);
-  border: 1px solid var(--border-color);
+/* ===== Profile action buttons — visual hierarchy =====
+   --primary  : action user CHƯA làm (Add Friend, Accept, Edit profile)
+   --outline  : state ĐÃ DONE (Friends, Sent, Following) — neutral, không gây chú ý
+   --outline-primary : action mời gọi nhưng không phải primary (Follow chưa theo dõi)
+*/
+.profile-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--spacing-sm);
+  align-items: center;
+}
+
+.profile-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 8px 16px;
   border-radius: var(--radius-lg);
   font-size: var(--font-md);
   font-weight: 600;
-  color: var(--primary-text);
   cursor: pointer;
   transition: var(--transition-base);
-}
-
-.profile-edit-btn:hover {
-  background: var(--primary-hover);
-  border-color: var(--text-secondary);
-}
-
-.profile-settings-btn {
-  background: none;
-  border: none;
-  cursor: pointer;
+  border: 1px solid transparent;
+  background: transparent;
   color: var(--text-primary);
-  padding: var(--spacing-sm);
-  transition: var(--transition-base);
+  white-space: nowrap;
 }
 
-.profile-settings-btn:hover {
-  opacity: 0.6;
-}
-
-.profile-follow-btn,
-.profile-message-btn {
-  padding: var(--spacing-sm) var(--spacing-base);
-  background: var(--primary-color);
-  border: 1px solid var(--border-color);
-  border-radius: var(--radius-lg);
-  font-size: var(--font-md);
-  font-weight: 600;
-  color: var(--primary-text);
-  cursor: pointer;
-  transition: var(--transition-base);
-}
-
-.profile-follow-btn:hover:not(:disabled) {
-  background: var(--primary-hover);
-}
-
-.profile-follow-btn.following {
-  padding: var(--spacing-sm) var(--spacing-base);
-  background: var(--primary-color);
-  border: 1px solid var(--primary-color);
-  border-radius: var(--radius-lg);
-  font-size: var(--font-md);
-  font-weight: 600;
-  color: white;
-  cursor: pointer;
-  transition: var(--transition-base);
-}
-
-.profile-follow-btn:disabled {
+.profile-btn:disabled {
   opacity: 0.6;
   cursor: not-allowed;
 }
 
-.profile-message-btn:hover {
+.profile-btn--primary {
+  background: var(--primary-color);
+  border-color: var(--primary-color);
+  color: var(--primary-text, #fff);
+}
+
+.profile-btn--primary:hover:not(:disabled) {
   background: var(--primary-hover);
+  border-color: var(--primary-hover);
+}
+
+.profile-btn--outline {
+  background: transparent;
+  border-color: var(--border-color);
+  color: var(--text-primary);
+}
+
+.profile-btn--outline:hover:not(:disabled) {
+  background: var(--bg-color);
   border-color: var(--text-secondary);
+}
+
+.profile-btn--outline-primary {
+  background: transparent;
+  border-color: var(--primary-color);
+  color: var(--primary-color);
+}
+
+.profile-btn--outline-primary:hover:not(:disabled) {
+  background: var(--primary-color);
+  color: var(--primary-text, #fff);
+}
+
+/* Dropdown menu cho "Friends ▾" — destructive action (Unfriend) ở trong */
+.profile-friend-menu {
+  position: relative;
+}
+
+.profile-friend-dropdown {
+  position: absolute;
+  top: calc(100% + 6px);
+  left: 0;
+  min-width: 160px;
+  background: var(--card-bg);
+  border: 1px solid var(--border-color);
+  border-radius: var(--radius-lg);
+  box-shadow: var(--shadow-lg);
+  padding: 4px;
+  z-index: var(--z-popover, 50);
+}
+
+.profile-friend-dropdown-item {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  width: 100%;
+  padding: 8px 12px;
+  border: none;
+  background: transparent;
+  cursor: pointer;
+  border-radius: var(--radius-base, 6px);
+  font-size: var(--font-md);
+  color: var(--text-primary);
+  text-align: left;
+  transition: var(--transition-base);
+}
+
+.profile-friend-dropdown-item:hover {
+  background: var(--bg-color);
+}
+
+.profile-friend-dropdown-item.danger {
+  color: var(--error-color);
+}
+
+.profile-friend-dropdown-item.danger:hover {
+  background: rgba(239, 68, 68, 0.08);
 }
 
 /* Profile Stats */
@@ -373,6 +417,26 @@
   .stat-number,
   .stat-label {
     font-size: var(--font-md);
+  }
+
+  /* Mobile: cluster button đa hàng nếu cần, padding gọn hơn */
+  .profile-actions {
+    width: 100%;
+    gap: 6px;
+  }
+
+  .profile-btn {
+    padding: 6px 12px;
+    font-size: var(--font-sm, 13px);
+    flex: 1 1 auto;
+    justify-content: center;
+  }
+}
+
+@media (max-width: 480px) {
+  /* Màn rất hẹp: button chỉ icon — text ẩn để khỏi tràn */
+  .profile-btn {
+    padding: 8px 10px;
   }
 }
 

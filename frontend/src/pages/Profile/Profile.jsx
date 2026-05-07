@@ -1,9 +1,10 @@
-import React, { useState, useEffect, useCallback } from "react";
+import React, { useState, useEffect, useCallback, useRef } from "react";
 import { useParams, useNavigate, useSearchParams } from "react-router-dom";
 import { useTranslation } from "react-i18next";
 import Header from "../../components/Header/Header";
 import PostModal from "../../components/PostModal/PostModal";
 import FollowListModal from "../../components/FollowListModal/FollowListModal";
+import ConfirmDialog from "../../components/ConfirmDialog/ConfirmDialog";
 import { useAuth } from "../../contexts/AuthContext";
 import { userService, postService, saveService, chatService } from "../../api";
 import { showError, showSuccess } from "../../utils/toast";
@@ -36,6 +37,12 @@ function Profile() {
   const [followListModal, setFollowListModal] = useState(null);
   const [friendshipStatus, setFriendshipStatus] = useState("none");
   const [friendActionLoading, setFriendActionLoading] = useState(false);
+  const [isFollowing, setIsFollowing] = useState(false);
+  const [followLoading, setFollowLoading] = useState(false);
+  const [friendMenuOpen, setFriendMenuOpen] = useState(false);
+  const friendMenuRef = useRef(null);
+  // Confirm dialog cho action phá hủy: { open, title, message, confirmText, onConfirm }
+  const [confirmDialog, setConfirmDialog] = useState({ open: false });
 
   const targetUsername = usernameParam || currentUser?.username;
   const isOwnProfile =
@@ -75,6 +82,7 @@ function Profile() {
 
         setUserProfile(normalizedProfile);
         setFriendshipStatus(normalizedProfile.friendship?.status || "none");
+        setIsFollowing(!!normalizedProfile.isFollowing);
 
         const userId = normalizedProfile._id || normalizedProfile.id;
         if (userId) {
@@ -143,61 +151,179 @@ function Profile() {
     }
   }, [activeTab, isOwnProfile, loadSavedPosts]);
 
+  // Click ngoài → đóng dropdown menu Friends
+  useEffect(() => {
+    if (!friendMenuOpen) return;
+    const handler = (e) => {
+      if (friendMenuRef.current && !friendMenuRef.current.contains(e.target)) {
+        setFriendMenuOpen(false);
+      }
+    };
+    document.addEventListener("mousedown", handler);
+    return () => document.removeEventListener("mousedown", handler);
+  }, [friendMenuOpen]);
+
   useEffect(() => {
     if (activeTab === "tagged") {
       loadTaggedPosts();
     }
   }, [activeTab, loadTaggedPosts]);
 
-  const getFriendButtonLabel = () => {
-    switch (friendshipStatus) {
-      case "friends":
-        return t("friends.actions.friends");
-      case "outgoing_request":
-        return t("friends.actions.sent");
-      case "incoming_request":
-        return t("friends.actions.accept");
-      default:
-        return t("friends.actions.add");
-    }
-  };
-
-  const handleFriendAction = async () => {
+  // Action không phá hủy — gọi thẳng. Add friend / Accept request.
+  const handleAddFriend = async () => {
     if (!userProfile || friendActionLoading) return;
-
     const userId = userProfile._id || userProfile.id;
     setFriendActionLoading(true);
-
     try {
-      if (friendshipStatus === "friends") {
-        await userService.unfriendUser(userId);
-        setFriendshipStatus("none");
-        setUserProfile((prev) => ({
-          ...prev,
-          friendsCount: Math.max(0, (prev.friendsCount || 0) - 1),
-        }));
-        showSuccess(t("friends.toast.unfriended"));
-      } else if (friendshipStatus === "outgoing_request") {
-        await userService.cancelFriendRequest(userId);
-        setFriendshipStatus("none");
-        showSuccess(t("friends.toast.canceled"));
-      } else if (friendshipStatus === "incoming_request") {
-        await userService.acceptFriendRequest(userId);
-        setFriendshipStatus("friends");
-        setUserProfile((prev) => ({
-          ...prev,
-          friendsCount: (prev.friendsCount || 0) + 1,
-        }));
-        showSuccess(t("friends.toast.accepted"));
-      } else {
-        await userService.sendFriendRequest(userId);
-        setFriendshipStatus("outgoing_request");
-        showSuccess(t("friends.toast.sent"));
-      }
+      await userService.sendFriendRequest(userId);
+      setFriendshipStatus("outgoing_request");
+      showSuccess(t("friends.toast.sent"));
     } catch (error) {
       showError(error.response?.data?.message || t("profile.actionFailed"));
     } finally {
       setFriendActionLoading(false);
+    }
+  };
+
+  const handleAcceptFriend = async () => {
+    if (!userProfile || friendActionLoading) return;
+    const userId = userProfile._id || userProfile.id;
+    setFriendActionLoading(true);
+    try {
+      await userService.acceptFriendRequest(userId);
+      setFriendshipStatus("friends");
+      setUserProfile((prev) => ({
+        ...prev,
+        friendsCount: (prev.friendsCount || 0) + 1,
+      }));
+      showSuccess(t("friends.toast.accepted"));
+    } catch (error) {
+      showError(error.response?.data?.message || t("profile.actionFailed"));
+    } finally {
+      setFriendActionLoading(false);
+    }
+  };
+
+  const handleDeclineFriend = async () => {
+    if (!userProfile || friendActionLoading) return;
+    const userId = userProfile._id || userProfile.id;
+    setFriendActionLoading(true);
+    try {
+      await userService.rejectFriendRequest(userId);
+      setFriendshipStatus("none");
+      showSuccess(t("friends.toast.rejected"));
+    } catch (error) {
+      showError(error.response?.data?.message || t("profile.actionFailed"));
+    } finally {
+      setFriendActionLoading(false);
+    }
+  };
+
+  // Action phá hủy — confirm trước khi gọi API. ConfirmDialog tự đóng sau onConfirm.
+  const requestUnfriend = () => {
+    if (!userProfile) return;
+    setFriendMenuOpen(false);
+    setConfirmDialog({
+      open: true,
+      title: t("profile.confirm.unfriendTitle"),
+      message: t("profile.confirm.unfriendMessage", {
+        username: userProfile.username,
+      }),
+      confirmText: t("profile.confirm.unfriendConfirm"),
+      isDangerous: true,
+      onConfirm: async () => {
+        const userId = userProfile._id || userProfile.id;
+        setFriendActionLoading(true);
+        try {
+          await userService.unfriendUser(userId);
+          setFriendshipStatus("none");
+          setUserProfile((prev) => ({
+            ...prev,
+            friendsCount: Math.max(0, (prev.friendsCount || 0) - 1),
+          }));
+          showSuccess(t("friends.toast.unfriended"));
+        } catch (error) {
+          showError(error.response?.data?.message || t("profile.actionFailed"));
+        } finally {
+          setFriendActionLoading(false);
+        }
+      },
+    });
+  };
+
+  const requestCancelRequest = () => {
+    if (!userProfile) return;
+    setConfirmDialog({
+      open: true,
+      title: t("profile.confirm.cancelRequestTitle"),
+      message: t("profile.confirm.cancelRequestMessage", {
+        username: userProfile.username,
+      }),
+      confirmText: t("profile.confirm.cancelRequestConfirm"),
+      isDangerous: false,
+      onConfirm: async () => {
+        const userId = userProfile._id || userProfile.id;
+        setFriendActionLoading(true);
+        try {
+          await userService.cancelFriendRequest(userId);
+          setFriendshipStatus("none");
+          showSuccess(t("friends.toast.canceled"));
+        } catch (error) {
+          showError(error.response?.data?.message || t("profile.actionFailed"));
+        } finally {
+          setFriendActionLoading(false);
+        }
+      },
+    });
+  };
+
+  // Follow: action không phá hủy gọi thẳng; Unfollow đi qua confirm.
+  const handleFollowClick = async () => {
+    if (!userProfile || followLoading) return;
+    const userId = userProfile._id || userProfile.id;
+
+    if (isFollowing) {
+      setConfirmDialog({
+        open: true,
+        title: t("profile.confirm.unfollowTitle"),
+        message: t("profile.confirm.unfollowMessage", {
+          username: userProfile.username,
+        }),
+        confirmText: t("profile.confirm.unfollowConfirm"),
+        isDangerous: false,
+        onConfirm: async () => {
+          setFollowLoading(true);
+          try {
+            await userService.unfollowUser(userId);
+            setIsFollowing(false);
+            setUserProfile((prev) => ({
+              ...prev,
+              followersCount: Math.max(0, (prev.followersCount || 0) - 1),
+            }));
+            showSuccess(t("profile.unfollowedSuccess"));
+          } catch (error) {
+            showError(error.response?.data?.message || t("profile.actionFailed"));
+          } finally {
+            setFollowLoading(false);
+          }
+        },
+      });
+      return;
+    }
+
+    setFollowLoading(true);
+    try {
+      await userService.followUser(userId);
+      setIsFollowing(true);
+      setUserProfile((prev) => ({
+        ...prev,
+        followersCount: (prev.followersCount || 0) + 1,
+      }));
+      showSuccess(t("profile.followedSuccess"));
+    } catch (error) {
+      showError(error.response?.data?.message || t("profile.actionFailed"));
+    } finally {
+      setFollowLoading(false);
     }
   };
 
@@ -308,31 +434,148 @@ function Profile() {
                   <h2 className="profile-username">{userProfile.username}</h2>
                   {isOwnProfile ? (
                     <button
-                      className="profile-edit-btn"
+                      className="profile-btn profile-btn--primary"
                       onClick={() => navigate("/settings")}
                     >
+                      <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" aria-hidden="true">
+                        <path d="M12 20h9" />
+                        <path d="M16.5 3.5a2.121 2.121 0 0 1 3 3L7 19l-4 1 1-4L16.5 3.5z" />
+                      </svg>
                       {t("profile.editProfile")}
                     </button>
                   ) : (
-                    <>
+                    <div className="profile-actions">
+                      {/* Friend area — switch theo friendshipStatus */}
+                      {friendshipStatus === "none" && (
+                        <button
+                          className="profile-btn profile-btn--primary"
+                          onClick={handleAddFriend}
+                          disabled={friendActionLoading}
+                        >
+                          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" aria-hidden="true">
+                            <path d="M16 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2" />
+                            <circle cx="8.5" cy="7" r="4" />
+                            <path d="M20 8v6M23 11h-6" />
+                          </svg>
+                          {t("friends.actions.add")}
+                        </button>
+                      )}
+
+                      {friendshipStatus === "outgoing_request" && (
+                        <button
+                          className="profile-btn profile-btn--outline"
+                          onClick={requestCancelRequest}
+                          disabled={friendActionLoading}
+                          title={t("friends.actions.cancel")}
+                        >
+                          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" aria-hidden="true">
+                            <circle cx="12" cy="12" r="10" />
+                            <polyline points="12 6 12 12 16 14" />
+                          </svg>
+                          {t("friends.actions.sent")}
+                        </button>
+                      )}
+
+                      {friendshipStatus === "incoming_request" && (
+                        <>
+                          <button
+                            className="profile-btn profile-btn--primary"
+                            onClick={handleAcceptFriend}
+                            disabled={friendActionLoading}
+                          >
+                            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" aria-hidden="true">
+                              <polyline points="20 6 9 17 4 12" />
+                            </svg>
+                            {t("friends.actions.accept")}
+                          </button>
+                          <button
+                            className="profile-btn profile-btn--outline"
+                            onClick={handleDeclineFriend}
+                            disabled={friendActionLoading}
+                          >
+                            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" aria-hidden="true">
+                              <line x1="18" y1="6" x2="6" y2="18" />
+                              <line x1="6" y1="6" x2="18" y2="18" />
+                            </svg>
+                            {t("friends.actions.reject")}
+                          </button>
+                        </>
+                      )}
+
+                      {friendshipStatus === "friends" && (
+                        <div className="profile-friend-menu" ref={friendMenuRef}>
+                          <button
+                            className="profile-btn profile-btn--outline"
+                            onClick={() => setFriendMenuOpen((v) => !v)}
+                            disabled={friendActionLoading}
+                            aria-haspopup="true"
+                            aria-expanded={friendMenuOpen}
+                          >
+                            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" aria-hidden="true">
+                              <path d="M16 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2" />
+                              <circle cx="8.5" cy="7" r="4" />
+                              <polyline points="17 11 19 13 23 9" />
+                            </svg>
+                            {t("friends.actions.friends")}
+                            <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" aria-hidden="true">
+                              <polyline points="6 9 12 15 18 9" />
+                            </svg>
+                          </button>
+                          {friendMenuOpen && (
+                            <div className="profile-friend-dropdown" role="menu">
+                              <button
+                                className="profile-friend-dropdown-item danger"
+                                onClick={requestUnfriend}
+                                role="menuitem"
+                              >
+                                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" aria-hidden="true">
+                                  <path d="M16 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2" />
+                                  <circle cx="8.5" cy="7" r="4" />
+                                  <line x1="18" y1="8" x2="23" y2="13" />
+                                  <line x1="23" y1="8" x2="18" y2="13" />
+                                </svg>
+                                {t("friends.actions.unfriend")}
+                              </button>
+                            </div>
+                          )}
+                        </div>
+                      )}
+
+                      {/* Follow button — độc lập với friend status */}
                       <button
-                        className={`profile-follow-btn ${
-                          friendshipStatus === "friends" ? "following" : ""
-                        }`}
-                        onClick={handleFriendAction}
-                        disabled={friendActionLoading}
+                        className={`profile-btn ${isFollowing ? "profile-btn--outline" : "profile-btn--outline-primary"}`}
+                        onClick={handleFollowClick}
+                        disabled={followLoading}
                       >
-                        {friendActionLoading
-                          ? t("profile.loadingButton")
-                          : getFriendButtonLabel()}
+                        {isFollowing ? (
+                          <>
+                            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" aria-hidden="true">
+                              <polyline points="20 6 9 17 4 12" />
+                            </svg>
+                            {t("profile.followingButton")}
+                          </>
+                        ) : (
+                          <>
+                            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" aria-hidden="true">
+                              <line x1="12" y1="5" x2="12" y2="19" />
+                              <line x1="5" y1="12" x2="19" y2="12" />
+                            </svg>
+                            {t("profile.followButton")}
+                          </>
+                        )}
                       </button>
+
+                      {/* Message button */}
                       <button
-                        className="profile-message-btn"
+                        className="profile-btn profile-btn--outline"
                         onClick={handleMessageClick}
                       >
+                        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" aria-hidden="true">
+                          <path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z" />
+                        </svg>
                         {t("profile.messageButton")}
                       </button>
-                    </>
+                    </div>
                   )}
                 </div>
 
@@ -696,6 +939,18 @@ function Profile() {
           onClose={handleCloseFollowList}
         />
       )}
+
+      <ConfirmDialog
+        isOpen={confirmDialog.open}
+        onClose={() => setConfirmDialog({ open: false })}
+        onConfirm={() => {
+          confirmDialog.onConfirm?.();
+        }}
+        title={confirmDialog.title}
+        message={confirmDialog.message}
+        confirmText={confirmDialog.confirmText}
+        isDangerous={confirmDialog.isDangerous}
+      />
     </div>
   );
 }
