@@ -1,5 +1,6 @@
 import React, { useEffect, useState } from "react";
 import { Link } from "react-router-dom";
+import { useTranslation } from "react-i18next";
 import Header from "../../components/Header/Header";
 import Sidebar from "../../components/Sidebar/Sidebar";
 import VerifiedBadge from "../../components/VerifiedBadge/VerifiedBadge";
@@ -7,25 +8,8 @@ import { organizationService } from "../../api";
 import { showError } from "../../utils/toast";
 import "./MyOrganization.css";
 
-const STATUS_COPY = {
-  pending: {
-    title: "Pending review",
-    body: "Your application is being reviewed by admin. You will be notified when a decision is made.",
-    className: "status-pending",
-  },
-  verified: {
-    title: "Verified",
-    body: "Your organization is verified. Your wallet is whitelisted for charity campaigns.",
-    className: "status-verified",
-  },
-  rejected: {
-    title: "Rejected",
-    body: "Unfortunately your application was not approved. You can apply again with updated information.",
-    className: "status-rejected",
-  },
-};
-
 function MyOrganization() {
+  const { t } = useTranslation();
   const [org, setOrg] = useState(null);
   const [loading, setLoading] = useState(true);
 
@@ -37,7 +21,7 @@ function MyOrganization() {
         const res = await organizationService.getMine();
         if (mounted && res?.success) setOrg(res.organization);
       } catch (err) {
-        showError(err?.response?.data?.message || "Failed to load");
+        showError(err?.response?.data?.message || t("organizations.mine.loadFailed"));
       } finally {
         if (mounted) setLoading(false);
       }
@@ -46,9 +30,26 @@ function MyOrganization() {
     return () => {
       mounted = false;
     };
-  }, []);
+  }, [t]);
 
   const status = org?.status;
+  const STATUS_COPY = {
+    pending: {
+      title: t("organizations.mine.status.pendingTitle"),
+      body: t("organizations.mine.status.pendingBody"),
+      className: "status-pending",
+    },
+    verified: {
+      title: t("organizations.mine.status.verifiedTitle"),
+      body: t("organizations.mine.status.verifiedBody"),
+      className: "status-verified",
+    },
+    rejected: {
+      title: t("organizations.mine.status.rejectedTitle"),
+      body: t("organizations.mine.status.rejectedBody"),
+      className: "status-rejected",
+    },
+  };
   const statusInfo = status ? STATUS_COPY[status] : null;
 
   return (
@@ -57,15 +58,15 @@ function MyOrganization() {
       <div className="my-org-wrapper">
         <Header />
         <main className="my-org-main">
-          <h1>My Organization</h1>
+          <h1>{t("organizations.mine.title")}</h1>
 
-          {loading && <p className="my-org-empty">Loading...</p>}
+          {loading && <p className="my-org-empty">{t("organizations.mine.loading")}</p>}
 
           {!loading && !org && (
             <div className="my-org-empty-state">
-              <p>You don't have an organization yet.</p>
+              <p>{t("organizations.mine.emptyText")}</p>
               <Link to="/organizations/apply" className="btn-apply-now">
-                Apply now
+                {t("organizations.mine.applyNow")}
               </Link>
             </div>
           )}
@@ -77,14 +78,14 @@ function MyOrganization() {
                 <p>{statusInfo.body}</p>
                 {status === "rejected" && org.rejectedReason && (
                   <p className="my-org-reject-reason">
-                    Reason: {org.rejectedReason}
+                    {t("organizations.mine.rejectReason", { reason: org.rejectedReason })}
                   </p>
                 )}
               </div>
 
               <div className="my-org-summary">
                 <div className="my-org-row">
-                  <span className="my-org-label">Name</span>
+                  <span className="my-org-label">{t("organizations.mine.labelName")}</span>
                   <span>
                     {org.name}
                     {status === "verified" && (
@@ -96,18 +97,18 @@ function MyOrganization() {
                   </span>
                 </div>
                 <div className="my-org-row">
-                  <span className="my-org-label">Wallet</span>
+                  <span className="my-org-label">{t("organizations.mine.labelWallet")}</span>
                   <code>{org.walletAddress}</code>
                 </div>
                 {org.contactEmail && (
                   <div className="my-org-row">
-                    <span className="my-org-label">Email</span>
+                    <span className="my-org-label">{t("organizations.mine.labelEmail")}</span>
                     <span>{org.contactEmail}</span>
                   </div>
                 )}
                 {org.website && (
                   <div className="my-org-row">
-                    <span className="my-org-label">Website</span>
+                    <span className="my-org-label">{t("organizations.mine.labelWebsite")}</span>
                     <span>{org.website}</span>
                   </div>
                 )}
@@ -115,16 +116,15 @@ function MyOrganization() {
 
               <div className="my-org-actions">
                 <Link to={`/org/${org.slug}`} className="btn-view-public">
-                  View public page
+                  {t("organizations.mine.viewPublic")}
                 </Link>
                 {status === "verified" && (
-                  <button
+                  <Link
+                    to="/charity/create"
                     className="btn-create-campaign"
-                    disabled
-                    title="Available when Charity contract is deployed"
                   >
-                    Create campaign (soon)
-                  </button>
+                    {t("organizations.mine.createCampaign")}
+                  </Link>
                 )}
               </div>
             </>

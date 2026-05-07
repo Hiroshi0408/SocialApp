@@ -5,7 +5,7 @@ import postService from "../../api/postService";
 import { useWeb3 } from "../../contexts/Web3Context";
 import { getUserAvatar } from "../../utils";
 import { POST_LIMITS } from "../../constants";
-import { showError } from "../../utils/toast";
+import { showError, showSuccess } from "../../utils/toast";
 import "./CreatePostModal.css";
 
 function CreatePostModal({ isOpen, onClose, onPostCreated, groupId = null }) {
@@ -74,6 +74,11 @@ function CreatePostModal({ isOpen, onClose, onPostCreated, groupId = null }) {
       const response = await postService.createPost(postData);
 
       if (response.success) {
+        // Toast cho user biết stamp đang chạy ngầm (BE fire-and-forget tx).
+        // PostCard sẽ hiện badge "Đang đóng dấu..." + toast success khi xong.
+        if (response.post?.onChain?.contentHash && !response.post?.onChain?.registered) {
+          showSuccess(t("createPost.stampingToast"));
+        }
         handleClose();
         if (onPostCreated) {
           onPostCreated(response.post);

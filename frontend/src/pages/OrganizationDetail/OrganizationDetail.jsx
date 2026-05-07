@@ -1,5 +1,6 @@
 import React, { useEffect, useMemo, useState } from "react";
 import { useParams, Link } from "react-router-dom";
+import { useTranslation } from "react-i18next";
 import { ethers } from "ethers";
 import Header from "../../components/Header/Header";
 import Sidebar from "../../components/Sidebar/Sidebar";
@@ -35,6 +36,7 @@ const formatRelDate = (d) => {
 };
 
 function OrganizationDetail() {
+  const { t } = useTranslation();
   const { slug } = useParams();
   const [org, setOrg] = useState(null);
   const [loading, setLoading] = useState(true);
@@ -56,7 +58,7 @@ function OrganizationDetail() {
         if (mounted && res?.success) setOrg(res.organization);
       } catch (err) {
         showError(
-          err?.response?.data?.message || "Failed to load organization"
+          err?.response?.data?.message || t("organizations.detail.loadOrgFailed")
         );
       } finally {
         if (mounted) setLoading(false);
@@ -66,7 +68,7 @@ function OrganizationDetail() {
     return () => {
       mounted = false;
     };
-  }, [slug]);
+  }, [slug, t]);
 
   // Eager-fetch campaigns NGAY khi org load xong, không chờ tab click.
   // Lý do: cả 2 tab Campaigns + Updates đều cần list này; user chuyển tab Updates
@@ -93,7 +95,7 @@ function OrganizationDetail() {
         }
       } catch (err) {
         showError(
-          err?.response?.data?.message || "Failed to load campaigns"
+          err?.response?.data?.message || t("charity.loadFailed")
         );
       } finally {
         if (mounted) setCampaignsLoading(false);
@@ -103,7 +105,7 @@ function OrganizationDetail() {
     return () => {
       mounted = false;
     };
-  }, [org?.id]);
+  }, [org?.id, t]);
 
   // Flatten các milestone đã unlocked thành 1 timeline duy nhất, sort theo
   // unlockedAt giảm dần. Mỗi entry kèm campaign context để render link tới
@@ -140,10 +142,10 @@ function OrganizationDetail() {
       <div className="org-detail-wrapper">
         <Header />
         <main className="org-detail-main">
-          {loading && <p className="org-detail-empty">Loading...</p>}
+          {loading && <p className="org-detail-empty">{t("organizations.detail.loading")}</p>}
 
           {!loading && !org && (
-            <p className="org-detail-empty">Organization not found.</p>
+            <p className="org-detail-empty">{t("organizations.detail.notFound")}</p>
           )}
 
           {org && (
@@ -174,25 +176,26 @@ function OrganizationDetail() {
                       )}
                       {org.status === "pending" && (
                         <span className="org-status-pill org-status-pending">
-                          Pending review
+                          {t("organizations.detail.statusPending")}
                         </span>
                       )}
                       {org.status === "rejected" && (
                         <span className="org-status-pill org-status-rejected">
-                          Rejected
+                          {t("organizations.detail.statusRejected")}
                         </span>
                       )}
                     </div>
                     <div className="org-detail-sub">
                       <span className="org-wallet">
-                        Wallet: <code>{shortAddr(org.walletAddress)}</code>
+                        {t("organizations.detail.wallet")}:{" "}
+                        <code>{shortAddr(org.walletAddress)}</code>
                       </span>
                       {org.groupId && (
                         <Link
                           to={`/groups/${org.groupId}`}
                           className="org-official-group-link"
                         >
-                          Official group chat →
+                          {t("organizations.detail.officialGroup")}
                         </Link>
                       )}
                     </div>
@@ -200,7 +203,7 @@ function OrganizationDetail() {
                       <div className="org-detail-tags">
                         {org.categories.map((c) => (
                           <span key={c} className="org-tag">
-                            {c}
+                            {t(`organizations.category.${c}`, { defaultValue: c })}
                           </span>
                         ))}
                       </div>
@@ -216,38 +219,39 @@ function OrganizationDetail() {
                   className={tab === "about" ? "active" : ""}
                   onClick={() => setTab("about")}
                 >
-                  About
+                  {t("organizations.detail.tabAbout")}
                 </button>
                 <button
                   className={tab === "campaigns" ? "active" : ""}
                   onClick={() => setTab("campaigns")}
                 >
-                  Campaigns ({org.campaignsCount || 0})
+                  {t("organizations.detail.tabCampaigns")} ({org.campaignsCount || 0})
                 </button>
                 <button
                   className={tab === "updates" ? "active" : ""}
                   onClick={() => setTab("updates")}
                 >
-                  Updates
+                  {t("organizations.detail.tabUpdates")}
                 </button>
               </nav>
 
               <section className="org-detail-body">
                 {tab === "about" && (
                   <div className="org-about">
-                    <h3>Description</h3>
-                    <p>{org.description || "No description provided."}</p>
+                    <h3>{t("organizations.detail.description")}</h3>
+                    <p>{org.description || t("organizations.detail.noDescription")}</p>
 
-                    <h3>Contact</h3>
+                    <h3>{t("organizations.detail.contact")}</h3>
                     <ul className="org-meta-list">
                       {org.contactEmail && (
                         <li>
-                          Email: <a href={`mailto:${org.contactEmail}`}>{org.contactEmail}</a>
+                          {t("organizations.detail.email")}:{" "}
+                          <a href={`mailto:${org.contactEmail}`}>{org.contactEmail}</a>
                         </li>
                       )}
                       {org.website && (
                         <li>
-                          Website:{" "}
+                          {t("organizations.detail.website")}:{" "}
                           <a
                             href={org.website}
                             target="_blank"
@@ -257,13 +261,16 @@ function OrganizationDetail() {
                           </a>
                         </li>
                       )}
-                      <li>Wallet: <code>{org.walletAddress}</code></li>
+                      <li>
+                        {t("organizations.detail.wallet")}: <code>{org.walletAddress}</code>
+                      </li>
                     </ul>
 
                     {org.status === "verified" && (
                       <p className="org-verified-note">
-                        Verified on {new Date(org.verifiedAt).toLocaleDateString()}. This
-                        wallet is whitelisted for charity campaigns.
+                        {t("organizations.detail.verifiedNote", {
+                          date: new Date(org.verifiedAt).toLocaleDateString(),
+                        })}
                       </p>
                     )}
                   </div>
@@ -272,10 +279,12 @@ function OrganizationDetail() {
                 {tab === "campaigns" && (
                   <div className="org-campaigns">
                     {campaignsLoading && !campaignsLoaded ? (
-                      <p className="org-placeholder">Loading campaigns...</p>
+                      <p className="org-placeholder">
+                        {t("organizations.detail.loadingCampaigns")}
+                      </p>
                     ) : campaigns.length === 0 ? (
                       <p className="org-placeholder">
-                        This organization has not created any campaigns yet.
+                        {t("organizations.detail.noCampaigns")}
                       </p>
                     ) : (
                       <div className="org-campaigns-grid">
@@ -290,11 +299,12 @@ function OrganizationDetail() {
                 {tab === "updates" && (
                   <div className="org-updates">
                     {campaignsLoading && !campaignsLoaded ? (
-                      <p className="org-placeholder">Loading updates...</p>
+                      <p className="org-placeholder">
+                        {t("organizations.detail.loadingUpdates")}
+                      </p>
                     ) : updates.length === 0 ? (
                       <p className="org-placeholder">
-                        No milestone has been unlocked yet. Updates will appear
-                        here when admin disburses funds for a milestone.
+                        {t("organizations.detail.noUpdates")}
                       </p>
                     ) : (
                       <ul className="org-updates-list">
@@ -310,7 +320,7 @@ function OrganizationDetail() {
                                   {u.campaignTitle}
                                 </Link>{" "}
                                 <span className="org-update-muted">
-                                  — Milestone #{u.milestoneIdx + 1}:
+                                  — {t("organizations.detail.milestone")} #{u.milestoneIdx + 1}:
                                 </span>{" "}
                                 <b>{u.milestoneTitle}</b>
                               </div>
@@ -321,7 +331,9 @@ function OrganizationDetail() {
                               )}
                               <div className="org-update-meta">
                                 <span className="org-update-amount">
-                                  Disbursed {formatEth(u.amountWei)} ETH
+                                  {t("organizations.detail.disbursed", {
+                                    amount: formatEth(u.amountWei),
+                                  })}
                                 </span>
                                 <span className="org-update-sep">·</span>
                                 <span>{formatRelDate(u.unlockedAt)}</span>
@@ -334,7 +346,7 @@ function OrganizationDetail() {
                                       rel="noopener noreferrer"
                                       className="org-update-link"
                                     >
-                                      View tx ↗
+                                      {t("organizations.detail.viewTx")}
                                     </a>
                                   </>
                                 )}
@@ -345,7 +357,7 @@ function OrganizationDetail() {
                                       to={`/post/${u.reportPostId}`}
                                       className="org-update-link"
                                     >
-                                      Report post →
+                                      {t("organizations.detail.reportPost")}
                                     </Link>
                                   </>
                                 )}

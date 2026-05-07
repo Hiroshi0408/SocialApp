@@ -1,9 +1,11 @@
 import React from "react";
 import { Link } from "react-router-dom";
+import { useTranslation } from "react-i18next";
 import VerifiedBadge from "../VerifiedBadge/VerifiedBadge";
 import "./OrganizationCard.css";
 
 function OrganizationCard({ org }) {
+  const { t } = useTranslation();
   if (!org) return null;
 
   return (
@@ -36,13 +38,17 @@ function OrganizationCard({ org }) {
             <div className="org-card-categories">
               {org.categories.slice(0, 2).map((c) => (
                 <span key={c} className="org-card-tag">
-                  {c}
+                  {t(`organizations.category.${c}`, { defaultValue: c })}
                 </span>
               ))}
             </div>
           )}
           <div className="org-card-stats">
-            <span>{org.campaignsCount || 0} campaigns</span>
+            <span>
+              {t("organizations.card.campaigns", {
+                count: org.campaignsCount || 0,
+              })}
+            </span>
           </div>
         </div>
       </div>

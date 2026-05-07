@@ -789,10 +789,24 @@
   color: var(--text-primary);
 }
 
+/* Pending badge: ghép spinner + label "Đang đóng dấu..." để user thấy rõ post
+   đang được register on-chain. Pill có background nhạt + border màu accent
+   để nổi bật trong header post. */
 .onchain-badge.onchain-pending {
-  color: #9ca3af;
+  border-radius: 999px;
+  padding: 2px 8px 2px 4px;
+  gap: 4px;
+  background: rgba(245, 158, 11, 0.12);
+  color: #b45309;
   cursor: default;
   pointer-events: none;
+}
+
+.onchain-pending-label {
+  font-size: 11px;
+  font-weight: 600;
+  letter-spacing: 0.2px;
+  white-space: nowrap;
 }
 
 @keyframes spin-badge {

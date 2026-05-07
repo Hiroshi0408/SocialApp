@@ -1,5 +1,6 @@
 import React, { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
+import { useTranslation } from "react-i18next";
 import Header from "../../components/Header/Header";
 import Sidebar from "../../components/Sidebar/Sidebar";
 import { organizationService, uploadService } from "../../api";
@@ -17,6 +18,7 @@ const CATEGORY_OPTIONS = [
 ];
 
 function ApplyOrganization() {
+  const { t } = useTranslation();
   const navigate = useNavigate();
   const { walletAddress, connectWallet } = useWeb3();
   const [form, setForm] = useState({
@@ -61,10 +63,11 @@ function ApplyOrganization() {
 
   async function handleSubmit(e) {
     e.preventDefault();
-    if (!form.name.trim()) return showError("Name is required");
-    if (!form.walletAddress.trim()) return showError("Wallet address is required");
+    if (!form.name.trim()) return showError(t("organizations.apply.errors.nameRequired"));
+    if (!form.walletAddress.trim())
+      return showError(t("organizations.apply.errors.walletRequired"));
     if (!/^0x[a-fA-F0-9]{40}$/.test(form.walletAddress.trim())) {
-      return showError("Wallet address format is invalid");
+      return showError(t("organizations.apply.errors.walletInvalid"));
     }
 
     setSubmitting(true);
@@ -83,11 +86,13 @@ function ApplyOrganization() {
       });
 
       if (res?.success) {
-        showSuccess("Application submitted. Admin will review shortly.");
+        showSuccess(t("organizations.apply.successToast"));
         navigate("/organizations/mine");
       }
     } catch (err) {
-      showError(err?.response?.data?.message || "Failed to submit application");
+      showError(
+        err?.response?.data?.message || t("organizations.apply.errors.submitFailed")
+      );
     } finally {
       setSubmitting(false);
     }
@@ -99,37 +104,34 @@ function ApplyOrganization() {
       <div className="apply-org-wrapper">
         <Header />
         <main className="apply-org-main">
-          <h1>Apply as Organization</h1>
-          <p className="apply-org-subtitle">
-            Submit your organization for admin review. Once verified, your wallet
-            will be whitelisted and you can create charity campaigns.
-          </p>
+          <h1>{t("organizations.apply.title")}</h1>
+          <p className="apply-org-subtitle">{t("organizations.apply.subtitle")}</p>
 
           <form onSubmit={handleSubmit} className="apply-org-form">
             <div className="form-group">
-              <label>Organization name *</label>
+              <label>{t("organizations.apply.name")} *</label>
               <input
                 type="text"
                 value={form.name}
                 onChange={handleChange("name")}
-                placeholder="e.g. Red Cross Vietnam"
+                placeholder={t("organizations.apply.namePlaceholder")}
                 maxLength={100}
               />
             </div>
 
             <div className="form-group">
-              <label>Description</label>
+              <label>{t("organizations.apply.description")}</label>
               <textarea
                 value={form.description}
                 onChange={handleChange("description")}
-                placeholder="What does your organization do?"
+                placeholder={t("organizations.apply.descriptionPlaceholder")}
                 rows={4}
                 maxLength={500}
               />
             </div>
 
             <div className="form-group">
-              <label>Wallet address *</label>
+              <label>{t("organizations.apply.wallet")} *</label>
               <div className="apply-wallet-row">
                 <input
                   type="text"
@@ -144,38 +146,35 @@ function ApplyOrganization() {
                     className="btn-connect-wallet"
                     onClick={connectWallet}
                   >
-                    Connect MetaMask
+                    {t("organizations.apply.connectMetaMask")}
                   </button>
                 )}
               </div>
-              <small>
-                This wallet will be whitelisted on-chain. Donations to your
-                campaigns go directly to this address.
-              </small>
+              <small>{t("organizations.apply.walletHint")}</small>
             </div>
 
             <div className="form-group">
-              <label>Contact email</label>
+              <label>{t("organizations.apply.contactEmail")}</label>
               <input
                 type="email"
                 value={form.contactEmail}
                 onChange={handleChange("contactEmail")}
-                placeholder="contact@your-org.com"
+                placeholder={t("organizations.apply.contactEmailPlaceholder")}
               />
             </div>
 
             <div className="form-group">
-              <label>Website</label>
+              <label>{t("organizations.apply.website")}</label>
               <input
                 type="url"
                 value={form.website}
                 onChange={handleChange("website")}
-                placeholder="https://your-org.com"
+                placeholder={t("organizations.apply.websitePlaceholder")}
               />
             </div>
 
             <div className="form-group">
-              <label>Categories</label>
+              <label>{t("organizations.apply.categories")}</label>
               <div className="apply-cat-chips">
                 {CATEGORY_OPTIONS.map((cat) => (
                   <button
@@ -187,14 +186,14 @@ function ApplyOrganization() {
                     }
                     onClick={() => toggleCategory(cat)}
                   >
-                    {cat}
+                    {t(`organizations.category.${cat}`, { defaultValue: cat })}
                   </button>
                 ))}
               </div>
             </div>
 
             <div className="form-group">
-              <label>Logo</label>
+              <label>{t("organizations.apply.logo")}</label>
               <input
                 type="file"
                 accept="image/*"
@@ -203,7 +202,7 @@ function ApplyOrganization() {
             </div>
 
             <div className="form-group">
-              <label>Cover image</label>
+              <label>{t("organizations.apply.cover")}</label>
               <input
                 type="file"
                 accept="image/*"
@@ -212,7 +211,7 @@ function ApplyOrganization() {
             </div>
 
             <div className="form-group">
-              <label>Proof documents (license, certificate...)</label>
+              <label>{t("organizations.apply.proof")}</label>
               <input
                 type="file"
                 accept="image/*"
@@ -221,10 +220,7 @@ function ApplyOrganization() {
                   setProofFiles(Array.from(e.target.files || []))
                 }
               />
-              <small>
-                Upload scanned images of your legal documents. These are only
-                visible to admin reviewers.
-              </small>
+              <small>{t("organizations.apply.proofHint")}</small>
             </div>
 
             <div className="form-actions">
@@ -233,7 +229,9 @@ function ApplyOrganization() {
                 className="btn-submit-apply"
                 disabled={submitting}
               >
-                {submitting ? "Submitting..." : "Submit application"}
+                {submitting
+                  ? t("organizations.apply.submitting")
+                  : t("organizations.apply.submit")}
               </button>
             </div>
           </form>

@@ -152,7 +152,10 @@
     "onChainMismatch": "⚠ Nội dung không khớp — có thể đã bị sửa",
     "onChainTxHash": "Transaction Hash",
     "onChainTimestamp": "Thời gian đăng ký",
-    "onChainOwner": "Chủ sở hữu (ví)"
+    "onChainOwner": "Chủ sở hữu (ví)",
+    "onChainPending": "Đang đóng dấu blockchain...",
+    "onChainPendingTooltip": "Bài viết đang được đăng ký lên Sepolia. Thường mất 15-30 giây.",
+    "onChainStampedToast": "Đã đóng dấu lên blockchain ✓"
   },
   "profile": {
     "usernameNotFound": "Không tìm thấy tên người dùng",
@@ -454,7 +457,8 @@
     "sharingButton": "Đang chia sẻ...",
     "shareButton": "Chia sẻ",
     "registerOnChain": "Đóng dấu on-chain",
-    "onChainTooltip": "Lưu hash nội dung lên Sepolia để chứng minh tác quyền. Bạn có thể verify bất cứ lúc nào."
+    "onChainTooltip": "Lưu hash nội dung lên Sepolia để chứng minh tác quyền. Bạn có thể verify bất cứ lúc nào.",
+    "stampingToast": "Đã đăng bài. Đang đóng dấu lên blockchain..."
   },
   "confirmDialog": {
     "defaultTitle": "Xác nhận hành động",
@@ -557,11 +561,93 @@
       "disaster-relief": "Cứu trợ thiên tai",
       "health": "Y tế",
       "environment": "Môi trường",
-      "animal": "Bảo vệ động vật"
+      "animal": "Bảo vệ động vật",
+      "poverty": "Xoá đói giảm nghèo"
     },
     "empty": {
       "title": "Chưa có tổ chức nào được xác minh",
       "description": "Bạn đại diện cho một tổ chức từ thiện? Đăng ký xác minh để bắt đầu mở chiến dịch quyên góp on-chain."
+    },
+    "card": {
+      "campaigns_one": "{{count}} chiến dịch",
+      "campaigns_other": "{{count}} chiến dịch"
+    },
+    "detail": {
+      "loading": "Đang tải...",
+      "notFound": "Không tìm thấy tổ chức.",
+      "tabAbout": "Giới thiệu",
+      "tabCampaigns": "Chiến dịch",
+      "tabUpdates": "Cập nhật",
+      "description": "Mô tả",
+      "noDescription": "Chưa có mô tả.",
+      "contact": "Liên hệ",
+      "wallet": "Ví",
+      "email": "Email",
+      "website": "Website",
+      "verifiedNote": "Xác minh ngày {{date}}. Ví này đã được whitelist để mở chiến dịch từ thiện.",
+      "officialGroup": "Group chat chính thức →",
+      "statusPending": "Đang chờ duyệt",
+      "statusRejected": "Bị từ chối",
+      "loadingCampaigns": "Đang tải chiến dịch...",
+      "noCampaigns": "Tổ chức này chưa tạo chiến dịch nào.",
+      "loadingUpdates": "Đang tải cập nhật...",
+      "noUpdates": "Chưa có milestone nào được giải ngân. Các cập nhật sẽ xuất hiện ở đây khi admin giải ngân quỹ cho từng mốc.",
+      "milestone": "Milestone",
+      "disbursed": "Đã giải ngân {{amount}} ETH",
+      "viewTx": "Xem giao dịch ↗",
+      "reportPost": "Bài báo cáo →",
+      "loadOrgFailed": "Tải thông tin tổ chức thất bại"
+    },
+    "apply": {
+      "title": "Đăng ký làm tổ chức",
+      "subtitle": "Gửi đơn đăng ký để admin duyệt. Sau khi xác minh, ví của bạn sẽ được whitelist và có thể tạo chiến dịch từ thiện.",
+      "name": "Tên tổ chức",
+      "namePlaceholder": "VD: Hội Chữ Thập Đỏ Việt Nam",
+      "description": "Mô tả",
+      "descriptionPlaceholder": "Tổ chức của bạn hoạt động như thế nào?",
+      "wallet": "Địa chỉ ví",
+      "connectMetaMask": "Kết nối MetaMask",
+      "walletHint": "Ví này sẽ được whitelist on-chain. Tiền quyên góp về chiến dịch của bạn sẽ chuyển trực tiếp đến địa chỉ này.",
+      "contactEmail": "Email liên hệ",
+      "contactEmailPlaceholder": "lien-he@to-chuc.com",
+      "website": "Website",
+      "websitePlaceholder": "https://to-chuc.com",
+      "categories": "Danh mục",
+      "logo": "Logo",
+      "cover": "Ảnh bìa",
+      "proof": "Tài liệu chứng minh (giấy phép, chứng nhận...)",
+      "proofHint": "Tải lên ảnh scan các giấy tờ pháp lý. Chỉ admin mới xem được tài liệu này.",
+      "submit": "Gửi đơn đăng ký",
+      "submitting": "Đang gửi...",
+      "errors": {
+        "nameRequired": "Vui lòng nhập tên tổ chức",
+        "walletRequired": "Vui lòng nhập địa chỉ ví",
+        "walletInvalid": "Định dạng địa chỉ ví không hợp lệ",
+        "submitFailed": "Gửi đơn đăng ký thất bại"
+      },
+      "successToast": "Đã gửi đơn đăng ký. Admin sẽ duyệt trong thời gian sớm nhất."
+    },
+    "mine": {
+      "title": "Tổ chức của tôi",
+      "loading": "Đang tải...",
+      "loadFailed": "Tải thông tin thất bại",
+      "emptyText": "Bạn chưa có tổ chức nào.",
+      "applyNow": "Đăng ký ngay",
+      "viewPublic": "Xem trang công khai",
+      "createCampaign": "Tạo chiến dịch",
+      "labelName": "Tên",
+      "labelWallet": "Ví",
+      "labelEmail": "Email",
+      "labelWebsite": "Website",
+      "rejectReason": "Lý do: {{reason}}",
+      "status": {
+        "pendingTitle": "Đang chờ duyệt",
+        "pendingBody": "Đơn đăng ký của bạn đang được admin xem xét. Bạn sẽ nhận thông báo khi có quyết định.",
+        "verifiedTitle": "Đã xác minh",
+        "verifiedBody": "Tổ chức của bạn đã được xác minh. Ví đã được whitelist để mở chiến dịch từ thiện.",
+        "rejectedTitle": "Bị từ chối",
+        "rejectedBody": "Rất tiếc, đơn đăng ký của bạn không được chấp thuận. Bạn có thể đăng ký lại với thông tin cập nhật."
+      }
     }
   },
   "groupDetail": {

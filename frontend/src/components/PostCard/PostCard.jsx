@@ -114,6 +114,10 @@ function PostCard({ post, onPostDeleted }) {
         if (data?.post?.onChain?.registered) {
           setOnChainStatus(data.post.onChain);
           clearInterval(interval);
+          // Toast cho tác giả biết stamp đã xong (chủ post mới care, người khác không quan tâm)
+          if (currentUser?._id && data.post.user?._id === currentUser._id) {
+            showSuccess(t("postCard.onChainStampedToast"));
+          }
         }
       } catch {
         // silent — không crash nếu request lỗi
@@ -122,7 +126,7 @@ function PostCard({ post, onPostDeleted }) {
     }, 5000);
 
     return () => clearInterval(interval);
-  }, [postId, onChainStatus]);
+  }, [postId, onChainStatus, currentUser, t]);
 
   const handleLike = useCallback(async () => {
     if (isLiking) return;
@@ -546,13 +550,20 @@ function PostCard({ post, onPostDeleted }) {
           />
           <span className="post-username">{post.user.username}</span>
           {onChainStatus?.contentHash && !onChainStatus.registered && (
-            // TX đang pending — hiện spinner nhỏ. Check contentHash để loại bỏ
+            // TX đang pending — hiện spinner + label visible. Check contentHash để loại bỏ
             // post không liên quan blockchain (sub-doc onChain mặc định luôn tồn
             // tại với registered=false, không phải lúc nào cũng = "đang pending").
-            <span className="onchain-badge onchain-pending" title="Đang đăng ký lên blockchain...">
+            <span
+              className="onchain-badge onchain-pending"
+              title={t("postCard.onChainPendingTooltip")}
+              aria-label={t("postCard.onChainPending")}
+            >
               <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" className="onchain-spinner" aria-hidden="true">
                 <path d="M12 2v4M12 18v4M4.93 4.93l2.83 2.83M16.24 16.24l2.83 2.83M2 12h4M18 12h4M4.93 19.07l2.83-2.83M16.24 7.76l2.83-2.83"/>
               </svg>
+              <span className="onchain-pending-label">
+                {t("postCard.onChainPending")}
+              </span>
             </span>
           )}
           {onChainStatus?.registered && (

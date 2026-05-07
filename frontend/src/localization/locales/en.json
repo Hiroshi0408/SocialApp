@@ -152,7 +152,10 @@
     "onChainMismatch": "⚠ Content mismatch — may have been edited",
     "onChainTxHash": "Transaction Hash",
     "onChainTimestamp": "Registered at",
-    "onChainOwner": "Owner (wallet)"
+    "onChainOwner": "Owner (wallet)",
+    "onChainPending": "Stamping on blockchain...",
+    "onChainPendingTooltip": "Your post is being registered on Sepolia. This usually takes 15-30 seconds.",
+    "onChainStampedToast": "Post stamped on-chain ✓"
   },
   "profile": {
     "usernameNotFound": "Username not found",
@@ -454,7 +457,8 @@
     "sharingButton": "Sharing...",
     "shareButton": "Share",
     "registerOnChain": "Stamp on-chain",
-    "onChainTooltip": "Store a content hash on Sepolia to prove authorship. Anyone can verify it at any time."
+    "onChainTooltip": "Store a content hash on Sepolia to prove authorship. Anyone can verify it at any time.",
+    "stampingToast": "Post created. Stamping on blockchain..."
   },
   "confirmDialog": {
     "defaultTitle": "Confirm Action",
@@ -557,11 +561,93 @@
       "disaster-relief": "Disaster relief",
       "health": "Health",
       "environment": "Environment",
-      "animal": "Animal welfare"
+      "animal": "Animal welfare",
+      "poverty": "Poverty"
     },
     "empty": {
       "title": "No verified organizations yet",
       "description": "Represent a charity? Apply to get verified and start launching on-chain donation campaigns."
+    },
+    "card": {
+      "campaigns_one": "{{count}} campaign",
+      "campaigns_other": "{{count}} campaigns"
+    },
+    "detail": {
+      "loading": "Loading...",
+      "notFound": "Organization not found.",
+      "tabAbout": "About",
+      "tabCampaigns": "Campaigns",
+      "tabUpdates": "Updates",
+      "description": "Description",
+      "noDescription": "No description provided.",
+      "contact": "Contact",
+      "wallet": "Wallet",
+      "email": "Email",
+      "website": "Website",
+      "verifiedNote": "Verified on {{date}}. This wallet is whitelisted for charity campaigns.",
+      "officialGroup": "Official group chat →",
+      "statusPending": "Pending review",
+      "statusRejected": "Rejected",
+      "loadingCampaigns": "Loading campaigns...",
+      "noCampaigns": "This organization has not created any campaigns yet.",
+      "loadingUpdates": "Loading updates...",
+      "noUpdates": "No milestone has been unlocked yet. Updates will appear here when admin disburses funds for a milestone.",
+      "milestone": "Milestone",
+      "disbursed": "Disbursed {{amount}} ETH",
+      "viewTx": "View tx ↗",
+      "reportPost": "Report post →",
+      "loadOrgFailed": "Failed to load organization"
+    },
+    "apply": {
+      "title": "Apply as Organization",
+      "subtitle": "Submit your organization for admin review. Once verified, your wallet will be whitelisted and you can create charity campaigns.",
+      "name": "Organization name",
+      "namePlaceholder": "e.g. Red Cross Vietnam",
+      "description": "Description",
+      "descriptionPlaceholder": "What does your organization do?",
+      "wallet": "Wallet address",
+      "connectMetaMask": "Connect MetaMask",
+      "walletHint": "This wallet will be whitelisted on-chain. Donations to your campaigns go directly to this address.",
+      "contactEmail": "Contact email",
+      "contactEmailPlaceholder": "contact@your-org.com",
+      "website": "Website",
+      "websitePlaceholder": "https://your-org.com",
+      "categories": "Categories",
+      "logo": "Logo",
+      "cover": "Cover image",
+      "proof": "Proof documents (license, certificate...)",
+      "proofHint": "Upload scanned images of your legal documents. These are only visible to admin reviewers.",
+      "submit": "Submit application",
+      "submitting": "Submitting...",
+      "errors": {
+        "nameRequired": "Name is required",
+        "walletRequired": "Wallet address is required",
+        "walletInvalid": "Wallet address format is invalid",
+        "submitFailed": "Failed to submit application"
+      },
+      "successToast": "Application submitted. Admin will review shortly."
+    },
+    "mine": {
+      "title": "My Organization",
+      "loading": "Loading...",
+      "loadFailed": "Failed to load",
+      "emptyText": "You don't have an organization yet.",
+      "applyNow": "Apply now",
+      "viewPublic": "View public page",
+      "createCampaign": "Create campaign",
+      "labelName": "Name",
+      "labelWallet": "Wallet",
+      "labelEmail": "Email",
+      "labelWebsite": "Website",
+      "rejectReason": "Reason: {{reason}}",
+      "status": {
+        "pendingTitle": "Pending review",
+        "pendingBody": "Your application is being reviewed by admin. You will be notified when a decision is made.",
+        "verifiedTitle": "Verified",
+        "verifiedBody": "Your organization is verified. Your wallet is whitelisted for charity campaigns.",
+        "rejectedTitle": "Rejected",
+        "rejectedBody": "Unfortunately your application was not approved. You can apply again with updated information."
+      }
     }
   },
   "groupDetail": {
