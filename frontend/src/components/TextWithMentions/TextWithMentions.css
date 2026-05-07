@@ -1,4 +1,8 @@
 .text-with-mentions {
+  /* pre-wrap để preserve newline + multiple spaces trong caption/comment.
+     Quan trọng cho auto-post Charity milestone (BE format nhiều dòng).
+     User-typed multi-line caption cũng giữ ngắt dòng đúng. */
+  white-space: pre-wrap;
   word-break: break-word;
 }
 
