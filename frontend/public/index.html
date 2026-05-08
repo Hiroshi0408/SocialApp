@@ -40,6 +40,10 @@
     <link rel="apple-touch-icon" href="%PUBLIC_URL%/logo192.png" />
     <link rel="manifest" href="%PUBLIC_URL%/manifest.json" />
 
+    <!-- DNS-resolve + TLS handshake sớm cho CDN ảnh — tiết kiệm ~100-200ms LCP. -->
+    <link rel="preconnect" href="https://res.cloudinary.com" crossorigin />
+    <link rel="dns-prefetch" href="https://res.cloudinary.com" />
+
     <title>SocialApp - Connect with friends</title>
   </head>
   <body>

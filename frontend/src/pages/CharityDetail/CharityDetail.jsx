@@ -1,5 +1,12 @@
 /* global BigInt */
-import React, { useCallback, useEffect, useMemo, useState } from "react";
+import React, {
+  useCallback,
+  useEffect,
+  useMemo,
+  useState,
+  Suspense,
+  lazy,
+} from "react";
 import { Link, useParams } from "react-router-dom";
 import { useTranslation } from "react-i18next";
 import { ethers } from "ethers";
@@ -7,13 +14,21 @@ import Header from "../../components/Header/Header";
 import Sidebar from "../../components/Sidebar/Sidebar";
 import VerifiedBadge from "../../components/VerifiedBadge/VerifiedBadge";
 import MilestoneList from "../../components/MilestoneList/MilestoneList";
-import DonateModal from "../../components/DonateModal/DonateModal";
-import ClaimRefundModal from "../../components/ClaimRefundModal/ClaimRefundModal";
 import { charityService } from "../../api";
 import { useWeb3 } from "../../contexts/Web3Context";
 import { showError, showSuccess } from "../../utils/toast";
+import { optimizeImage } from "../../utils/cloudinary";
 import { SEPOLIA_ETHERSCAN_BASE, DEFAULT_IMAGES } from "../../constants";
 import "./CharityDetail.css";
+
+// 2 modal Web3 chỉ load khi user click "Ủng hộ" / "Refund" — tách khỏi initial
+// bundle để giảm TBT mobile (kéo theo ethers + TxStatusModal vào chunk riêng).
+const DonateModal = lazy(
+  () => import("../../components/DonateModal/DonateModal"),
+);
+const ClaimRefundModal = lazy(
+  () => import("../../components/ClaimRefundModal/ClaimRefundModal"),
+);
 
 const CHARITY_ADDRESS = process.env.REACT_APP_CHARITY_ADDRESS || "";
 
@@ -215,7 +230,12 @@ function CharityDetail() {
           <section className="charity-detail-hero">
             <div className="charity-detail-cover">
               {campaign.coverImage ? (
-                <img src={campaign.coverImage} alt={campaign.title} />
+                <img
+                  src={optimizeImage(campaign.coverImage, { width: 1200 })}
+                  alt={campaign.title}
+                  // LCP element — báo browser fetch sớm song song với HTML parse.
+                  fetchpriority="high"
+                />
               ) : (
                 <div className="charity-detail-cover-placeholder" />
               )}
@@ -235,9 +255,10 @@ function CharityDetail() {
                 >
                   {org.logo ? (
                     <img
-                      src={org.logo}
+                      src={optimizeImage(org.logo, { width: 96 })}
                       alt={org.name}
                       className="charity-detail-org-logo"
+                      loading="lazy"
                       onError={(e) => {
                         e.currentTarget.src = DEFAULT_IMAGES.AVATAR;
                       }}
@@ -395,9 +416,13 @@ function CharityDetail() {
                           className="charity-detail-donor-link"
                         >
                           <img
-                            src={d.donorUser.avatar || DEFAULT_IMAGES.AVATAR}
+                            src={optimizeImage(
+                              d.donorUser.avatar || DEFAULT_IMAGES.AVATAR,
+                              { width: 64 },
+                            )}
                             alt={d.donorUser.username}
                             className="charity-detail-donor-avatar"
+                            loading="lazy"
                             onError={(e) => {
                               e.currentTarget.src = DEFAULT_IMAGES.AVATAR;
                             }}
@@ -532,27 +557,39 @@ function CharityDetail() {
         </main>
       </div>
 
-      <DonateModal
-        isOpen={donateModalOpen}
-        onClose={() => setDonateModalOpen(false)}
-        campaign={campaign}
-        onSuccess={() => {
-          showSuccess(t("charity.donate.successToast", { amount: "" }).trim());
-          fetchDetail({ silent: true });
-          fetchDonations();
-        }}
-      />
+      {/* Mount conditional + Suspense — chunk modal chỉ tải khi user thực sự
+          mở. Initial bundle CharityDetail không kéo ethers + TxStatusModal. */}
+      {donateModalOpen && (
+        <Suspense fallback={null}>
+          <DonateModal
+            isOpen={donateModalOpen}
+            onClose={() => setDonateModalOpen(false)}
+            campaign={campaign}
+            onSuccess={() => {
+              showSuccess(
+                t("charity.donate.successToast", { amount: "" }).trim(),
+              );
+              fetchDetail({ silent: true });
+              fetchDonations();
+            }}
+          />
+        </Suspense>
+      )}
 
-      <ClaimRefundModal
-        isOpen={claimRefundModalOpen}
-        onClose={() => setClaimRefundModalOpen(false)}
-        campaign={campaign}
-        onSuccess={() => {
-          showSuccess(t("charity.claimRefund.successToast"));
-          fetchDetail({ silent: true });
-          fetchDonations();
-        }}
-      />
+      {claimRefundModalOpen && (
+        <Suspense fallback={null}>
+          <ClaimRefundModal
+            isOpen={claimRefundModalOpen}
+            onClose={() => setClaimRefundModalOpen(false)}
+            campaign={campaign}
+            onSuccess={() => {
+              showSuccess(t("charity.claimRefund.successToast"));
+              fetchDetail({ silent: true });
+              fetchDonations();
+            }}
+          />
+        </Suspense>
+      )}
     </div>
   );
 }

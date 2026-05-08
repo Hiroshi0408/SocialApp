@@ -4,6 +4,7 @@ import { Link } from "react-router-dom";
 import { useTranslation } from "react-i18next";
 import { ethers } from "ethers";
 import VerifiedBadge from "../VerifiedBadge/VerifiedBadge";
+import { optimizeImage } from "../../utils/cloudinary";
 import "./CampaignCard.css";
 
 // raisedWei / goalWei là String BigInt (xem CLAUDE.md — race + sai số nếu parseInt).
@@ -74,7 +75,11 @@ function CampaignCard({ campaign }) {
     <Link to={`/charity/${campaign.id}`} className="campaign-card">
       <div className="campaign-card-cover">
         {campaign.coverImage ? (
-          <img src={campaign.coverImage} alt={campaign.title} loading="lazy" />
+          <img
+            src={optimizeImage(campaign.coverImage, { width: 480 })}
+            alt={campaign.title}
+            loading="lazy"
+          />
         ) : (
           <div className="campaign-card-cover-placeholder" />
         )}
