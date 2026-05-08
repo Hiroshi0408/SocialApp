@@ -469,6 +469,7 @@
     "shareButton": "Share",
     "registerOnChain": "Stamp on-chain",
     "onChainTooltip": "Store a content hash on Sepolia to prove authorship. Anyone can verify it at any time.",
+    "onChainMultiMediaNote": "On-chain stamping currently supports posts with one image or one video only.",
     "stampingToast": "Post created. Stamping on blockchain..."
   },
   "confirmDialog": {
@@ -492,7 +493,7 @@
     "fileSizeError": "File size must be less than {{size}}MB",
     "uploadFailedError": "Failed to upload media",
     "previewAlt": "Preview",
-    "clickToUpload": "Click to upload image or video",
+    "clickToUpload": "Click or drop files here",
     "imageFormats": "Images: JPEG, PNG, GIF, WebP (max 10MB)",
     "videoFormats": "Videos: MP4, WebM, MOV (max 100MB)",
     "uploadingProgress": "Uploading {{type}}...",
@@ -500,7 +501,13 @@
     "video": "video",
     "uploadingButton": "Uploading...",
     "changeMediaButton": "Change Media",
-    "selectMediaButton": "Select Image or Video"
+    "selectMediaButton": "Select Image or Video",
+    "multiHint": "Up to {{max}} images or 1 video",
+    "videoExclusiveError": "A video must be posted alone — no images alongside",
+    "tooManyError": "At most {{max}} images per post",
+    "removeItem": "Remove this media",
+    "addMore_one": "Add ({{count}})",
+    "addMore_other": "Add ({{count}})"
   },
   "call": {
     "incoming_call": "Incoming Call",

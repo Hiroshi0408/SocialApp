@@ -41,6 +41,12 @@ const ALLOWED_IMAGE_TYPES = [
 const CLOUDINARY_FOLDER = "social-app";
 const DEFAULT_AVATAR_URL = "/images/default-avatar.png";
 
+// ==================== POST MEDIA ====================
+// Max ảnh/video trong 1 post (carousel). Cap để tránh spam + giới hạn render.
+const MAX_MEDIA_PER_POST = 5;
+// Cap số mention/tag trong caption để tránh fan-out notification quá tải
+const MAX_MENTIONS_PER_POST = 30;
+
 // ==================== USER ====================
 const USER_STATUS = {
   ACTIVE: "active",
@@ -121,6 +127,10 @@ module.exports = {
   ALLOWED_IMAGE_TYPES,
   CLOUDINARY_FOLDER,
   DEFAULT_AVATAR_URL,
+
+  // Post Media
+  MAX_MEDIA_PER_POST,
+  MAX_MENTIONS_PER_POST,
 
   // Enums
   USER_STATUS,

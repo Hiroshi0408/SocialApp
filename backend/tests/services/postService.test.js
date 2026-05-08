@@ -158,13 +158,41 @@ describe("getPostById", () => {
 // createPost
 // =============================================================
 describe("createPost", () => {
-  test("throw 400 neu khong co image/video", async () => {
+  // URL Cloudinary hợp lệ — phải match prefix res.cloudinary.com (validation mới)
+  const FAKE_IMG = "https://res.cloudinary.com/demo/image/upload/v1/sample.jpg";
+
+  test("throw 400 neu khong co media va khong co caption", async () => {
     await expect(
-      postService.createPost("userId123", { caption: "hello" }),
+      postService.createPost("userId123", {}),
     ).rejects.toMatchObject({
       statusCode: 400,
-      message: "Image or video is required",
+      message: "Caption or media is required",
     });
+  });
+
+  test("throw 400 neu URL khong phai Cloudinary", async () => {
+    await expect(
+      postService.createPost("userId123", { image: "img.jpg", caption: "hello" }),
+    ).rejects.toMatchObject({ statusCode: 400 });
+  });
+
+  test("cho phep text-only post (khong media, co caption)", async () => {
+    const fakePost = makeFakePost({ _id: "post-text", userId: "authorId" });
+    postDAO.create.mockResolvedValue(fakePost);
+    userDAO.incrementPostsCount.mockResolvedValue();
+    validateMentions.mockResolvedValue([]);
+
+    await postService.createPost("authorId", { caption: "hello world" });
+
+    expect(postDAO.create).toHaveBeenCalledWith(
+      expect.objectContaining({
+        userId: "authorId",
+        image: "",
+        video: "",
+        media: [],
+        caption: "hello world",
+      }),
+    );
   });
 
   test("throw 400 neu moderation chan caption", async () => {
@@ -176,7 +204,7 @@ describe("createPost", () => {
     });
 
     await expect(
-      postService.createPost("userId123", { image: "img.jpg", caption: "bad" }),
+      postService.createPost("userId123", { image: FAKE_IMG, caption: "bad" }),
     ).rejects.toMatchObject({
       statusCode: 400,
       message: "Caption violates community guidelines",
@@ -199,7 +227,7 @@ describe("createPost", () => {
     ]);
 
     const result = await postService.createPost("authorId", {
-      image: "img.jpg",
+      image: FAKE_IMG,
       caption: "hello @alice",
       taggedUsers: ["tagged1", "authorId"],
     });
@@ -207,7 +235,7 @@ describe("createPost", () => {
     expect(postDAO.create).toHaveBeenCalledWith(
       expect.objectContaining({
         userId: "authorId",
-        image: "img.jpg",
+        image: FAKE_IMG,
         mediaType: "image",
         caption: "hello @alice",
       }),

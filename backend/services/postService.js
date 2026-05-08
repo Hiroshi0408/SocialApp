@@ -23,7 +23,96 @@ const {
   DEFAULT_POST_LIMIT,
   MAX_POST_LIMIT,
   DEFAULT_COMMENT_LIMIT,
+  MAX_MEDIA_PER_POST,
+  MAX_MENTIONS_PER_POST,
 } = require("../constants");
+
+// Cloudinary URL prefix — chấp nhận mọi cloud name của project (từ env).
+// Nếu CLOUDINARY_CLOUD_NAME chưa set thì fallback về regex chung res.cloudinary.com.
+const _cloudName = process.env.CLOUDINARY_CLOUD_NAME || "";
+const CLOUDINARY_URL_REGEX = _cloudName
+  ? new RegExp(`^https://res\\.cloudinary\\.com/${_cloudName}/`)
+  : /^https:\/\/res\.cloudinary\.com\//;
+
+function _isValidCloudinaryUrl(url) {
+  return typeof url === "string" && CLOUDINARY_URL_REGEX.test(url);
+}
+
+// Normalize input: chấp nhận media[] array mới HOẶC image/video legacy.
+// Trả về { media, legacyImage, legacyVideo, legacyMediaType, legacyDuration }
+// để createPost có 1 nguồn dữ liệu thống nhất.
+function _normalizeMediaInput({ media, image, video, mediaType, videoDuration }) {
+  const items = [];
+
+  if (Array.isArray(media) && media.length > 0) {
+    for (const item of media) {
+      if (!item || typeof item !== "object") continue;
+      const t = item.type === "video" ? "video" : "image";
+      const url = item.url;
+      if (!_isValidCloudinaryUrl(url)) {
+        throw new AppError("Invalid media URL — must be a Cloudinary URL", 400);
+      }
+      items.push({
+        type: t,
+        url,
+        duration: t === "video" ? Number(item.duration) || 0 : 0,
+      });
+    }
+  } else if (video) {
+    if (!_isValidCloudinaryUrl(video)) {
+      throw new AppError("Invalid video URL — must be a Cloudinary URL", 400);
+    }
+    items.push({ type: "video", url: video, duration: Number(videoDuration) || 0 });
+  } else if (image) {
+    if (!_isValidCloudinaryUrl(image)) {
+      throw new AppError("Invalid image URL — must be a Cloudinary URL", 400);
+    }
+    items.push({ type: "image", url: image, duration: 0 });
+  }
+
+  if (items.length > MAX_MEDIA_PER_POST) {
+    throw new AppError(
+      `Maximum ${MAX_MEDIA_PER_POST} media items per post`,
+      400
+    );
+  }
+
+  // Nếu có video → chỉ cho 1 video duy nhất (carousel video phức tạp, scope hẹp)
+  const videoCount = items.filter((m) => m.type === "video").length;
+  if (videoCount > 1) {
+    throw new AppError("Only one video allowed per post", 400);
+  }
+  if (videoCount === 1 && items.length > 1) {
+    throw new AppError("Cannot mix video with other media in a single post", 400);
+  }
+
+  const first = items[0] || null;
+  return {
+    media: items,
+    legacyImage: first?.type === "image" ? first.url : "",
+    legacyVideo: first?.type === "video" ? first.url : "",
+    legacyMediaType: first?.type || "image",
+    legacyDuration: first?.type === "video" ? first.duration : 0,
+  };
+}
+
+// Synth media[] từ legacy image/video cho post cũ chưa có field media.
+// Dùng ở mọi response trả post ra FE để FE chỉ cần đọc media[] thống nhất.
+function _ensureMediaArray(post) {
+  if (!post) return post;
+  const hasMedia = Array.isArray(post.media) && post.media.length > 0;
+  if (hasMedia) return post;
+  const synth = [];
+  if (post.video) {
+    synth.push({ type: "video", url: post.video, duration: post.videoDuration || 0 });
+  } else if (post.image) {
+    synth.push({ type: "image", url: post.image, duration: 0 });
+  }
+  // Mutate object: ưu tiên cho lean object, nhưng cũng OK với Mongoose doc
+  // vì .toJSON() trả plain object trước đó.
+  post.media = synth;
+  return post;
+}
 
 class PostService {
   // ========== FEED ==========
@@ -227,8 +316,10 @@ class PostService {
       timestamp: getTimeAgo(c.createdAt),
     }));
 
+    const json = post.toJSON();
+    _ensureMediaArray(json);
     return {
-      ...post.toJSON(),
+      ...json,
       user: post.userId,
       likes: post.likesCount,
       comments: post.commentsCount,
@@ -243,10 +334,6 @@ class PostService {
 
   async createPost(userId, data) {
     const {
-      image,
-      video,
-      mediaType,
-      videoDuration,
       caption,
       location,
       taggedUsers,
@@ -254,8 +341,20 @@ class PostService {
       groupId,
     } = data;
 
-    if (!image && !video) {
-      throw new AppError("Image or video is required", 400);
+    const trimmedCaption = (caption || "").trim();
+
+    // Normalize media — chấp nhận cả input mới (media[]) và legacy (image/video)
+    const {
+      media,
+      legacyImage,
+      legacyVideo,
+      legacyMediaType,
+      legacyDuration,
+    } = _normalizeMediaInput(data);
+
+    // Cho phép text-only post: phải có ít nhất caption HOẶC media
+    if (media.length === 0 && !trimmedCaption) {
+      throw new AppError("Caption or media is required", 400);
     }
 
     // Nếu post vào group → bắt buộc user phải là member
@@ -266,8 +365,8 @@ class PostService {
       }
     }
 
-    if (caption && caption.trim()) {
-      const moderation = await moderateText(caption);
+    if (trimmedCaption) {
+      const moderation = await moderateText(trimmedCaption);
       if (!moderation.allowed) {
         throw new AppError("Caption violates community guidelines", 400, {
           moderation: {
@@ -282,11 +381,13 @@ class PostService {
     const post = await postDAO.create({
       userId,
       groupId: groupId || null,
-      image: image || "",
-      video: video || "",
-      mediaType: mediaType || (video ? "video" : "image"),
-      videoDuration: videoDuration || 0,
-      caption: caption || "",
+      // Mirror media[0] vào legacy field để code chưa migrate vẫn hiển thị được
+      image: legacyImage,
+      video: legacyVideo,
+      mediaType: legacyMediaType,
+      videoDuration: legacyDuration,
+      media,
+      caption: trimmedCaption,
       location: location || "",
       taggedUsers: taggedUsers || [],
       // mentions và hashtags tự động extract từ caption bởi pre-save hook trong Post model
@@ -296,7 +397,11 @@ class PostService {
 
     // Đóng dấu on-chain nếu user chọn — fire-and-forget không block response
     // Dùng fire-and-forget vì tx Sepolia có thể mất 10-30s, không nên bắt user chờ
-    if (registerOnChain === true) {
+    // Guard: post group không cho stamp (private content) + multi-media chưa support
+    // hash v2 (chỉ hash 1 image/video) — multi-image bỏ qua thay vì throw để UX êm.
+    const canRegister =
+      registerOnChain === true && !groupId && media.length === 1;
+    if (canRegister) {
       // Pre-write contentHash + version SYNCHRONOUSLY trước khi fire tx, lý do:
       // mọi post mới đều có sub-doc onChain {registered:false, ...} mặc định
       // (Mongoose default), nên FE không thể phân biệt "post đang chờ register"
@@ -337,9 +442,11 @@ class PostService {
 
     await post.populate({ path: "userId", select: "username fullName avatar" });
 
-    // Mention notifications (fire-and-forget)
+    // Mention notifications (fire-and-forget) — cap số mention để tránh spam
+    // (vd caption có 1000 @username → fan-out 1000 noti là DoS dễ).
     if (post.mentions && post.mentions.length > 0) {
-      const mentionedUsers = await validateMentions(post.mentions);
+      const cappedMentions = post.mentions.slice(0, MAX_MENTIONS_PER_POST);
+      const mentionedUsers = await validateMentions(cappedMentions);
       for (const mentionedUser of mentionedUsers) {
         if (mentionedUser._id.toString() !== userId.toString()) {
           notificationService

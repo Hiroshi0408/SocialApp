@@ -1,6 +1,6 @@
 import React, { useEffect, useState, useCallback } from "react";
 import { getUserAvatar, formatTimestamp, getId } from "../../utils";
-import VideoPlayer from "../VideoPlayer/VideoPlayer";
+import MediaCarousel, { getPostMedia } from "../MediaCarousel/MediaCarousel";
 import TextWithMentions from "../TextWithMentions/TextWithMentions";
 import postService from "../../api/postService";
 import "./PostModal.css";
@@ -111,13 +111,9 @@ function PostModal({ post, onClose }) {
         </button>
 
         <div className="modal-body">
-          {/* Left - Image/Video */}
+          {/* Left - Image/Video carousel */}
           <div className="modal-image-container">
-            {post.mediaType === "video" && post.video ? (
-              <VideoPlayer src={post.video} className="modal-video" />
-            ) : (
-              <img src={post.image} alt="Post" className="modal-image" />
-            )}
+            <MediaCarousel media={getPostMedia(post)} />
           </div>
 
           {/* Right - Details */}

@@ -6,6 +6,8 @@ export const DEFAULT_IMAGES = {
 export const POST_LIMITS = {
   CAPTION_MAX_LENGTH: 2200,
   LOCATION_MAX_LENGTH: 100,
+  // Khớp với BE constants/index.js — MAX_MEDIA_PER_POST
+  MAX_MEDIA: 5,
 };
 
 export const FILE_LIMITS = {

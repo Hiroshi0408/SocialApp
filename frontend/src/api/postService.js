@@ -52,10 +52,7 @@ const postService = {
 
   createPost: async (postData) => {
     const response = await axios.post("/posts", {
-      image: postData.image || "",
-      video: postData.video || "",
-      mediaType: postData.mediaType || "image",
-      videoDuration: postData.videoDuration || 0,
+      media: postData.media || [],
       caption: postData.caption || "",
       location: postData.location || "",
       taggedUsers: postData.taggedUsers || [],

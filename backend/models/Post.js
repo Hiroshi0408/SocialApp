@@ -17,6 +17,9 @@ const postSchema = new mongoose.Schema(
       default: null,
       index: true,
     },
+    // Legacy fields — giữ cho post cũ + làm fallback cho code chưa migrate
+    // sang đọc media[]. Khi tạo post mới, BE sẽ mirror media[0] vào image/video
+    // theo đúng type để PostCard/Profile cũ vẫn hiển thị được mà không sửa.
     image: {
       type: String,
       default: "",
@@ -33,6 +36,21 @@ const postSchema = new mongoose.Schema(
     videoDuration: {
       type: Number,
       default: 0,
+    },
+    // media[] = nguồn dữ liệu chuẩn cho post mới (carousel nhiều ảnh).
+    // Quy ước: nếu có video thì chỉ 1 phần tử duy nhất kiểu video (Instagram-style).
+    // Nếu là ảnh, max MAX_MEDIA_PER_POST.
+    // Post cũ (chưa migrate) → media = [] → service synth từ image/video khi format response.
+    media: {
+      type: [
+        {
+          _id: false,
+          type: { type: String, enum: ["image", "video"], required: true },
+          url: { type: String, required: true },
+          duration: { type: Number, default: 0 },
+        },
+      ],
+      default: [],
     },
     caption: {
       type: String,

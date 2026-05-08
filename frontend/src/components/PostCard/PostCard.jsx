@@ -20,7 +20,7 @@ import {
 } from "../../utils";
 import { useAuth } from "../../contexts/AuthContext";
 import TextWithMentions from "../TextWithMentions/TextWithMentions";
-import VideoPlayer from "../VideoPlayer/VideoPlayer";
+import MediaCarousel, { getPostMedia } from "../MediaCarousel/MediaCarousel";
 import ConfirmDialog from "../ConfirmDialog/ConfirmDialog";
 import "./PostCard.css";
 import PostModal from "../PostModal/PostModal";
@@ -670,18 +670,20 @@ function PostCard({ post, onPostDeleted }) {
       <p className="post-caption">
         <TextWithMentions text={caption} />
       </p>
-      {/* Post media */}
-      <div
-        className="post-media"
-        onClick={() => handleOpenImage()}
-        onDoubleClick={handleDoubleClick}
-      >
-        {post.mediaType === "video" && post.video ? (
-          <VideoPlayer src={post.video} />
-        ) : (
-          post.image && <img src={post.image} alt="Post" />
-        )}
-      </div>
+      {/* Post media — carousel cho nhiều ảnh, single render cho 1 media. */}
+      {(() => {
+        const mediaItems = getPostMedia(post);
+        if (mediaItems.length === 0) return null;
+        return (
+          <div className="post-media">
+            <MediaCarousel
+              media={mediaItems}
+              onClick={handleOpenImage}
+              onDoubleClick={handleDoubleClick}
+            />
+          </div>
+        );
+      })()}
 
       {/* Post Actions */}
       <div className="post-actions">

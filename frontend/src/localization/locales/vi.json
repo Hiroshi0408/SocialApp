@@ -469,6 +469,7 @@
     "shareButton": "Chia sẻ",
     "registerOnChain": "Đóng dấu on-chain",
     "onChainTooltip": "Lưu hash nội dung lên Sepolia để chứng minh tác quyền. Bạn có thể verify bất cứ lúc nào.",
+    "onChainMultiMediaNote": "Đóng dấu on-chain hiện chỉ hỗ trợ bài 1 ảnh hoặc 1 video.",
     "stampingToast": "Đã đăng bài. Đang đóng dấu lên blockchain..."
   },
   "confirmDialog": {
@@ -492,7 +493,7 @@
     "fileSizeError": "Kích thước file phải nhỏ hơn {{size}}MB",
     "uploadFailedError": "Tải lên media thất bại",
     "previewAlt": "Xem trước",
-    "clickToUpload": "Nhấn để tải lên hình ảnh hoặc video",
+    "clickToUpload": "Nhấn hoặc kéo thả file vào đây",
     "imageFormats": "Hình ảnh: JPEG, PNG, GIF, WebP (tối đa 10MB)",
     "videoFormats": "Video: MP4, WebM, MOV (tối đa 100MB)",
     "uploadingProgress": "Đang tải lên {{type}}...",
@@ -500,7 +501,13 @@
     "video": "video",
     "uploadingButton": "Đang tải lên...",
     "changeMediaButton": "Đổi media",
-    "selectMediaButton": "Chọn hình ảnh hoặc video"
+    "selectMediaButton": "Chọn hình ảnh hoặc video",
+    "multiHint": "Có thể chọn tối đa {{max}} ảnh hoặc 1 video",
+    "videoExclusiveError": "Video chỉ đăng riêng, không kèm ảnh trong cùng bài",
+    "tooManyError": "Mỗi bài tối đa {{max}} ảnh",
+    "removeItem": "Xóa media này",
+    "addMore_one": "Thêm ({{count}})",
+    "addMore_other": "Thêm ({{count}})"
   },
   "call": {
     "incoming_call": "Cuộc gọi đến",
