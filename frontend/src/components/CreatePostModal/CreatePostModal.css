@@ -237,46 +237,103 @@
   }
 }
 
-.onchain-note {
-  font-size: 12px;
-  color: var(--text-secondary);
-  margin: 0;
-  padding: 8px 12px;
+.onchain-option {
+  border: 1px solid var(--border-color);
+  border-radius: 8px;
   background: var(--bg-color);
-  border-left: 3px solid var(--primary-color);
-  border-radius: 4px;
-  line-height: 1.5;
+  overflow: hidden;
+}
+
+.onchain-option.selected {
+  border-color: var(--primary-color);
+  background: rgba(0, 149, 246, 0.06);
+}
+
+.onchain-option.disabled {
+  opacity: 0.78;
 }
 
 .onchain-toggle {
   display: flex;
   align-items: center;
-  gap: 8px;
-  margin: 12px 0;
+  gap: 10px;
+  padding: 12px;
+  margin: 0;
   cursor: pointer;
-  font-size: 13px;
   color: var(--text-secondary);
   user-select: none;
 }
 
-.onchain-toggle input[type="checkbox"] {
-  width: 16px;
-  height: 16px;
-  accent-color: var(--primary-color);
-  cursor: pointer;
-  flex-shrink: 0;
+.onchain-option.disabled .onchain-toggle {
+  cursor: not-allowed;
 }
 
-.onchain-toggle-icon {
-  font-size: 15px;
+.onchain-toggle input[type="checkbox"] {
+  position: absolute;
+  opacity: 0;
+  pointer-events: none;
+}
+
+.onchain-toggle-box {
+  width: 24px;
+  height: 24px;
+  border: 1px solid var(--border-color);
+  border-radius: 6px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  color: var(--text-secondary);
+  background: var(--card-bg);
+  flex-shrink: 0;
+  transition: all 0.2s ease;
+}
+
+.onchain-toggle input[type="checkbox"]:checked + .onchain-toggle-box {
+  color: var(--primary-text-color);
+  background: var(--primary-color);
+  border-color: var(--primary-color);
+}
+
+.onchain-toggle input[type="checkbox"]:focus-visible + .onchain-toggle-box {
+  outline: 2px solid var(--primary-color);
+  outline-offset: 2px;
+}
+
+.onchain-toggle input[type="checkbox"]:disabled + .onchain-toggle-box {
+  background: var(--card-bg);
+  color: var(--gray);
+  cursor: not-allowed;
+}
+
+.onchain-toggle-copy {
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
 }
 
 .onchain-toggle-label {
   color: var(--text-primary);
   font-size: 13px;
+  font-weight: 600;
+  line-height: 1.3;
 }
 
-.onchain-toggle:has(input:checked) .onchain-toggle-label {
-  color: var(--primary-color);
-  font-weight: 500;
+.onchain-toggle-subtitle {
+  color: var(--text-secondary);
+  font-size: 12px;
+  line-height: 1.35;
+}
+
+.onchain-note {
+  font-size: 12px;
+  color: var(--text-secondary);
+  margin: 0;
+  padding: 0 12px 12px 46px;
+  line-height: 1.45;
+}
+
+/* Legacy fallback in case browser CSS does not apply custom checkbox styles. */
+.onchain-toggle input[type="checkbox"] {
+  accent-color: var(--primary-color);
 }

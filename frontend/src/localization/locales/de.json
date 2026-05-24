@@ -135,7 +135,25 @@
     "captionPlaceholder": "Bildunterschrift schreiben...",
     "locationLabel": "Standort",
     "locationPlaceholder": "Standort hinzufügen...",
-    "saving": "Wird gespeichert..."
+    "saving": "Wird gespeichert...",
+    "onChainEditWarning": "Eine Bearbeitung kann bei der On-chain-Prüfung als Inhaltsabweichung erscheinen.",
+    "onChainVerified": "On-chain verifiziert",
+    "onChainModalSubtitle": "Content-Hash auf Sepolia ContentRegistry gespeichert.",
+    "onChainVerifying": "Blockchain wird geprüft...",
+    "onChainVerifyingDetail": "On-chain-Eintrag wird gelesen und mit dem aktuellen Beitrag verglichen.",
+    "onChainVerifyFailed": "Verifizierung fehlgeschlagen. Bitte erneut versuchen.",
+    "onChainVerifyFailedDetail": "Der Blockchain-Eintrag kann gerade nicht geladen werden.",
+    "onChainMatch": "✓ Inhalt stimmt überein — nicht verändert",
+    "onChainMismatch": "⚠ Inhalt stimmt nicht überein — möglicherweise bearbeitet",
+    "onChainMatchDetail": "Der aktuelle Beitrag stimmt weiterhin mit dem ursprünglichen On-chain-Hash überein.",
+    "onChainMismatchDetail": "Der aktuelle Beitrag unterscheidet sich vom auf der Blockchain gespeicherten Hash.",
+    "onChainNetwork": "Netzwerk",
+    "onChainTxHash": "Transaction Hash",
+    "onChainTimestamp": "Registriert am",
+    "onChainOwner": "Besitzer (Wallet)",
+    "onChainPending": "Wird auf der Blockchain gestempelt...",
+    "onChainPendingTooltip": "Ihr Beitrag wird auf Sepolia registriert. Das dauert normalerweise 15 bis 30 Sekunden.",
+    "onChainStampedToast": "Beitrag on-chain gestempelt ✓"
   },
   "profile": {
     "usernameNotFound": "Benutzername nicht gefunden",
@@ -426,7 +444,14 @@
     "captionPlaceholder": "Bildunterschrift schreiben...",
     "locationPlaceholder": "Standort hinzufügen",
     "sharingButton": "Wird geteilt...",
-    "shareButton": "Teilen"
+    "shareButton": "Teilen",
+    "registerOnChain": "On-chain stempeln",
+    "onChainSubtitle": "Speichert einen öffentlichen Content-Hash auf Sepolia.",
+    "onChainTooltip": "Speichert einen Content-Hash auf Sepolia, um die Urheberschaft nachzuweisen.",
+    "onChainContentNote": "Fügen Sie eine Bildunterschrift oder ein Medium hinzu, um On-chain-Stempeln zu aktivieren.",
+    "onChainGroupNote": "Gruppenbeiträge können nicht on-chain gestempelt werden.",
+    "onChainMultiMediaNote": "On-chain-Stempeln unterstützt eine einzelne Bild- oder Videodatei.",
+    "stampingToast": "Beitrag erstellt. Wird auf der Blockchain gestempelt..."
   },
   "confirmDialog": {
     "defaultTitle": "Aktion bestätigen",

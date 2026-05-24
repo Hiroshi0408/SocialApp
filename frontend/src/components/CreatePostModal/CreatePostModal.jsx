@@ -1,8 +1,7 @@
-import React, { useState } from "react";
+import React, { useEffect, useMemo, useState } from "react";
 import { useTranslation } from "react-i18next";
 import MediaUpload from "../MediaUpload/MediaUpload";
 import postService from "../../api/postService";
-import { useWeb3 } from "../../contexts/Web3Context";
 import { useAuth } from "../../contexts/AuthContext";
 import { getUserAvatar } from "../../utils";
 import { POST_LIMITS } from "../../constants";
@@ -13,7 +12,6 @@ import "./CreatePostModal.css";
 // Cho phép submit khi có ít nhất caption HOẶC media (text-only post được).
 function CreatePostModal({ isOpen, onClose, onPostCreated, groupId = null }) {
   const { t } = useTranslation();
-  const { walletAddress } = useWeb3();
   const { user } = useAuth();
   const [media, setMedia] = useState([]);
   const [caption, setCaption] = useState("");
@@ -22,13 +20,24 @@ function CreatePostModal({ isOpen, onClose, onPostCreated, groupId = null }) {
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [error, setError] = useState("");
 
-  // ContentRegistry hiện chỉ hash 1 media (v2). Multi-image → ẩn toggle on-chain.
-  // Group post cũng không stamp on-chain (private content).
-  const canRegisterOnChain =
-    walletAddress && !groupId && media.length === 1;
+  const hasContent = media.length > 0 || caption.trim().length > 0;
+  // ContentRegistry hash v2 hỗ trợ text-only hoặc 1 media. Multi-image chưa stamp.
+  // BE relay trả gas, nên UI không cần bắt user connect ví để bật lựa chọn này.
+  const canRegisterOnChain = !groupId && media.length <= 1 && hasContent;
+  const onChainUnavailableReason = useMemo(() => {
+    if (groupId) return t("createPost.onChainGroupNote");
+    if (media.length > 1) return t("createPost.onChainMultiMediaNote");
+    if (!hasContent) return t("createPost.onChainContentNote");
+    return "";
+  }, [groupId, hasContent, media.length, t]);
 
-  const canSubmit =
-    !isSubmitting && (media.length > 0 || caption.trim().length > 0);
+  const canSubmit = !isSubmitting && hasContent;
+
+  useEffect(() => {
+    if (!canRegisterOnChain && registerOnChain) {
+      setRegisterOnChain(false);
+    }
+  }, [canRegisterOnChain, registerOnChain]);
 
   const handleClose = () => {
     setMedia([]);
@@ -154,28 +163,58 @@ function CreatePostModal({ isOpen, onClose, onPostCreated, groupId = null }) {
                 />
               </div>
 
-              {canRegisterOnChain && (
-                <label
-                  className="onchain-toggle"
-                  title={t("createPost.onChainTooltip")}
-                >
+              <div
+                className={`onchain-option ${
+                  registerOnChain ? "selected" : ""
+                } ${!canRegisterOnChain ? "disabled" : ""}`}
+                title={t("createPost.onChainTooltip")}
+              >
+                <label className="onchain-toggle">
                   <input
                     type="checkbox"
                     checked={registerOnChain}
+                    disabled={!canRegisterOnChain}
                     onChange={(e) => setRegisterOnChain(e.target.checked)}
                   />
-                  <span className="onchain-toggle-icon">🔗</span>
-                  <span className="onchain-toggle-label">
-                    {t("createPost.registerOnChain")}
+                  <span className="onchain-toggle-box" aria-hidden="true">
+                    {registerOnChain ? (
+                      <svg
+                        width="14"
+                        height="14"
+                        viewBox="0 0 24 24"
+                        fill="none"
+                        stroke="currentColor"
+                        strokeWidth="3"
+                      >
+                        <path d="M20 6 9 17l-5-5" />
+                      </svg>
+                    ) : (
+                      <svg
+                        width="15"
+                        height="15"
+                        viewBox="0 0 24 24"
+                        fill="none"
+                        stroke="currentColor"
+                        strokeWidth="2.2"
+                      >
+                        <path d="M10 13a5 5 0 0 0 7.07 0l2.12-2.12a5 5 0 0 0-7.07-7.07L10.9 5.03" />
+                        <path d="M14 11a5 5 0 0 0-7.07 0L4.81 13.12a5 5 0 0 0 7.07 7.07l1.22-1.22" />
+                      </svg>
+                    )}
+                  </span>
+                  <span className="onchain-toggle-copy">
+                    <span className="onchain-toggle-label">
+                      {t("createPost.registerOnChain")}
+                    </span>
+                    <span className="onchain-toggle-subtitle">
+                      {t("createPost.onChainSubtitle")}
+                    </span>
                   </span>
                 </label>
-              )}
-
-              {walletAddress && !groupId && media.length > 1 && (
-                <p className="onchain-note">
-                  {t("createPost.onChainMultiMediaNote")}
-                </p>
-              )}
+                {onChainUnavailableReason && (
+                  <p className="onchain-note">{onChainUnavailableReason}</p>
+                )}
+              </div>
 
               {error && <div className="error-message">{error}</div>}
 

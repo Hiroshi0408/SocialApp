@@ -135,7 +135,25 @@
     "captionPlaceholder": "Écrire une légende...",
     "locationLabel": "Lieu",
     "locationPlaceholder": "Ajouter un lieu...",
-    "saving": "Enregistrement..."
+    "saving": "Enregistrement...",
+    "onChainEditWarning": "Modifier cette publication peut afficher une non-correspondance lors de la vérification on-chain.",
+    "onChainVerified": "Vérifié on-chain",
+    "onChainModalSubtitle": "Hash du contenu enregistré sur Sepolia ContentRegistry.",
+    "onChainVerifying": "Vérification sur la blockchain...",
+    "onChainVerifyingDetail": "Lecture de l'enregistrement on-chain et comparaison avec la publication actuelle.",
+    "onChainVerifyFailed": "Échec de la vérification. Veuillez réessayer.",
+    "onChainVerifyFailedDetail": "L'enregistrement blockchain ne peut pas être chargé pour le moment.",
+    "onChainMatch": "✓ Le contenu correspond — non modifié",
+    "onChainMismatch": "⚠ Le contenu ne correspond pas — il a peut-être été modifié",
+    "onChainMatchDetail": "Le contenu actuel correspond toujours au hash original enregistré on-chain.",
+    "onChainMismatchDetail": "Le contenu actuel diffère du hash enregistré sur la blockchain.",
+    "onChainNetwork": "Réseau",
+    "onChainTxHash": "Transaction Hash",
+    "onChainTimestamp": "Enregistré le",
+    "onChainOwner": "Propriétaire (wallet)",
+    "onChainPending": "Scellement sur la blockchain...",
+    "onChainPendingTooltip": "Votre publication est en cours d'enregistrement sur Sepolia. Cela prend généralement 15 à 30 secondes.",
+    "onChainStampedToast": "Publication scellée on-chain ✓"
   },
   "profile": {
     "usernameNotFound": "Nom d'utilisateur introuvable",
@@ -426,7 +444,14 @@
     "captionPlaceholder": "Écrire une légende...",
     "locationPlaceholder": "Ajouter un lieu",
     "sharingButton": "Partage...",
-    "shareButton": "Partager"
+    "shareButton": "Partager",
+    "registerOnChain": "Sceller on-chain",
+    "onChainSubtitle": "Enregistre un hash public du contenu sur Sepolia.",
+    "onChainTooltip": "Stocke un hash du contenu sur Sepolia pour prouver la paternité.",
+    "onChainContentNote": "Ajoutez une légende ou un média pour activer le scellement on-chain.",
+    "onChainGroupNote": "Les publications de groupe ne peuvent pas être scellées on-chain.",
+    "onChainMultiMediaNote": "Le scellement on-chain prend en charge une seule image ou une seule vidéo.",
+    "stampingToast": "Publication créée. Scellement sur la blockchain..."
   },
   "confirmDialog": {
     "defaultTitle": "Confirmer l'action",

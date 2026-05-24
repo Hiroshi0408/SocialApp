@@ -398,9 +398,9 @@ class PostService {
     // Đóng dấu on-chain nếu user chọn — fire-and-forget không block response
     // Dùng fire-and-forget vì tx Sepolia có thể mất 10-30s, không nên bắt user chờ
     // Guard: post group không cho stamp (private content) + multi-media chưa support
-    // hash v2 (chỉ hash 1 image/video) — multi-image bỏ qua thay vì throw để UX êm.
+    // hash v2 hỗ trợ text-only hoặc 1 image/video — multi-image bỏ qua thay vì throw để UX êm.
     const canRegister =
-      registerOnChain === true && !groupId && media.length === 1;
+      registerOnChain === true && !groupId && media.length <= 1;
     if (canRegister) {
       // Pre-write contentHash + version SYNCHRONOUSLY trước khi fire tx, lý do:
       // mọi post mới đều có sub-doc onChain {registered:false, ...} mặc định

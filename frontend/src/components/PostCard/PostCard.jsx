@@ -24,6 +24,7 @@ import MediaCarousel, { getPostMedia } from "../MediaCarousel/MediaCarousel";
 import ConfirmDialog from "../ConfirmDialog/ConfirmDialog";
 import "./PostCard.css";
 import PostModal from "../PostModal/PostModal";
+import { POST_LIMITS, SEPOLIA_ETHERSCAN_BASE } from "../../constants";
 
 function PostCard({ post, onPostDeleted }) {
   const { t } = useTranslation();
@@ -74,6 +75,11 @@ function PostCard({ post, onPostDeleted }) {
   const openPostModal = (post) => {
     setSelectedPost(post);
   };
+  const shortMiddle = (value, start = 10, end = 8) => {
+    if (!value) return "-";
+    if (value.length <= start + end + 3) return value;
+    return `${value.slice(0, start)}...${value.slice(-end)}`;
+  };
 
   const postId = useMemo(() => getId(post), [post]);
   const userAvatar = useMemo(() => getUserAvatar(post.user), [post.user]);
@@ -86,6 +92,15 @@ function PostCard({ post, onPostDeleted }) {
     () => normalizeCount(commentsCount),
     [commentsCount],
   );
+  const postMediaItems = useMemo(() => getPostMedia(post), [post]);
+  const hasPostMedia = postMediaItems.length > 0;
+  const isOnChainStamped = !!onChainStatus?.registered;
+  const editHasChanges =
+    editCaption !== caption || editLocation !== location;
+  const canSaveEdit =
+    !isEditing &&
+    editHasChanges &&
+    (hasPostMedia || editCaption.trim() || editLocation.trim());
 
   // Sync props to state when post changes
   useEffect(() => {
@@ -94,6 +109,17 @@ function PostCard({ post, onPostDeleted }) {
     setIsSaved(post.isSaved);
     setCommentsCount(normalizeCount(post.comments));
   }, [post.isLiked, post.likes, post.isSaved, post.comments]);
+
+  useEffect(() => {
+    const nextCaption = post.caption || "";
+    const nextLocation = post.location || "";
+    setCaption(nextCaption);
+    setLocation(nextLocation);
+    setEditCaption(nextCaption);
+    setEditLocation(nextLocation);
+    setOnChainStatus(post.onChain || null);
+    setOnChainVerify(null);
+  }, [postId, post.caption, post.location, post.onChain]);
 
   // Poll BE mỗi 5s nếu post đang chờ register on-chain.
   // Phân biệt "đang pending" vs "không liên quan blockchain" qua contentHash:
@@ -198,6 +224,20 @@ function PostCard({ post, onPostDeleted }) {
     setShowMenu((prev) => !prev);
   }, []);
 
+  const handleOpenEditModal = useCallback(() => {
+    setEditCaption(caption);
+    setEditLocation(location);
+    setShowEditModal(true);
+    setShowMenu(false);
+  }, [caption, location]);
+
+  const handleCloseEditModal = useCallback(() => {
+    if (isEditing) return;
+    setEditCaption(caption);
+    setEditLocation(location);
+    setShowEditModal(false);
+  }, [caption, isEditing, location]);
+
   const handleCopyLink = useCallback(async () => {
     const postUrl = `${window.location.origin}/post/${postId}`;
     try {
@@ -222,19 +262,32 @@ function PostCard({ post, onPostDeleted }) {
   }, [postId, onPostDeleted, t]);
 
   const handleEditPost = useCallback(async () => {
-    if (!editCaption.trim() && !editLocation.trim()) {
+    const nextCaption = editCaption.trim();
+    const nextLocation = editLocation.trim();
+
+    if (!hasPostMedia && !nextCaption && !nextLocation) {
       showError(t("postCard.editPostRequirement"));
+      return;
+    }
+
+    if (!editHasChanges) {
+      setShowEditModal(false);
       return;
     }
 
     try {
       setIsEditing(true);
-      await postService.updatePost(postId, {
-        caption: editCaption,
-        location: editLocation,
+      const response = await postService.updatePost(postId, {
+        caption: nextCaption,
+        location: nextLocation,
       });
-      setCaption(editCaption);
-      setLocation(editLocation);
+      const updatedPost = response?.post || response;
+      setCaption(updatedPost?.caption ?? nextCaption);
+      setLocation(updatedPost?.location ?? nextLocation);
+      if (updatedPost?.onChain) {
+        setOnChainStatus(updatedPost.onChain);
+      }
+      setOnChainVerify(null);
       showSuccess(t("postCard.postUpdated"));
       setShowEditModal(false);
       setShowMenu(false);
@@ -243,7 +296,14 @@ function PostCard({ post, onPostDeleted }) {
     } finally {
       setIsEditing(false);
     }
-  }, [postId, editCaption, editLocation, t]);
+  }, [
+    postId,
+    editCaption,
+    editLocation,
+    hasPostMedia,
+    editHasChanges,
+    t,
+  ]);
 
   const handleLikeComment = useCallback(
     async (commentId) => {
@@ -499,8 +559,13 @@ function PostCard({ post, onPostDeleted }) {
   }, [showComments, allCommentsLoaded, isLoadingComments, postId, t]);
 
   const handleOpenImage = useCallback(() => {
-    openPostModal(post);
-  }, [post]);
+    openPostModal({
+      ...post,
+      caption,
+      location,
+      onChain: onChainStatus,
+    });
+  }, [caption, location, onChainStatus, post]);
 
   const handleOpenOnChainModal = useCallback(async () => {
     setShowOnChainModal(true);
@@ -548,36 +613,72 @@ function PostCard({ post, onPostDeleted }) {
             alt={post.user.username}
             className="post-avatar"
           />
-          <span className="post-username">{post.user.username}</span>
-          {onChainStatus?.contentHash && !onChainStatus.registered && (
-            // TX đang pending — hiện spinner + label visible. Check contentHash để loại bỏ
-            // post không liên quan blockchain (sub-doc onChain mặc định luôn tồn
-            // tại với registered=false, không phải lúc nào cũng = "đang pending").
-            <span
-              className="onchain-badge onchain-pending"
-              title={t("postCard.onChainPendingTooltip")}
-              aria-label={t("postCard.onChainPending")}
-            >
-              <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" className="onchain-spinner" aria-hidden="true">
-                <path d="M12 2v4M12 18v4M4.93 4.93l2.83 2.83M16.24 16.24l2.83 2.83M2 12h4M18 12h4M4.93 19.07l2.83-2.83M16.24 7.76l2.83-2.83"/>
-              </svg>
-              <span className="onchain-pending-label">
-                {t("postCard.onChainPending")}
+          <div className="post-user-meta">
+            <div className="post-user-line">
+              <span className="post-username">{post.user.username}</span>
+              {onChainStatus?.contentHash && !onChainStatus.registered && (
+                // TX đang pending — hiện spinner + label visible. Check contentHash để loại bỏ
+                // post không liên quan blockchain (sub-doc onChain mặc định luôn tồn
+                // tại với registered=false, không phải lúc nào cũng = "đang pending").
+                <span
+                  className="onchain-badge onchain-pending"
+                  title={t("postCard.onChainPendingTooltip")}
+                  aria-label={t("postCard.onChainPending")}
+                >
+                  <svg
+                    width="12"
+                    height="12"
+                    viewBox="0 0 24 24"
+                    fill="none"
+                    stroke="currentColor"
+                    strokeWidth="2.5"
+                    className="onchain-spinner"
+                    aria-hidden="true"
+                  >
+                    <path d="M12 2v4M12 18v4M4.93 4.93l2.83 2.83M16.24 16.24l2.83 2.83M2 12h4M18 12h4M4.93 19.07l2.83-2.83M16.24 7.76l2.83-2.83" />
+                  </svg>
+                  <span className="onchain-pending-label">
+                    {t("postCard.onChainPending")}
+                  </span>
+                </span>
+              )}
+              {onChainStatus?.registered && (
+                <button
+                  className="onchain-badge"
+                  onClick={handleOpenOnChainModal}
+                  title={t("postCard.onChainVerified")}
+                  aria-label={t("postCard.onChainVerified")}
+                >
+                  <svg
+                    width="14"
+                    height="14"
+                    viewBox="0 0 24 24"
+                    fill="currentColor"
+                    aria-hidden="true"
+                  >
+                    <path d="M12 1 3 5v6c0 5.55 3.84 10.74 9 12 5.16-1.26 9-6.45 9-12V5l-9-4Zm-2 16-4-4 1.41-1.41L10 14.17l6.59-6.59L18 9l-8 8Z" />
+                  </svg>
+                </button>
+              )}
+            </div>
+            {location && (
+              <span className="post-location" title={location}>
+                <svg
+                  width="12"
+                  height="12"
+                  viewBox="0 0 24 24"
+                  fill="none"
+                  stroke="currentColor"
+                  strokeWidth="2"
+                  aria-hidden="true"
+                >
+                  <path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0 1 18 0Z" />
+                  <circle cx="12" cy="10" r="3" />
+                </svg>
+                {location}
               </span>
-            </span>
-          )}
-          {onChainStatus?.registered && (
-            <button
-              className="onchain-badge"
-              onClick={handleOpenOnChainModal}
-              title={t("postCard.onChainVerified")}
-              aria-label={t("postCard.onChainVerified")}
-            >
-              <svg width="14" height="14" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true">
-                <path d="M12 1L3 5v6c0 5.55 3.84 10.74 9 12 5.16-1.26 9-6.45 9-12V5l-9-4zm-2 16l-4-4 1.41-1.41L10 14.17l6.59-6.59L18 9l-8 8z"/>
-              </svg>
-            </button>
-          )}
+            )}
+          </div>
         </div>
 
         <div className="post-menu-container" ref={menuRef}>
@@ -605,10 +706,7 @@ function PostCard({ post, onPostDeleted }) {
                 <>
                   <button
                     className="menu-item"
-                    onClick={() => {
-                      setShowEditModal(true);
-                      setShowMenu(false);
-                    }}
+                    onClick={handleOpenEditModal}
                   >
                     {t("postCard.edit")}
                   </button>
@@ -672,12 +770,11 @@ function PostCard({ post, onPostDeleted }) {
       </p>
       {/* Post media — carousel cho nhiều ảnh, single render cho 1 media. */}
       {(() => {
-        const mediaItems = getPostMedia(post);
-        if (mediaItems.length === 0) return null;
+        if (postMediaItems.length === 0) return null;
         return (
           <div className="post-media">
             <MediaCarousel
-              media={mediaItems}
+              media={postMediaItems}
               onClick={handleOpenImage}
               onDoubleClick={handleDoubleClick}
             />
@@ -1079,18 +1176,65 @@ function PostCard({ post, onPostDeleted }) {
       />
 
       {showEditModal && (
-        <div className="modal-overlay" onClick={() => setShowEditModal(false)}>
+        <div className="modal-overlay" onClick={handleCloseEditModal}>
           <div className="edit-modal" onClick={(e) => e.stopPropagation()}>
             <div className="edit-modal-header">
-              <h3>{t("postCard.editPostTitle")}</h3>
+              <div className="edit-modal-title">
+                <h3>{t("postCard.editPostTitle")}</h3>
+                {isOnChainStamped && (
+                  <span className="edit-onchain-chip">
+                    <svg
+                      width="13"
+                      height="13"
+                      viewBox="0 0 24 24"
+                      fill="currentColor"
+                      aria-hidden="true"
+                    >
+                      <path d="M12 1 3 5v6c0 5.55 3.84 10.74 9 12 5.16-1.26 9-6.45 9-12V5l-9-4Zm-2 16-4-4 1.41-1.41L10 14.17l6.59-6.59L18 9l-8 8Z" />
+                    </svg>
+                    {t("postCard.onChainVerified")}
+                  </span>
+                )}
+              </div>
               <button
                 className="modal-close-btn"
-                onClick={() => setShowEditModal(false)}
+                onClick={handleCloseEditModal}
+                aria-label={t("common.close", "Close")}
+                disabled={isEditing}
               >
                 ×
               </button>
             </div>
             <div className="edit-modal-body">
+              <div className="edit-author-row">
+                <img
+                  src={userAvatar}
+                  alt={post.user.username}
+                  className="edit-author-avatar"
+                />
+                <div className="edit-author-copy">
+                  <span className="edit-author-name">{post.user.username}</span>
+                  <span className="edit-author-meta">{postTimestamp}</span>
+                </div>
+              </div>
+              {isOnChainStamped && (
+                <div className="edit-onchain-warning">
+                  <svg
+                    width="16"
+                    height="16"
+                    viewBox="0 0 24 24"
+                    fill="none"
+                    stroke="currentColor"
+                    strokeWidth="2.2"
+                    aria-hidden="true"
+                  >
+                    <path d="M12 9v4" />
+                    <path d="M12 17h.01" />
+                    <path d="M10.29 3.86 1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0Z" />
+                  </svg>
+                  <span>{t("postCard.onChainEditWarning")}</span>
+                </div>
+              )}
               <div className="form-group">
                 <label htmlFor="edit-caption">
                   {t("postCard.captionLabel")}
@@ -1100,10 +1244,12 @@ function PostCard({ post, onPostDeleted }) {
                   value={editCaption}
                   onChange={(e) => setEditCaption(e.target.value)}
                   placeholder={t("postCard.captionPlaceholder")}
-                  rows="4"
-                  maxLength="2200"
+                  rows="5"
+                  maxLength={POST_LIMITS.CAPTION_MAX_LENGTH}
                 />
-                <span className="char-count">{editCaption.length}/2200</span>
+                <span className="char-count">
+                  {editCaption.length}/{POST_LIMITS.CAPTION_MAX_LENGTH}
+                </span>
               </div>
               <div className="form-group">
                 <label htmlFor="edit-location">
@@ -1115,21 +1261,25 @@ function PostCard({ post, onPostDeleted }) {
                   value={editLocation}
                   onChange={(e) => setEditLocation(e.target.value)}
                   placeholder={t("postCard.locationPlaceholder")}
-                  maxLength="100"
+                  maxLength={POST_LIMITS.LOCATION_MAX_LENGTH}
                 />
+                <span className="char-count">
+                  {editLocation.length}/{POST_LIMITS.LOCATION_MAX_LENGTH}
+                </span>
               </div>
             </div>
             <div className="edit-modal-footer">
               <button
                 className="btn-cancel"
-                onClick={() => setShowEditModal(false)}
+                onClick={handleCloseEditModal}
+                disabled={isEditing}
               >
                 {t("postCard.cancel")}
               </button>
               <button
                 className="btn-save"
                 onClick={handleEditPost}
-                disabled={isEditing}
+                disabled={!canSaveEdit}
               >
                 {isEditing ? t("postCard.saving") : t("postCard.save")}
               </button>
@@ -1145,44 +1295,194 @@ function PostCard({ post, onPostDeleted }) {
         <div className="modal-overlay" onClick={() => setShowOnChainModal(false)}>
           <div className="onchain-modal" onClick={(e) => e.stopPropagation()}>
             <div className="onchain-modal-header">
-              <svg width="18" height="18" viewBox="0 0 24 24" fill="currentColor">
-                <path d="M12 1L3 5v6c0 5.55 3.84 10.74 9 12 5.16-1.26 9-6.45 9-12V5l-9-4zm-2 16l-4-4 1.41-1.41L10 14.17l6.59-6.59L18 9l-8 8z"/>
-              </svg>
-              <h3>{t("postCard.onChainVerified")}</h3>
-              <button className="modal-close-btn" onClick={() => setShowOnChainModal(false)}>×</button>
+              <div className="onchain-modal-title">
+                <span className="onchain-modal-icon" aria-hidden="true">
+                  <svg
+                    width="22"
+                    height="22"
+                    viewBox="0 0 24 24"
+                    fill="currentColor"
+                  >
+                    <path d="M12 1 3 5v6c0 5.55 3.84 10.74 9 12 5.16-1.26 9-6.45 9-12V5l-9-4Zm-2 16-4-4 1.41-1.41L10 14.17l6.59-6.59L18 9l-8 8Z" />
+                  </svg>
+                </span>
+                <div>
+                  <h3>{t("postCard.onChainVerified")}</h3>
+                  <p>{t("postCard.onChainModalSubtitle")}</p>
+                </div>
+              </div>
+              <button
+                className="modal-close-btn onchain-modal-close"
+                onClick={() => setShowOnChainModal(false)}
+                aria-label={t("common.close", "Close")}
+              >
+                ×
+              </button>
             </div>
             <div className="onchain-modal-body">
-              {isVerifying && <p className="onchain-loading">{t("postCard.onChainVerifying")}</p>}
+              {isVerifying && (
+                <div className="onchain-state-card loading">
+                  <span className="onchain-state-icon" aria-hidden="true">
+                    <svg
+                      width="20"
+                      height="20"
+                      viewBox="0 0 24 24"
+                      fill="none"
+                      stroke="currentColor"
+                      strokeWidth="2.4"
+                      className="onchain-spinner"
+                    >
+                      <path d="M12 2v4M12 18v4M4.93 4.93l2.83 2.83M16.24 16.24l2.83 2.83M2 12h4M18 12h4M4.93 19.07l2.83-2.83M16.24 7.76l2.83-2.83" />
+                    </svg>
+                  </span>
+                  <div>
+                    <strong>{t("postCard.onChainVerifying")}</strong>
+                    <span>{t("postCard.onChainVerifyingDetail")}</span>
+                  </div>
+                </div>
+              )}
               {!isVerifying && onChainVerify?.error && (
-                <p className="onchain-error">{t("postCard.onChainVerifyFailed")}</p>
+                <div className="onchain-state-card error">
+                  <span className="onchain-state-icon" aria-hidden="true">
+                    <svg
+                      width="20"
+                      height="20"
+                      viewBox="0 0 24 24"
+                      fill="none"
+                      stroke="currentColor"
+                      strokeWidth="2.4"
+                    >
+                      <circle cx="12" cy="12" r="10" />
+                      <path d="M12 8v5" />
+                      <path d="M12 16h.01" />
+                    </svg>
+                  </span>
+                  <div>
+                    <strong>{t("postCard.onChainVerifyFailed")}</strong>
+                    <span>{t("postCard.onChainVerifyFailedDetail")}</span>
+                  </div>
+                </div>
               )}
               {!isVerifying && onChainVerify && !onChainVerify.error && (
                 <>
-                  <div className={`onchain-match-badge ${onChainVerify.match ? "match" : "mismatch"}`}>
-                    {onChainVerify.match ? t("postCard.onChainMatch") : t("postCard.onChainMismatch")}
-                  </div>
-                  <div className="onchain-detail">
-                    <span className="onchain-detail-label">{t("postCard.onChainTxHash")}</span>
-                    <a
-                      href={`https://sepolia.etherscan.io/tx/${onChainStatus?.txHash}`}
-                      target="_blank"
-                      rel="noopener noreferrer"
-                      className="onchain-tx-link"
-                    >
-                      {onChainStatus?.txHash?.slice(0, 12)}...{onChainStatus?.txHash?.slice(-8)}
-                    </a>
-                  </div>
-                  <div className="onchain-detail">
-                    <span className="onchain-detail-label">{t("postCard.onChainTimestamp")}</span>
-                    <span>{onChainVerify.onChainData?.timestamp
-                      ? new Date(onChainVerify.onChainData.timestamp).toLocaleString()
-                      : "-"}</span>
-                  </div>
-                  <div className="onchain-detail">
-                    <span className="onchain-detail-label">{t("postCard.onChainOwner")}</span>
-                    <span className="onchain-address">
-                      {onChainVerify.onChainData?.owner?.slice(0, 8)}...{onChainVerify.onChainData?.owner?.slice(-6)}
+                  <div
+                    className={`onchain-state-card ${
+                      onChainVerify.match ? "match" : "mismatch"
+                    }`}
+                  >
+                    <span className="onchain-state-icon" aria-hidden="true">
+                      {onChainVerify.match ? (
+                        <svg
+                          width="20"
+                          height="20"
+                          viewBox="0 0 24 24"
+                          fill="none"
+                          stroke="currentColor"
+                          strokeWidth="2.5"
+                        >
+                          <path d="m20 6-11 11-5-5" />
+                        </svg>
+                      ) : (
+                        <svg
+                          width="20"
+                          height="20"
+                          viewBox="0 0 24 24"
+                          fill="none"
+                          stroke="currentColor"
+                          strokeWidth="2.4"
+                        >
+                          <path d="M12 9v4" />
+                          <path d="M12 17h.01" />
+                          <path d="M10.29 3.86 1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0Z" />
+                        </svg>
+                      )}
                     </span>
+                    <div>
+                      <strong>
+                        {onChainVerify.match
+                          ? t("postCard.onChainMatch")
+                          : t("postCard.onChainMismatch")}
+                      </strong>
+                      <span>
+                        {onChainVerify.match
+                          ? t("postCard.onChainMatchDetail")
+                          : t("postCard.onChainMismatchDetail")}
+                      </span>
+                    </div>
+                  </div>
+
+                  <div className="onchain-details-grid">
+                    <div className="onchain-detail">
+                      <span className="onchain-detail-label">
+                        {t("postCard.onChainNetwork")}
+                      </span>
+                      <span className="onchain-detail-value">Sepolia</span>
+                    </div>
+
+                    <div className="onchain-detail">
+                      <span className="onchain-detail-label">
+                        {t("postCard.onChainTimestamp")}
+                      </span>
+                      <span className="onchain-detail-value">
+                        {onChainVerify.onChainData?.timestamp
+                          ? new Date(
+                              onChainVerify.onChainData.timestamp,
+                            ).toLocaleString()
+                          : "-"}
+                      </span>
+                    </div>
+
+                    <div className="onchain-detail full">
+                      <span className="onchain-detail-label">
+                        {t("postCard.onChainTxHash")}
+                      </span>
+                      {onChainStatus?.txHash ? (
+                        <a
+                          href={`${SEPOLIA_ETHERSCAN_BASE}/tx/${onChainStatus.txHash}`}
+                          target="_blank"
+                          rel="noopener noreferrer"
+                          className="onchain-link-value"
+                        >
+                          <span>{shortMiddle(onChainStatus.txHash, 12, 10)}</span>
+                          <svg
+                            width="14"
+                            height="14"
+                            viewBox="0 0 24 24"
+                            fill="none"
+                            stroke="currentColor"
+                            strokeWidth="2.2"
+                            aria-hidden="true"
+                          >
+                            <path d="M7 17 17 7" />
+                            <path d="M7 7h10v10" />
+                          </svg>
+                        </a>
+                      ) : (
+                        <span className="onchain-detail-value">-</span>
+                      )}
+                    </div>
+
+                    <div className="onchain-detail full">
+                      <span className="onchain-detail-label">
+                        {t("postCard.onChainOwner")}
+                      </span>
+                      <span className="onchain-code-value">
+                        {shortMiddle(onChainVerify.onChainData?.owner, 10, 8)}
+                      </span>
+                    </div>
+
+                    <div className="onchain-detail full">
+                      <span className="onchain-detail-label">
+                        {t("verifyPost.onChainHash")}
+                      </span>
+                      <span className="onchain-code-value">
+                        {shortMiddle(
+                          onChainVerify.onChainData?.contentHash,
+                          14,
+                          12,
+                        )}
+                      </span>
+                    </div>
                   </div>
                 </>
               )}
