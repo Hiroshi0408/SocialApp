@@ -98,20 +98,76 @@ function _normalizeMediaInput({ media, image, video, mediaType, videoDuration })
 
 // Synth media[] từ legacy image/video cho post cũ chưa có field media.
 // Dùng ở mọi response trả post ra FE để FE chỉ cần đọc media[] thống nhất.
+function _getMediaArray(post) {
+  if (!post) return [];
+  if (Array.isArray(post.media) && post.media.length > 0) return post.media;
+  if (post.video) {
+    return [{ type: "video", url: post.video, duration: post.videoDuration || 0 }];
+  }
+  if (post.image) {
+    return [{ type: "image", url: post.image, duration: 0 }];
+  }
+  return [];
+}
+
 function _ensureMediaArray(post) {
   if (!post) return post;
-  const hasMedia = Array.isArray(post.media) && post.media.length > 0;
-  if (hasMedia) return post;
-  const synth = [];
-  if (post.video) {
-    synth.push({ type: "video", url: post.video, duration: post.videoDuration || 0 });
-  } else if (post.image) {
-    synth.push({ type: "image", url: post.image, duration: 0 });
-  }
   // Mutate object: ưu tiên cho lean object, nhưng cũng OK với Mongoose doc
   // vì .toJSON() trả plain object trước đó.
-  post.media = synth;
+  post.media = _getMediaArray(post);
   return post;
+}
+
+function _plainOnChain(onChain) {
+  return onChain?.toObject?.() || onChain || {};
+}
+
+function _getAuthorId(post) {
+  return post.userId?._id || post.userId;
+}
+
+function _getNextOnChainRevision(post) {
+  const onChain = _plainOnChain(post.onChain);
+  const revisionNumbers = Array.isArray(onChain.revisions)
+    ? onChain.revisions
+        .map((item) => Number(item.revision))
+        .filter((item) => Number.isFinite(item))
+    : [];
+
+  if (Number.isFinite(Number(onChain.revision)) && Number(onChain.revision) > 0) {
+    revisionNumbers.push(Number(onChain.revision));
+  }
+  if (onChain.registered) revisionNumbers.push(1);
+
+  const latestRevision =
+    revisionNumbers.length > 0 ? Math.max(...revisionNumbers) : 0;
+  return latestRevision + 1;
+}
+
+function _buildRegistryPostId(postId, revision) {
+  return revision <= 1 ? postId.toString() : `${postId}:rev:${revision}`;
+}
+
+function _buildOnChainSnapshot(post) {
+  const plainPost = post?.toJSON?.() || { ...post };
+  _ensureMediaArray(plainPost);
+
+  return {
+    caption: plainPost.caption || "",
+    location: plainPost.location || "",
+    image: plainPost.image || "",
+    video: plainPost.video || "",
+    mediaType: plainPost.mediaType || "image",
+    videoDuration: plainPost.videoDuration || 0,
+    createdAt: plainPost.createdAt || null,
+    media: Array.isArray(plainPost.media)
+      ? plainPost.media.map((item) => ({
+          type: item.type,
+          url: item.url,
+          duration: item.duration || 0,
+        }))
+      : [],
+  };
 }
 
 class PostService {
@@ -409,29 +465,54 @@ class PostService {
       // contentHash + version ngay = signal cho FE biết post này có trong
       // tiến trình → hiện spinner; post không có contentHash → không spinner.
       const version = "v2";
+      const revision = 1;
+      const registryPostId = _buildRegistryPostId(post._id, revision);
+      const snapshot = _buildOnChainSnapshot(post);
       const contentHash = contentRegistryService.computeContentHash(post, {
         version,
         authorId: userId,
       });
       await postDAO.updateById(post._id, {
+        "onChain.registered": false,
         "onChain.version": version,
         "onChain.contentHash": contentHash,
+        "onChain.registryPostId": registryPostId,
+        "onChain.revision": revision,
       });
       post.onChain = {
-        ...(post.onChain?.toObject?.() || post.onChain || {}),
+        ..._plainOnChain(post.onChain),
+        registered: false,
         version,
         contentHash,
+        registryPostId,
+        revision,
       };
 
       contentRegistryService
-        .registerPost(post._id.toString(), post, userId)
+        .registerPost(registryPostId, post, userId)
         .then(async ({ contentHash: confirmedHash, txHash, blockNumber, version: v }) => {
           await postDAO.updateById(post._id, {
-            "onChain.registered": true,
-            "onChain.version": v,
-            "onChain.contentHash": confirmedHash,
-            "onChain.txHash": txHash,
-            "onChain.blockNumber": blockNumber,
+            $set: {
+              "onChain.registered": true,
+              "onChain.version": v,
+              "onChain.contentHash": confirmedHash,
+              "onChain.txHash": txHash,
+              "onChain.blockNumber": blockNumber,
+              "onChain.registryPostId": registryPostId,
+              "onChain.revision": revision,
+            },
+            $push: {
+              "onChain.revisions": {
+                revision,
+                registryPostId,
+                version: v,
+                contentHash: confirmedHash,
+                txHash,
+                blockNumber,
+                registeredAt: new Date(),
+                snapshot,
+              },
+            },
           });
           logger.info(`Post ${post._id} registered on-chain (${v}): tx=${txHash}`);
         })
@@ -498,6 +579,21 @@ class PostService {
     }
 
     const { caption, location, taggedUsers } = data;
+    const hasMediaUpdate =
+      Object.prototype.hasOwnProperty.call(data, "media") ||
+      Object.prototype.hasOwnProperty.call(data, "image") ||
+      Object.prototype.hasOwnProperty.call(data, "video");
+    const normalizedUpdateMedia = hasMediaUpdate
+      ? _normalizeMediaInput(data)
+      : null;
+    const onChain = _plainOnChain(post.onChain);
+
+    if (onChain.contentHash && normalizedUpdateMedia?.media?.length > 1) {
+      throw new AppError(
+        "On-chain stamped posts currently support one media item only",
+        400,
+      );
+    }
 
     if (caption !== undefined && caption && caption.trim()) {
       const moderation = await moderateText(caption);
@@ -515,11 +611,149 @@ class PostService {
     if (caption !== undefined) post.caption = caption;
     if (location !== undefined) post.location = location;
     if (taggedUsers !== undefined) post.taggedUsers = taggedUsers;
+    if (normalizedUpdateMedia) {
+      post.media = normalizedUpdateMedia.media;
+      post.image = normalizedUpdateMedia.legacyImage;
+      post.video = normalizedUpdateMedia.legacyVideo;
+      post.mediaType = normalizedUpdateMedia.legacyMediaType;
+      post.videoDuration = normalizedUpdateMedia.legacyDuration;
+    }
+
+    const nextCaption =
+      caption !== undefined ? (caption || "").trim() : post.caption || "";
+    const nextLocation =
+      location !== undefined ? (location || "").trim() : post.location || "";
+    const nextMedia = normalizedUpdateMedia
+      ? normalizedUpdateMedia.media
+      : _getMediaArray(post);
+    if (nextMedia.length === 0 && !nextCaption && !nextLocation) {
+      throw new AppError("Caption, location, or media is required", 400);
+    }
 
     await post.save();
     await post.populate({ path: "userId", select: "username fullName avatar" });
 
     return post;
+  }
+
+  async stampPostOnChain(postId, userId) {
+    const post = await postDAO.findById(postId);
+
+    if (!post) {
+      throw new AppError("Post not found", 404);
+    }
+
+    const authorId = _getAuthorId(post);
+    if (authorId.toString() !== userId.toString()) {
+      throw new AppError("You are not authorized to stamp this post", 403);
+    }
+
+    if (post.groupId) {
+      throw new AppError("Group posts cannot be stamped on-chain", 400);
+    }
+
+    if (Array.isArray(post.media) && post.media.length > 1) {
+      throw new AppError(
+        "On-chain stamping currently supports one media item only",
+        400,
+      );
+    }
+
+    const version = "v2";
+    const contentHash = contentRegistryService.computeContentHash(post, {
+      version,
+      authorId,
+    });
+    const onChain = _plainOnChain(post.onChain);
+
+    if (onChain.contentHash === contentHash && !onChain.registered) {
+      throw new AppError("This post is already being stamped on-chain", 409);
+    }
+
+    if (onChain.contentHash === contentHash && onChain.registered) {
+      throw new AppError("Current post content is already stamped on-chain", 400);
+    }
+
+    const revision = _getNextOnChainRevision(post);
+    const registryPostId = _buildRegistryPostId(postId, revision);
+    const snapshot = _buildOnChainSnapshot(post);
+    const existingRevisions = Array.isArray(onChain.revisions)
+      ? onChain.revisions
+      : [];
+    const previousRegistryPostId = onChain.registryPostId || postId.toString();
+    const shouldPreservePreviousRevision =
+      onChain.registered &&
+      onChain.contentHash &&
+      onChain.txHash &&
+      !existingRevisions.some(
+        (item) => item.registryPostId === previousRegistryPostId,
+      );
+
+    const updatePending = {
+      $set: {
+        "onChain.registered": false,
+        "onChain.version": version,
+        "onChain.contentHash": contentHash,
+        "onChain.registryPostId": registryPostId,
+        "onChain.revision": revision,
+      },
+    };
+
+    if (shouldPreservePreviousRevision) {
+      updatePending.$push = {
+        "onChain.revisions": {
+          revision: onChain.revision || 1,
+          registryPostId: previousRegistryPostId,
+          version: onChain.version || null,
+          contentHash: onChain.contentHash,
+          txHash: onChain.txHash,
+          blockNumber: onChain.blockNumber || null,
+          registeredAt: new Date(),
+        },
+      };
+    }
+
+    const updatedPost = await postDAO.updateById(postId, updatePending);
+
+    contentRegistryService
+      .registerPost(registryPostId, post, authorId)
+      .then(async ({ contentHash: confirmedHash, txHash, blockNumber, version: v }) => {
+        await postDAO.updateById(postId, {
+          $set: {
+            "onChain.registered": true,
+            "onChain.version": v,
+            "onChain.contentHash": confirmedHash,
+            "onChain.txHash": txHash,
+            "onChain.blockNumber": blockNumber,
+            "onChain.registryPostId": registryPostId,
+            "onChain.revision": revision,
+          },
+          $push: {
+            "onChain.revisions": {
+              revision,
+              registryPostId,
+              version: v,
+              contentHash: confirmedHash,
+              txHash,
+              blockNumber,
+              registeredAt: new Date(),
+              snapshot,
+            },
+          },
+        });
+        logger.info(
+          `Post ${postId} revision ${revision} registered on-chain (${v}): tx=${txHash}`,
+        );
+      })
+      .catch((err) =>
+        logger.error(
+          `On-chain revision registration failed for post ${postId}:`,
+          err.message,
+        ),
+      );
+
+    await updatedPost.populate({ path: "userId", select: "username fullName avatar" });
+    return updatedPost;
   }
 
   async deletePost(postId, userId) {

@@ -4,6 +4,71 @@ const postService = require("../services/postService");
 const AppError = require("../utils/AppError");
 const logger = require("../utils/logger");
 
+function getVerifyCandidates(post, postId) {
+  const candidates = [];
+  const seen = new Set();
+  const pushCandidate = (candidate) => {
+    if (!candidate?.registryPostId) return;
+    if (seen.has(candidate.registryPostId)) {
+      const index = candidates.findIndex(
+        (item) => item.registryPostId === candidate.registryPostId,
+      );
+      if (index >= 0) {
+        candidates[index] = {
+          ...candidate,
+          ...candidates[index],
+          snapshot: candidates[index].snapshot || candidate.snapshot || null,
+          registeredAt:
+            candidates[index].registeredAt || candidate.registeredAt || null,
+          contentHash: candidates[index].contentHash || candidate.contentHash,
+          txHash: candidates[index].txHash || candidate.txHash,
+          blockNumber: candidates[index].blockNumber || candidate.blockNumber,
+        };
+      }
+      return;
+    }
+    seen.add(candidate.registryPostId);
+    candidates.push(candidate);
+  };
+
+  const onChain = post.onChain || {};
+  pushCandidate({
+    revision: onChain.revision || 1,
+    registryPostId: onChain.registryPostId || postId,
+    version: onChain.version,
+    contentHash: onChain.contentHash,
+    txHash: onChain.txHash,
+    blockNumber: onChain.blockNumber,
+  });
+
+  const revisions = Array.isArray(onChain.revisions)
+    ? [...onChain.revisions].sort((a, b) => (b.revision || 0) - (a.revision || 0))
+    : [];
+
+  revisions.forEach((revision) => pushCandidate(revision));
+
+  if (candidates.length === 0) {
+    pushCandidate({ revision: 1, registryPostId: postId });
+  }
+
+  return candidates;
+}
+
+function buildRevisionHistory(candidates) {
+  return [...candidates]
+    .sort((a, b) => (a.revision || 0) - (b.revision || 0))
+    .map((item) => ({
+      revision: item.revision || 1,
+      registryPostId: item.registryPostId,
+      version: item.version,
+      contentHash: item.contentHash,
+      txHash: item.txHash,
+      blockNumber: item.blockNumber,
+      registeredAt: item.registeredAt,
+      snapshot: item.snapshot || null,
+    }));
+}
+
 // [GET] /api/web3/nonce/:walletAddress
 exports.getNonce = async (req, res, next) => {
   try {
@@ -64,10 +129,55 @@ exports.verifyPost = async (req, res, next) => {
       return next(new AppError("Post is not registered on-chain", 400));
     }
 
-    const result = await contentRegistryService.verifyPost(postId, post);
-    res.json({ success: true, ...result });
+    const candidates = getVerifyCandidates(post, postId);
+    const revisionHistory = buildRevisionHistory(candidates);
+    let latestResult = null;
+
+    for (const candidate of candidates) {
+      const result = await contentRegistryService.verifyPost(
+        candidate.registryPostId,
+        post,
+        { version: candidate.version },
+      );
+      const resultWithRevision = {
+        ...result,
+        matchedRevision: {
+          revision: candidate.revision || 1,
+          registryPostId: candidate.registryPostId,
+          version: candidate.version,
+          txHash: candidate.txHash,
+          blockNumber: candidate.blockNumber,
+          snapshot: candidate.snapshot || null,
+        },
+        revisions: revisionHistory,
+      };
+
+      if (!latestResult) latestResult = resultWithRevision;
+      if (result.match) {
+        return res.json({ success: true, ...resultWithRevision });
+      }
+    }
+
+    res.json({ success: true, ...latestResult });
   } catch (error) {
     logger.error("Error verifying post on-chain:", error.message);
+    next(error);
+  }
+};
+
+// [POST] /api/web3/posts/:postId/stamp
+exports.stampPost = async (req, res, next) => {
+  try {
+    const { postId } = req.params;
+    const post = await postService.stampPostOnChain(postId, req.user.id);
+
+    res.json({
+      success: true,
+      message: "Post revision is being stamped on-chain",
+      post: { ...post.toJSON(), user: post.userId },
+    });
+  } catch (error) {
+    logger.error("Error stamping post on-chain:", error.message);
     next(error);
   }
 };

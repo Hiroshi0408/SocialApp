@@ -21,6 +21,7 @@ import {
 import { useAuth } from "../../contexts/AuthContext";
 import TextWithMentions from "../TextWithMentions/TextWithMentions";
 import MediaCarousel, { getPostMedia } from "../MediaCarousel/MediaCarousel";
+import MediaUpload from "../MediaUpload/MediaUpload";
 import ConfirmDialog from "../ConfirmDialog/ConfirmDialog";
 import "./PostCard.css";
 import PostModal from "../PostModal/PostModal";
@@ -54,6 +55,8 @@ function PostCard({ post, onPostDeleted }) {
   const [location, setLocation] = useState(post.location || "");
   const [editCaption, setEditCaption] = useState(post.caption || "");
   const [editLocation, setEditLocation] = useState(post.location || "");
+  const [mediaItems, setMediaItems] = useState(() => getPostMedia(post));
+  const [editMedia, setEditMedia] = useState(() => getPostMedia(post));
   const [isEditing, setIsEditing] = useState(false);
   const [replyingTo, setReplyingTo] = useState(null);
   const [replyText, setReplyText] = useState("");
@@ -66,6 +69,7 @@ function PostCard({ post, onPostDeleted }) {
   const [showOnChainModal, setShowOnChainModal] = useState(false);
   const [onChainVerify, setOnChainVerify] = useState(null);
   const [isVerifying, setIsVerifying] = useState(false);
+  const [isStampingRevision, setIsStampingRevision] = useState(false);
   // onChainStatus: theo dõi trạng thái local để poll khi TX đang pending
   const [onChainStatus, setOnChainStatus] = useState(post.onChain || null);
 
@@ -92,15 +96,36 @@ function PostCard({ post, onPostDeleted }) {
     () => normalizeCount(commentsCount),
     [commentsCount],
   );
-  const postMediaItems = useMemo(() => getPostMedia(post), [post]);
-  const hasPostMedia = postMediaItems.length > 0;
+  const sourceMediaItems = useMemo(() => getPostMedia(post), [post]);
+  const normalizeMediaForCompare = (items) =>
+    JSON.stringify(
+      (items || []).map((item) => ({
+        type: item.type,
+        url: item.url,
+        duration: item.duration || 0,
+      })),
+    );
+  const editMediaHasChanges =
+    normalizeMediaForCompare(editMedia) !== normalizeMediaForCompare(mediaItems);
+  const isOnChainTracked = !!onChainStatus?.contentHash;
   const isOnChainStamped = !!onChainStatus?.registered;
+  const editMediaLimit = isOnChainTracked ? 1 : POST_LIMITS.MAX_MEDIA;
   const editHasChanges =
-    editCaption !== caption || editLocation !== location;
+    editCaption !== caption || editLocation !== location || editMediaHasChanges;
   const canSaveEdit =
     !isEditing &&
     editHasChanges &&
-    (hasPostMedia || editCaption.trim() || editLocation.trim());
+    (editMedia.length > 0 || editCaption.trim() || editLocation.trim());
+  const verifiedTxHash =
+    onChainVerify?.matchedRevision?.txHash || onChainStatus?.txHash;
+  const verifiedRevision =
+    onChainVerify?.matchedRevision?.revision || onChainStatus?.revision || 1;
+  const revisionHistory = useMemo(() => {
+    const revisions = onChainVerify?.revisions || onChainStatus?.revisions || [];
+    return [...revisions].sort(
+      (a, b) => Number(a.revision || 0) - Number(b.revision || 0),
+    );
+  }, [onChainStatus, onChainVerify]);
 
   // Sync props to state when post changes
   useEffect(() => {
@@ -117,9 +142,11 @@ function PostCard({ post, onPostDeleted }) {
     setLocation(nextLocation);
     setEditCaption(nextCaption);
     setEditLocation(nextLocation);
+    setMediaItems(sourceMediaItems);
+    setEditMedia(sourceMediaItems);
     setOnChainStatus(post.onChain || null);
     setOnChainVerify(null);
-  }, [postId, post.caption, post.location, post.onChain]);
+  }, [postId, post.caption, post.location, post.onChain, sourceMediaItems]);
 
   // Poll BE mỗi 5s nếu post đang chờ register on-chain.
   // Phân biệt "đang pending" vs "không liên quan blockchain" qua contentHash:
@@ -227,16 +254,18 @@ function PostCard({ post, onPostDeleted }) {
   const handleOpenEditModal = useCallback(() => {
     setEditCaption(caption);
     setEditLocation(location);
+    setEditMedia(mediaItems);
     setShowEditModal(true);
     setShowMenu(false);
-  }, [caption, location]);
+  }, [caption, location, mediaItems]);
 
   const handleCloseEditModal = useCallback(() => {
     if (isEditing) return;
     setEditCaption(caption);
     setEditLocation(location);
+    setEditMedia(mediaItems);
     setShowEditModal(false);
-  }, [caption, isEditing, location]);
+  }, [caption, isEditing, location, mediaItems]);
 
   const handleCopyLink = useCallback(async () => {
     const postUrl = `${window.location.origin}/post/${postId}`;
@@ -265,8 +294,13 @@ function PostCard({ post, onPostDeleted }) {
     const nextCaption = editCaption.trim();
     const nextLocation = editLocation.trim();
 
-    if (!hasPostMedia && !nextCaption && !nextLocation) {
+    if (editMedia.length === 0 && !nextCaption && !nextLocation) {
       showError(t("postCard.editPostRequirement"));
+      return;
+    }
+
+    if (isOnChainTracked && editMedia.length > 1) {
+      showError(t("postCard.onChainMediaLimit"));
       return;
     }
 
@@ -278,12 +312,16 @@ function PostCard({ post, onPostDeleted }) {
     try {
       setIsEditing(true);
       const response = await postService.updatePost(postId, {
+        media: editMedia,
         caption: nextCaption,
         location: nextLocation,
       });
       const updatedPost = response?.post || response;
+      const nextMedia = getPostMedia({ ...post, ...updatedPost });
       setCaption(updatedPost?.caption ?? nextCaption);
       setLocation(updatedPost?.location ?? nextLocation);
+      setMediaItems(nextMedia);
+      setEditMedia(nextMedia);
       if (updatedPost?.onChain) {
         setOnChainStatus(updatedPost.onChain);
       }
@@ -298,10 +336,12 @@ function PostCard({ post, onPostDeleted }) {
     }
   }, [
     postId,
+    post,
     editCaption,
     editLocation,
-    hasPostMedia,
+    editMedia,
     editHasChanges,
+    isOnChainTracked,
     t,
   ]);
 
@@ -563,9 +603,10 @@ function PostCard({ post, onPostDeleted }) {
       ...post,
       caption,
       location,
+      media: mediaItems,
       onChain: onChainStatus,
     });
-  }, [caption, location, onChainStatus, post]);
+  }, [caption, location, mediaItems, onChainStatus, post]);
 
   const handleOpenOnChainModal = useCallback(async () => {
     setShowOnChainModal(true);
@@ -580,6 +621,27 @@ function PostCard({ post, onPostDeleted }) {
       setIsVerifying(false);
     }
   }, [postId, onChainVerify]);
+
+  const handleStampCurrentVersion = useCallback(async () => {
+    if (isStampingRevision) return;
+
+    try {
+      setIsStampingRevision(true);
+      const response = await web3Service.stampPost(postId);
+      if (response?.post?.onChain) {
+        setOnChainStatus(response.post.onChain);
+      }
+      setOnChainVerify(null);
+      setShowOnChainModal(false);
+      showSuccess(t("postCard.onChainRestampStarted"));
+    } catch (error) {
+      showError(
+        error.response?.data?.message || t("postCard.onChainRestampFailed"),
+      );
+    } finally {
+      setIsStampingRevision(false);
+    }
+  }, [isStampingRevision, postId, t]);
 
   const fetchAllComments = useCallback(async () => {
     if (allCommentsLoaded || isLoadingComments) {
@@ -770,11 +832,11 @@ function PostCard({ post, onPostDeleted }) {
       </p>
       {/* Post media — carousel cho nhiều ảnh, single render cho 1 media. */}
       {(() => {
-        if (postMediaItems.length === 0) return null;
+        if (mediaItems.length === 0) return null;
         return (
           <div className="post-media">
             <MediaCarousel
-              media={postMediaItems}
+              media={mediaItems}
               onClick={handleOpenImage}
               onDoubleClick={handleDoubleClick}
             />
@@ -1235,6 +1297,19 @@ function PostCard({ post, onPostDeleted }) {
                   <span>{t("postCard.onChainEditWarning")}</span>
                 </div>
               )}
+              <div className="form-group edit-media-group">
+                <label>{t("postCard.mediaLabel")}</label>
+                <MediaUpload
+                  media={editMedia}
+                  onChange={setEditMedia}
+                  maxMedia={editMediaLimit}
+                />
+                {isOnChainTracked && (
+                  <p className="edit-media-note">
+                    {t("postCard.onChainMediaLimit")}
+                  </p>
+                )}
+              </div>
               <div className="form-group">
                 <label htmlFor="edit-caption">
                   {t("postCard.captionLabel")}
@@ -1408,10 +1483,31 @@ function PostCard({ post, onPostDeleted }) {
                           ? t("postCard.onChainMatchDetail")
                           : t("postCard.onChainMismatchDetail")}
                       </span>
+                      {!onChainVerify.match && isOwnPost && (
+                        <button
+                          type="button"
+                          className="onchain-restamp-btn"
+                          onClick={handleStampCurrentVersion}
+                          disabled={isStampingRevision}
+                        >
+                          {isStampingRevision
+                            ? t("postCard.onChainRestamping")
+                            : t("postCard.onChainRestamp")}
+                        </button>
+                      )}
                     </div>
                   </div>
 
                   <div className="onchain-details-grid">
+                    <div className="onchain-detail">
+                      <span className="onchain-detail-label">
+                        {t("postCard.onChainRevision")}
+                      </span>
+                      <span className="onchain-detail-value">
+                        v{verifiedRevision}
+                      </span>
+                    </div>
+
                     <div className="onchain-detail">
                       <span className="onchain-detail-label">
                         {t("postCard.onChainNetwork")}
@@ -1436,14 +1532,14 @@ function PostCard({ post, onPostDeleted }) {
                       <span className="onchain-detail-label">
                         {t("postCard.onChainTxHash")}
                       </span>
-                      {onChainStatus?.txHash ? (
+                      {verifiedTxHash ? (
                         <a
-                          href={`${SEPOLIA_ETHERSCAN_BASE}/tx/${onChainStatus.txHash}`}
+                          href={`${SEPOLIA_ETHERSCAN_BASE}/tx/${verifiedTxHash}`}
                           target="_blank"
                           rel="noopener noreferrer"
                           className="onchain-link-value"
                         >
-                          <span>{shortMiddle(onChainStatus.txHash, 12, 10)}</span>
+                          <span>{shortMiddle(verifiedTxHash, 12, 10)}</span>
                           <svg
                             width="14"
                             height="14"
@@ -1484,6 +1580,81 @@ function PostCard({ post, onPostDeleted }) {
                       </span>
                     </div>
                   </div>
+
+                  {revisionHistory.length > 0 && (
+                    <div className="onchain-history">
+                      <div className="onchain-history-header">
+                        <h4>{t("postCard.onChainHistoryTitle")}</h4>
+                      </div>
+                      <div className="onchain-history-list">
+                        {revisionHistory.map((revision) => {
+                          const snapshot = revision.snapshot || null;
+                          const caption = snapshot?.caption?.trim();
+                          const mediaItems = Array.isArray(snapshot?.media)
+                            ? snapshot.media
+                            : [];
+                          const firstMedia = mediaItems[0];
+                          const revisionTxHash = revision.txHash;
+
+                          return (
+                            <div
+                              className="onchain-history-item"
+                              key={
+                                revision.registryPostId ||
+                                `${revision.revision}-${revisionTxHash}`
+                              }
+                            >
+                              <div className="onchain-history-topline">
+                                <span className="onchain-history-version">
+                                  v{revision.revision || 1}
+                                </span>
+                                <span className="onchain-history-name">
+                                  {(revision.revision || 1) === 1
+                                    ? t("postCard.onChainOriginalVersion")
+                                    : t("postCard.onChainEditedVersion")}
+                                </span>
+                                {revisionTxHash && (
+                                  <a
+                                    href={`${SEPOLIA_ETHERSCAN_BASE}/tx/${revisionTxHash}`}
+                                    target="_blank"
+                                    rel="noopener noreferrer"
+                                    className="onchain-history-link"
+                                  >
+                                    {shortMiddle(revisionTxHash, 8, 6)}
+                                  </a>
+                                )}
+                              </div>
+
+                              {snapshot ? (
+                                <div className="onchain-history-snapshot">
+                                  {firstMedia?.type === "image" && (
+                                    <img
+                                      src={firstMedia.url}
+                                      alt=""
+                                      className="onchain-history-thumb"
+                                    />
+                                  )}
+                                  {firstMedia?.type === "video" && (
+                                    <div className="onchain-history-thumb video">
+                                      {t("postCard.onChainVideoSnapshot")}
+                                    </div>
+                                  )}
+                                  <p>
+                                    {caption ||
+                                      t("postCard.onChainNoCaptionSnapshot")}
+                                  </p>
+                                </div>
+                              ) : (
+                                <p className="onchain-history-missing">
+                                  {t("postCard.onChainNoSnapshot")}
+                                </p>
+                              )}
+                            </div>
+                          );
+                        })}
+                      </div>
+                    </div>
+                  )}
                 </>
               )}
             </div>

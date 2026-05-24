@@ -567,7 +567,7 @@
 .edit-modal {
   background: var(--card-bg);
   border-radius: 12px;
-  max-width: 560px;
+  max-width: 640px;
   width: 90%;
   max-height: 86vh;
   display: flex;
@@ -691,6 +691,26 @@
   margin-top: 1px;
 }
 
+.edit-media-group .upload-empty {
+  min-height: 220px;
+}
+
+.edit-media-group .media-grid {
+  grid-template-columns: repeat(auto-fill, minmax(96px, 1fr));
+  padding: 0;
+}
+
+.edit-media-group .media-upload {
+  gap: 10px;
+}
+
+.edit-media-note {
+  margin: 8px 0 0;
+  color: var(--text-secondary);
+  font-size: 12px;
+  line-height: 1.45;
+}
+
 .form-group {
   margin-bottom: 20px;
 }
@@ -788,6 +808,29 @@
   .comment-count-btn {
     padding-right: 8px;
   }
+
+  .onchain-modal {
+    width: calc(100vw - 24px);
+    max-width: calc(100vw - 24px);
+    max-height: calc(100vh - 32px);
+  }
+
+  .onchain-modal-header {
+    padding: 14px 16px;
+  }
+
+  .onchain-modal-icon {
+    width: 36px;
+    height: 36px;
+  }
+
+  .onchain-modal-body {
+    padding: 16px;
+  }
+
+  .onchain-details-grid {
+    grid-template-columns: 1fr;
+  }
 }
 
 /* ===== ON-CHAIN BADGE ===== */
@@ -817,8 +860,11 @@
   border-radius: 12px;
   width: 460px;
   max-width: 92vw;
+  max-height: min(86vh, 760px);
   box-shadow: 0 8px 32px rgba(0, 0, 0, 0.2);
   overflow: hidden;
+  display: flex;
+  flex-direction: column;
 }
 
 .onchain-modal-header {
@@ -826,6 +872,7 @@
   align-items: center;
   justify-content: space-between;
   gap: 14px;
+  flex-shrink: 0;
   padding: 18px 20px;
   border-bottom: 1px solid var(--border-color);
   background: linear-gradient(
@@ -878,6 +925,9 @@
   display: flex;
   flex-direction: column;
   gap: 16px;
+  overflow-y: auto;
+  min-height: 0;
+  overscroll-behavior: contain;
 }
 
 .onchain-state-card {
@@ -912,6 +962,28 @@
   color: var(--text-secondary);
   font-size: 12px;
   line-height: 1.45;
+}
+
+.onchain-restamp-btn {
+  margin-top: 10px;
+  padding: 8px 12px;
+  border: none;
+  border-radius: 8px;
+  background: var(--primary-color);
+  color: var(--primary-text-color);
+  font-size: 12px;
+  font-weight: 700;
+  cursor: pointer;
+  transition: background 0.2s ease, opacity 0.2s ease;
+}
+
+.onchain-restamp-btn:hover:not(:disabled) {
+  background: var(--primary-hover);
+}
+
+.onchain-restamp-btn:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
 }
 
 .onchain-state-card.loading .onchain-state-icon {
@@ -1003,6 +1075,109 @@
 
 .onchain-link-value:hover {
   text-decoration: underline;
+}
+
+.onchain-history {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.onchain-history-header h4 {
+  margin: 0;
+  color: var(--text-primary);
+  font-size: 13px;
+  font-weight: 700;
+}
+
+.onchain-history-list {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.onchain-history-item {
+  padding: 12px;
+  border: 1px solid var(--border-color);
+  border-radius: 8px;
+  background: var(--bg-color);
+}
+
+.onchain-history-topline {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  min-width: 0;
+}
+
+.onchain-history-version {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-width: 28px;
+  height: 22px;
+  padding: 0 7px;
+  border-radius: 999px;
+  background: rgba(37, 99, 235, 0.1);
+  color: #2563eb;
+  font-size: 12px;
+  font-weight: 800;
+  line-height: 1;
+}
+
+.onchain-history-name {
+  min-width: 0;
+  flex: 1;
+  color: var(--text-primary);
+  font-size: 13px;
+  font-weight: 600;
+}
+
+.onchain-history-link {
+  color: #2563eb;
+  font-family: monospace;
+  font-size: 12px;
+  text-decoration: none;
+  flex-shrink: 0;
+}
+
+.onchain-history-link:hover {
+  text-decoration: underline;
+}
+
+.onchain-history-snapshot {
+  display: flex;
+  align-items: flex-start;
+  gap: 10px;
+  margin-top: 10px;
+}
+
+.onchain-history-snapshot p,
+.onchain-history-missing {
+  margin: 0;
+  color: var(--text-secondary);
+  font-size: 12px;
+  line-height: 1.45;
+  white-space: pre-wrap;
+  word-break: break-word;
+}
+
+.onchain-history-thumb {
+  width: 44px;
+  height: 44px;
+  border-radius: 7px;
+  object-fit: cover;
+  background: var(--border-color);
+  flex-shrink: 0;
+}
+
+.onchain-history-thumb.video {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  color: var(--text-secondary);
+  font-size: 11px;
+  font-weight: 700;
 }
 
 /* Pending badge: ghép spinner + label "Đang đóng dấu..." để user thấy rõ post

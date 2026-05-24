@@ -75,6 +75,7 @@ const postService = {
 
   updatePost: async (postId, postData) => {
     const response = await axios.put(`/posts/${postId}`, {
+      media: postData.media,
       caption: postData.caption,
       location: postData.location,
       taggedUsers: postData.taggedUsers,

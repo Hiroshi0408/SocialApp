@@ -5,19 +5,20 @@ import { showError } from "../../utils/toast";
 import { POST_LIMITS } from "../../constants";
 import "./MediaUpload.css";
 
-// Đa-media: ảnh tới MAX_MEDIA, hoặc 1 video (mutually exclusive theo Instagram).
+// Đa-media: ảnh tới maxMedia, hoặc 1 video (mutually exclusive theo Instagram).
 // Caller giữ state media[] qua prop `media`; mỗi thay đổi gọi `onChange(newMedia)`.
 // Mỗi item: { type: "image"|"video", url, duration? }
-function MediaUpload({ media = [], onChange }) {
+function MediaUpload({ media = [], onChange, maxMedia = POST_LIMITS.MAX_MEDIA }) {
   const { t } = useTranslation();
   const [uploading, setUploading] = useState(false);
   const [uploadProgress, setUploadProgress] = useState(0);
   const [isDragging, setIsDragging] = useState(false);
   const fileInputRef = useRef(null);
 
+  const mediaLimit = Math.max(1, Math.min(maxMedia, POST_LIMITS.MAX_MEDIA));
   const hasVideo = media.some((m) => m.type === "video");
   const hasImage = media.some((m) => m.type === "image");
-  const remainingSlots = Math.max(0, POST_LIMITS.MAX_MEDIA - media.length);
+  const remainingSlots = Math.max(0, mediaLimit - media.length);
   const canAddMore = !uploading && !hasVideo && remainingSlots > 0;
 
   const handleFiles = useCallback(
@@ -78,7 +79,7 @@ function MediaUpload({ media = [], onChange }) {
       const accepted = imageFiles.slice(0, remainingSlots);
       const rejected = imageFiles.length - accepted.length;
       if (rejected > 0) {
-        showError(t("mediaUpload.tooManyError", { max: POST_LIMITS.MAX_MEDIA }));
+        showError(t("mediaUpload.tooManyError", { max: mediaLimit }));
       }
 
       // Validate size từng file (10MB cho ảnh)
@@ -110,7 +111,7 @@ function MediaUpload({ media = [], onChange }) {
         setUploadProgress(0);
       }
     },
-    [media, hasImage, hasVideo, remainingSlots, onChange, t],
+    [media, hasImage, hasVideo, mediaLimit, remainingSlots, onChange, t],
   );
 
   const handleFileInputChange = (e) => {
@@ -179,7 +180,7 @@ function MediaUpload({ media = [], onChange }) {
                 {t("mediaUpload.videoFormats")}
               </span>
               <span className="multi-hint">
-                {t("mediaUpload.multiHint", { max: POST_LIMITS.MAX_MEDIA })}
+                {t("mediaUpload.multiHint", { max: mediaLimit })}
               </span>
             </div>
           )}
@@ -188,7 +189,7 @@ function MediaUpload({ media = [], onChange }) {
           ref={fileInputRef}
           type="file"
           accept="image/jpeg,image/png,image/gif,image/webp,video/mp4,video/webm,video/quicktime"
-          multiple
+          multiple={mediaLimit > 1}
           onChange={handleFileInputChange}
           className="file-input"
           disabled={uploading}
@@ -273,7 +274,7 @@ function MediaUpload({ media = [], onChange }) {
         ref={fileInputRef}
         type="file"
         accept="image/jpeg,image/png,image/gif,image/webp,video/mp4,video/webm,video/quicktime"
-        multiple
+        multiple={mediaLimit > 1}
         onChange={handleFileInputChange}
         className="file-input"
         disabled={uploading}

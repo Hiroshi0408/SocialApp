@@ -115,6 +115,43 @@ const postSchema = new mongoose.Schema(
       contentHash: { type: String, default: null },
       txHash: { type: String, default: null },
       blockNumber: { type: Number, default: null },
+      registryPostId: { type: String, default: null },
+      revision: { type: Number, default: 0 },
+      revisions: {
+        type: [
+          {
+            _id: false,
+            revision: { type: Number, required: true },
+            registryPostId: { type: String, required: true },
+            version: { type: String, default: "v2" },
+            contentHash: { type: String, required: true },
+            txHash: { type: String, required: true },
+            blockNumber: { type: Number, default: null },
+            registeredAt: { type: Date, default: Date.now },
+            snapshot: {
+              caption: { type: String, default: "" },
+              location: { type: String, default: "" },
+              image: { type: String, default: "" },
+              video: { type: String, default: "" },
+              mediaType: { type: String, default: "image" },
+              videoDuration: { type: Number, default: 0 },
+              createdAt: { type: Date, default: null },
+              media: {
+                type: [
+                  {
+                    _id: false,
+                    type: { type: String, enum: ["image", "video"], required: true },
+                    url: { type: String, required: true },
+                    duration: { type: Number, default: 0 },
+                  },
+                ],
+                default: [],
+              },
+            },
+          },
+        ],
+        default: [],
+      },
     },
     // Set khi BE auto-tạo post liên quan đến 1 Charity Campaign event.
     // Null = post bình thường do user tự đăng.

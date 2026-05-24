@@ -182,6 +182,26 @@ const updatePostValidation = [
     .withMessage("Location cannot exceed 100 characters")
     .escape(),
 
+  body("media")
+    .optional()
+    .isArray({ max: 5 })
+    .withMessage("Media must be an array with up to 5 items"),
+
+  body("media.*.type")
+    .optional()
+    .isIn(["image", "video"])
+    .withMessage("Media type must be image or video"),
+
+  body("media.*.url")
+    .optional()
+    .isURL()
+    .withMessage("Media URL must be a valid URL"),
+
+  body("media.*.duration")
+    .optional({ values: "falsy" })
+    .isNumeric()
+    .withMessage("Media duration must be a number"),
+
   handleValidationErrors,
 ];
 

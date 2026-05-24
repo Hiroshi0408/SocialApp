@@ -37,6 +37,11 @@ const web3Service = {
     const response = await axios.get(`/web3/posts/${postId}/verify`);
     return response.data;
   },
+
+  stampPost: async (postId) => {
+    const response = await axios.post(`/web3/posts/${postId}/stamp`);
+    return response.data;
+  },
 };
 
 export default web3Service;

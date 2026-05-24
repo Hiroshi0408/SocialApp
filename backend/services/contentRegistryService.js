@@ -89,16 +89,20 @@ class ContentRegistryService {
     }
   }
 
-  // Gọi verifyPost on-chain, tính lại hash từ Mongo rồi so sánh
+  // Gọi verifyPost on-chain, tính lại hash từ Mongo rồi so sánh.
+  // registryPostId có thể là postId gốc hoặc postId:rev:n cho bản edit đã re-stamp.
   // Tự detect version từ post.onChain.version — post cũ (null) dùng v1, post mới dùng v2.
   // Trả về { match, version, onChainData, offChainHash }
-  async verifyPost(postId, post) {
+  async verifyPost(registryPostId, post, options = {}) {
     try {
       const contract = this._getReadOnlyContract();
-      const onChainPost = await contract.verifyPost(postId.toString());
+      const onChainPost = await contract.verifyPost(registryPostId.toString());
 
       // post.userId có thể là ObjectId hoặc object đã populate — lấy _id nếu có
-      const version = post.onChain?.version || "v1";
+      const explicitVersion = Object.prototype.hasOwnProperty.call(options, "version")
+        ? options.version
+        : post.onChain?.version;
+      const version = explicitVersion || "v1";
       const authorId =
         version === "v2"
           ? post.userId?._id || post.userId
@@ -111,6 +115,7 @@ class ContentRegistryService {
         match: onChainHash === offChainHash,
         version,
         onChainData: {
+          registryPostId: registryPostId.toString(),
           contentHash: onChainHash,
           owner: onChainPost.owner,
           // timestamp từ contract là BigInt (seconds) → convert sang ms
