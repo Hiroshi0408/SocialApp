@@ -173,7 +173,9 @@ function App() {
                     path="/admin"
                     element={
                       <PrivateRoute>
-                        <AdminDashboard />
+                        <AdminRoute>
+                          <AdminDashboard />
+                        </AdminRoute>
                       </PrivateRoute>
                     }
                   />

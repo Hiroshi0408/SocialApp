@@ -168,7 +168,7 @@ class AdminService {
 
     const status = query.status || "active";
     const filter = {};
-    if (status === "active") filter.deleted = false;
+    if (status === "active") filter.deleted = { $ne: true };
     if (status === "deleted") filter.deleted = true;
 
     const q = (query.q || "").trim();
@@ -238,7 +238,7 @@ class AdminService {
 
     const status = query.status || "active";
     const filter = {};
-    if (status === "active") filter.deleted = false;
+    if (status === "active") filter.deleted = { $ne: true };
     if (status === "deleted") filter.deleted = true;
 
     const q = (query.q || "").trim();
@@ -304,8 +304,8 @@ class AdminService {
     const [totalUsers, newUsers7, totalPosts, totalComments, totalLikes] = await Promise.all([
       userDAO.count({ deleted: { $ne: true } }),
       userDAO.count({ deleted: { $ne: true }, createdAt: { $gte: from7 } }),
-      postDAO.count({ deleted: { $ne: true } }),
-      commentDAO.count({ deleted: false }),
+      postDAO.count({ deleted: { $ne: true } }, { includeDeleted: true }),
+      commentDAO.count({ deleted: { $ne: true } }, { includeDeleted: true }),
       likeDAO.countByTargetType("post"),
     ]);
 

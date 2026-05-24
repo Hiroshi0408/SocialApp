@@ -14,10 +14,60 @@ const formatDateTime = (d) => {
   if (!d) return "—";
   try {
     const dt = new Date(d);
+    if (Number.isNaN(dt.getTime())) return "—";
     return dt.toLocaleString();
   } catch {
     return "—";
   }
+};
+
+const getApiErrorMessage = (error, fallback) =>
+  error?.response?.data?.message || error?.message || fallback;
+
+const asArray = (value) => (Array.isArray(value) ? value : []);
+
+const safeTotalPages = (value) => {
+  const parsed = Number(value);
+  return Number.isFinite(parsed) && parsed > 0 ? parsed : 1;
+};
+
+const formatNumber = (value) => {
+  const parsed = Number(value);
+  if (!Number.isFinite(parsed)) return "—";
+  return parsed.toLocaleString();
+};
+
+const shortId = (value, size = 8) => {
+  if (!value) return "—";
+  const str = String(value);
+  return str.length <= size ? str : str.slice(-size);
+};
+
+const shortAddress = (value) => {
+  if (!value) return "—";
+  const str = String(value);
+  return str.length > 12 ? `${str.slice(0, 6)}...${str.slice(-4)}` : str;
+};
+
+const formatEth = (value) => {
+  try {
+    const eth = Number(ethers.formatEther(value || "0"));
+    if (!Number.isFinite(eth)) return "0";
+    return eth.toLocaleString(undefined, { maximumFractionDigits: 4 });
+  } catch {
+    return "0";
+  }
+};
+
+const getUserDisplayName = (userLike) => {
+  if (!userLike) return "—";
+  const name = userLike.fullName || userLike.username;
+  return name || "—";
+};
+
+const getUserHandle = (userLike) => {
+  if (!userLike?.username) return "";
+  return `@${userLike.username}`;
 };
 
 // Detect Cloudinary/standard URLs theo extension. Cloudinary có thể append
@@ -43,9 +93,9 @@ const milestonePercent = (amountWei, goalWei) => {
 // trực tiếp; nếu rule đổi thì sửa ở cả 2 nơi (CLAUDE.md đã ghi).
 const MAX_MILESTONE_PERCENT = 50;
 
-function StatCard({ title, value, hint }) {
+function StatCard({ title, value, hint, tone = "neutral" }) {
   return (
-    <div className="admin-card">
+    <div className={`admin-card ${tone}`}>
       <div className="admin-card-title">{title}</div>
       <div className="admin-card-value">{value}</div>
       {hint ? <div className="admin-card-hint">{hint}</div> : null}
@@ -54,16 +104,24 @@ function StatCard({ title, value, hint }) {
 }
 
 function MiniBarChart({ series, valueKey, title }) {
-  const values = (series || []).map((x) => Number(x?.[valueKey] || 0));
+  const rows = asArray(series);
+  const values = rows.map((x) => Number(x?.[valueKey] || 0));
   const max = Math.max(1, ...values);
+  const firstDate = rows[0]?.date || "—";
+  const lastDate = rows[rows.length - 1]?.date || "—";
 
   return (
     <div className="admin-chart">
-      <div className="admin-chart-title">{title}</div>
+      <div className="admin-chart-title">
+        <span>{title}</span>
+        <span className="admin-chart-total">
+          {formatNumber(values.reduce((sum, item) => sum + item, 0))}
+        </span>
+      </div>
       <div className="admin-bars" aria-label={title}>
-        {(series || []).map((x) => {
+        {rows.map((x) => {
           const v = Number(x?.[valueKey] || 0);
-          const h = Math.round((v / max) * 100);
+          const h = v > 0 ? Math.max(10, Math.round((v / max) * 100)) : 0;
           return (
             <div
               key={x.date}
@@ -76,8 +134,8 @@ function MiniBarChart({ series, valueKey, title }) {
         })}
       </div>
       <div className="admin-chart-axis">
-        <span>{series?.[0]?.date}</span>
-        <span>{series?.[series.length - 1]?.date}</span>
+        <span>{firstDate}</span>
+        <span>{lastDate}</span>
       </div>
     </div>
   );
@@ -108,25 +166,27 @@ function Tabs({ tab, setTab }) {
 }
 
 function Pagination({ page, totalPages, onPage }) {
-  const canPrev = page > 1;
-  const canNext = page < totalPages;
+  const safePage = Math.max(1, Number(page) || 1);
+  const pages = safeTotalPages(totalPages);
+  const canPrev = safePage > 1;
+  const canNext = safePage < pages;
 
   return (
     <div className="admin-pagination">
       <button
         className="admin-btn"
         disabled={!canPrev}
-        onClick={() => onPage(page - 1)}
+        onClick={() => onPage(safePage - 1)}
       >
         Prev
       </button>
       <div className="admin-pagination-text">
-        Page <b>{page}</b> / {totalPages || 1}
+        Page <b>{safePage}</b> / {pages}
       </div>
       <button
         className="admin-btn"
         disabled={!canNext}
-        onClick={() => onPage(page + 1)}
+        onClick={() => onPage(safePage + 1)}
       >
         Next
       </button>
@@ -166,6 +226,7 @@ export default function AdminDashboard() {
       status: "active",
       q: "",
       totalPages: 1,
+      total: 0,
       items: [],
     },
     comments: {
@@ -174,6 +235,7 @@ export default function AdminDashboard() {
       status: "active",
       q: "",
       totalPages: 1,
+      total: 0,
       items: [],
     },
   });
@@ -221,7 +283,7 @@ export default function AdminDashboard() {
       if (!data?.success) throw new Error(data?.message || "Failed");
       setStats(data);
     } catch (e) {
-      toast.error(e?.message || "Failed to load admin stats");
+      toast.error(getApiErrorMessage(e, "Failed to load admin stats"));
     } finally {
       setLoading(false);
     }
@@ -236,12 +298,12 @@ export default function AdminDashboard() {
       setUsersState((s) => ({
         ...s,
         ...next,
-        users: data.users || [],
-        total: data.total || 0,
-        totalPages: data.totalPages || 1,
+        users: asArray(data.users),
+        total: Number(data.total) || 0,
+        totalPages: safeTotalPages(data.totalPages),
       }));
     } catch (e) {
-      toast.error(e?.message || "Failed to load users");
+      toast.error(getApiErrorMessage(e, "Failed to load users"));
     } finally {
       setLoading(false);
     }
@@ -257,12 +319,13 @@ export default function AdminDashboard() {
         ...s,
         posts: {
           ...next,
-          items: data.posts || [],
-          totalPages: data.totalPages || 1,
+          items: asArray(data.posts),
+          total: Number(data.total) || 0,
+          totalPages: safeTotalPages(data.totalPages),
         },
       }));
     } catch (e) {
-      toast.error(e?.message || "Failed to load posts");
+      toast.error(getApiErrorMessage(e, "Failed to load posts"));
     } finally {
       setLoading(false);
     }
@@ -278,12 +341,13 @@ export default function AdminDashboard() {
         ...s,
         comments: {
           ...next,
-          items: data.comments || [],
-          totalPages: data.totalPages || 1,
+          items: asArray(data.comments),
+          total: Number(data.total) || 0,
+          totalPages: safeTotalPages(data.totalPages),
         },
       }));
     } catch (e) {
-      toast.error(e?.message || "Failed to load comments");
+      toast.error(getApiErrorMessage(e, "Failed to load comments"));
     } finally {
       setLoading(false);
     }
@@ -295,9 +359,9 @@ export default function AdminDashboard() {
     try {
       const data = await adminService.listAudit(80);
       if (!data?.success) throw new Error(data?.message || "Failed");
-      setAudit(data.logs || []);
+      setAudit(asArray(data.logs));
     } catch (e) {
-      toast.error(e?.message || "Failed to load audit logs");
+      toast.error(getApiErrorMessage(e, "Failed to load audit logs"));
     } finally {
       setLoading(false);
     }
@@ -311,9 +375,10 @@ export default function AdminDashboard() {
       // "ALL" = không filter status → debug khi cache chưa kịp sync
       if (status && status !== "ALL") params.status = status;
       const res = await charityService.listCampaigns(params);
-      setCharityState((s) => ({ ...s, funded: res.campaigns || [] }));
+      if (!res?.success) throw new Error(res?.message || "Failed");
+      setCharityState((s) => ({ ...s, funded: asArray(res.campaigns) }));
     } catch (e) {
-      toast.error(e?.response?.data?.message || "Failed to load campaigns");
+      toast.error(getApiErrorMessage(e, "Failed to load campaigns"));
     } finally {
       setCharityState((s) => ({ ...s, loadingFunded: false }));
     }
@@ -323,9 +388,10 @@ export default function AdminDashboard() {
     setCharityState((s) => ({ ...s, loadingExecuting: true }));
     try {
       const res = await charityService.listCampaigns({ status: "EXECUTING", limit: 50 });
-      setCharityState((s) => ({ ...s, executing: res.campaigns || [] }));
+      if (!res?.success) throw new Error(res?.message || "Failed");
+      setCharityState((s) => ({ ...s, executing: asArray(res.campaigns) }));
     } catch (e) {
-      toast.error(e?.response?.data?.message || "Failed to load EXECUTING campaigns");
+      toast.error(getApiErrorMessage(e, "Failed to load EXECUTING campaigns"));
     } finally {
       setCharityState((s) => ({ ...s, loadingExecuting: false }));
     }
@@ -349,7 +415,7 @@ export default function AdminDashboard() {
     } catch (e) {
       const msg = e?.code === "ECONNABORTED"
         ? "Request timed out. The transaction may still be processing on-chain — please reload in a moment."
-        : (e?.response?.data?.message || "Failed to mark executing");
+        : getApiErrorMessage(e, "Failed to mark executing");
       toast.error(msg);
     } finally {
       setCharityState((s) => ({ ...s, processingKey: null }));
@@ -371,7 +437,7 @@ export default function AdminDashboard() {
     } catch (e) {
       const msg = e?.code === "ECONNABORTED"
         ? "Request timed out. The transaction may still be processing on-chain — please reload in a moment."
-        : (e?.response?.data?.message || "Failed to force-fail");
+        : getApiErrorMessage(e, "Failed to force-fail");
       toast.error(msg);
     } finally {
       setCharityState((s) => ({ ...s, processingKey: null }));
@@ -390,7 +456,7 @@ export default function AdminDashboard() {
     } catch (e) {
       const msg = e?.code === "ECONNABORTED"
         ? "Request timed out. The transaction may still be processing on-chain — please reload in a moment."
-        : (e?.response?.data?.message || "Failed to unlock milestone");
+        : getApiErrorMessage(e, "Failed to unlock milestone");
       toast.error(msg);
       setCharityState((s) => ({ ...s, processingKey: null }));
     }
@@ -425,14 +491,15 @@ export default function AdminDashboard() {
         page: next.page,
         limit: next.limit,
       });
+      if (!res?.success) throw new Error(res?.message || "Failed");
       setOrgsState({
         ...next,
-        items: res.organizations || [],
-        total: res.pagination?.total || 0,
-        totalPages: res.pagination?.totalPages || 1,
+        items: asArray(res.organizations),
+        total: Number(res.pagination?.total) || 0,
+        totalPages: safeTotalPages(res.pagination?.totalPages),
       });
     } catch (e) {
-      toast.error(e?.message || "Failed to load organizations");
+      toast.error(getApiErrorMessage(e, "Failed to load organizations"));
     } finally {
       setLoading(false);
     }
@@ -444,7 +511,7 @@ export default function AdminDashboard() {
       toast.success("Organization verified. Official group chat created.");
       await loadOrganizations();
     } catch (e) {
-      toast.error(e?.response?.data?.message || "Failed to verify");
+      toast.error(getApiErrorMessage(e, "Failed to verify"));
     }
   };
 
@@ -456,11 +523,11 @@ export default function AdminDashboard() {
       toast.success("Organization rejected");
       await loadOrganizations();
     } catch (e) {
-      toast.error(e?.response?.data?.message || "Failed to reject");
+      toast.error(getApiErrorMessage(e, "Failed to reject"));
     }
   };
 
-  const topPosts = useMemo(() => stats?.topPosts || [], [stats]);
+  const topPosts = useMemo(() => asArray(stats?.topPosts), [stats]);
 
   const onBanToggle = async (u) => {
     const status = String(u.status || "").toLowerCase();
@@ -487,7 +554,7 @@ export default function AdminDashboard() {
       }
       await loadUsers();
     } catch (e) {
-      toast.error(e?.message || "Action failed");
+      toast.error(getApiErrorMessage(e, "Action failed"));
     }
   };
 
@@ -497,7 +564,7 @@ export default function AdminDashboard() {
       toast.success("Role updated");
       await loadUsers();
     } catch (e) {
-      toast.error(e?.message || "Failed to update role");
+      toast.error(getApiErrorMessage(e, "Failed to update role"));
     }
   };
 
@@ -512,7 +579,7 @@ export default function AdminDashboard() {
       }
       await loadModerationPosts();
     } catch (e) {
-      toast.error(e?.message || "Failed");
+      toast.error(getApiErrorMessage(e, "Failed"));
     }
   };
 
@@ -527,7 +594,7 @@ export default function AdminDashboard() {
       }
       await loadModerationComments();
     } catch (e) {
-      toast.error(e?.message || "Failed");
+      toast.error(getApiErrorMessage(e, "Failed"));
     }
   };
 
@@ -535,13 +602,17 @@ export default function AdminDashboard() {
     <div className="admin-wrap">
       <div className="admin-header">
         <div>
+          <div className="admin-kicker">Operations console</div>
           <h1 className="admin-title">Admin Dashboard</h1>
           <div className="admin-subtitle">
-            Logged in as <b>{user?.username}</b> ({role})
+            Signed in as <b>{user?.username || "—"}</b>
+            <span className={`admin-role-badge ${isAdmin ? "admin" : "mod"}`}>
+              {role}
+            </span>
           </div>
         </div>
 
-        <div className="admin-actions">
+        <div className="admin-actions admin-toolbar">
           <select
             className="admin-select"
             value={days}
@@ -560,7 +631,7 @@ export default function AdminDashboard() {
             onClick={() => loadStats(days)}
             disabled={loading}
           >
-            Refresh
+            {loading ? "Refreshing..." : "Refresh"}
           </button>
         </div>
       </div>
@@ -572,25 +643,31 @@ export default function AdminDashboard() {
           <div className="admin-cards">
             <StatCard
               title="Total users"
-              value={stats?.summary?.totalUsers ?? "—"}
+              value={formatNumber(stats?.summary?.totalUsers)}
+              tone="blue"
             />
             <StatCard
               title="New users (7d)"
-              value={stats?.summary?.newUsers7 ?? "—"}
+              value={formatNumber(stats?.summary?.newUsers7)}
+              tone="green"
             />
             <StatCard
               title="Active users"
-              value={stats?.summary?.activeUsers ?? "—"}
+              value={formatNumber(stats?.summary?.activeUsers)}
               hint="DAU/WAU approx based on activity"
+              tone="amber"
             />
-            <StatCard title="Posts" value={stats?.summary?.totalPosts ?? "—"} />
+            <StatCard
+              title="Posts"
+              value={formatNumber(stats?.summary?.totalPosts)}
+            />
             <StatCard
               title="Comments"
-              value={stats?.summary?.totalComments ?? "—"}
+              value={formatNumber(stats?.summary?.totalComments)}
             />
             <StatCard
               title="Likes (posts)"
-              value={stats?.summary?.totalLikes ?? "—"}
+              value={formatNumber(stats?.summary?.totalLikes)}
             />
           </div>
 
@@ -608,7 +685,10 @@ export default function AdminDashboard() {
           </div>
 
           <div className="admin-section">
-            <div className="admin-section-title">Top posts (by likes)</div>
+            <div className="admin-section-head">
+              <div className="admin-section-title">Top posts</div>
+              <span className="admin-section-meta">Sorted by post likes</span>
+            </div>
             <div className="admin-table">
               <div className="admin-row admin-head default">
                 <div>Post</div>
@@ -624,15 +704,21 @@ export default function AdminDashboard() {
                   <div key={String(x.postId)} className="admin-row default">
                     <div className="admin-cell">
                       <div className="admin-ellipsis">
-                        {x.post?.caption || "(no caption)"}
+                        {x.post ? (
+                          <Link to={`/post/${x.postId}`} className="admin-link">
+                            {x.post.caption || "(no caption)"}
+                          </Link>
+                        ) : (
+                          "(post unavailable)"
+                        )}
                       </div>
                       <div className="admin-muted">
-                        #{String(x.postId).slice(-8)}
+                        #{shortId(x.postId)}
                       </div>
                     </div>
-                    <div>{x.likes}</div>
-                    <div>{x.comments}</div>
-                    <div>{x.post?.userId?.username || "—"}</div>
+                    <div>{formatNumber(x.likes)}</div>
+                    <div>{formatNumber(x.comments)}</div>
+                    <div>{getUserHandle(x.post?.userId) || "—"}</div>
                     <div>{formatDateTime(x.post?.createdAt)}</div>
                   </div>
                 ))
@@ -644,7 +730,14 @@ export default function AdminDashboard() {
 
       {tab === "users" ? (
         <div className="admin-section">
-          <div className="admin-section-title">User management</div>
+          <div className="admin-section-head">
+            <div>
+              <div className="admin-section-title">User management</div>
+              <div className="admin-section-subtitle">
+                {formatNumber(usersState.total)} matching account(s)
+              </div>
+            </div>
+          </div>
 
           <div className="admin-filters">
             <input
@@ -728,14 +821,16 @@ export default function AdminDashboard() {
                   <div className="admin-row users" key={u._id}>
                     <div className="admin-cell">
                       <div className="admin-ellipsis">
-                        {u.fullName ? `${u.fullName} ` : ""}
-                        <span className="admin-muted">@{u.username}</span>
+                        {getUserDisplayName(u)}{" "}
+                        <span className="admin-muted">
+                          {getUserHandle(u)}
+                        </span>
                       </div>
                       <div className="admin-muted">
-                        #{String(u._id).slice(-8)}
+                        #{shortId(u._id)}
                       </div>
                     </div>
-                    <div className="admin-ellipsis">{u.email}</div>
+                    <div className="admin-ellipsis">{u.email || "—"}</div>
                     <div>
                       <span
                         className={`admin-pill ${isActive ? "ok" : "danger"}`}
@@ -756,13 +851,27 @@ export default function AdminDashboard() {
                         </select>
                       ) : (
                         <span
-                          className={`admin-pill ${isActive ? "ok" : "danger"}`}
+                          className={`admin-pill ${
+                            targetRole === "admin"
+                              ? "admin"
+                              : targetRole === "mod"
+                                ? "info"
+                                : ""
+                          }`}
                         >
-                          {u.status || "—"}
+                          {targetRole}
                         </span>
                       )}
                     </div>
-                    <div>{u.isEmailVerified ? "✅" : "❌"}</div>
+                    <div>
+                      <span
+                        className={`admin-pill ${
+                          u.isEmailVerified ? "ok" : "muted"
+                        }`}
+                      >
+                        {u.isEmailVerified ? "Verified" : "No"}
+                      </span>
+                    </div>
                     <div>{formatDateTime(u.createdAt)}</div>
                     <div>{formatDateTime(u.lastLoginAt)}</div>
                     <div className="admin-actions-inline">
@@ -800,8 +909,13 @@ export default function AdminDashboard() {
       {tab === "moderation" ? (
         <div className="admin-grid2">
           <div className="admin-section">
-            <div className="admin-section-title">
-              Posts moderation (soft delete)
+            <div className="admin-section-head">
+              <div>
+                <div className="admin-section-title">Posts moderation</div>
+                <div className="admin-section-subtitle">
+                  {formatNumber(modState.posts.total)} matching post(s)
+                </div>
+              </div>
             </div>
             <div className="admin-filters">
               <input
@@ -838,7 +952,7 @@ export default function AdminDashboard() {
             </div>
 
             <div className="admin-table">
-              <div className="admin-row admin-head">
+              <div className="admin-row admin-head posts">
                 <div>Caption</div>
                 <div>Author</div>
                 <div>Status</div>
@@ -856,10 +970,10 @@ export default function AdminDashboard() {
                         {p.caption || "(no caption)"}
                       </div>
                       <div className="admin-muted">
-                        #{String(p._id).slice(-8)}
+                        #{shortId(p._id)}
                       </div>
                     </div>
-                    <div>{p.userId?.username || "—"}</div>
+                    <div>{getUserHandle(p.userId) || "—"}</div>
                     <div>
                       <span
                         className={`admin-pill ${p.deleted ? "danger" : "ok"}`}
@@ -889,8 +1003,13 @@ export default function AdminDashboard() {
           </div>
 
           <div className="admin-section">
-            <div className="admin-section-title">
-              Comments moderation (soft delete)
+            <div className="admin-section-head">
+              <div>
+                <div className="admin-section-title">Comments moderation</div>
+                <div className="admin-section-subtitle">
+                  {formatNumber(modState.comments.total)} matching comment(s)
+                </div>
+              </div>
             </div>
             <div className="admin-filters">
               <input
@@ -927,7 +1046,7 @@ export default function AdminDashboard() {
             </div>
 
             <div className="admin-table">
-              <div className="admin-row admin-head">
+              <div className="admin-row admin-head comments">
                 <div>Comment</div>
                 <div>Author</div>
                 <div>Status</div>
@@ -945,10 +1064,10 @@ export default function AdminDashboard() {
                         {c.content || "(empty)"}
                       </div>
                       <div className="admin-muted">
-                        #{String(c._id).slice(-8)}
+                        #{shortId(c._id)}
                       </div>
                     </div>
-                    <div>{c.userId?.username || "—"}</div>
+                    <div>{getUserHandle(c.userId) || "—"}</div>
                     <div>
                       <span
                         className={`admin-pill ${c.deleted ? "danger" : "ok"}`}
@@ -981,7 +1100,14 @@ export default function AdminDashboard() {
 
       {tab === "organizations" ? (
         <div className="admin-section">
-          <div className="admin-section-title">Organization applications</div>
+          <div className="admin-section-head">
+            <div>
+              <div className="admin-section-title">Organization applications</div>
+              <div className="admin-section-subtitle">
+                {formatNumber(orgsState.total)} organization(s)
+              </div>
+            </div>
+          </div>
           <div className="admin-filters">
             <select
               className="admin-select"
@@ -1029,13 +1155,11 @@ export default function AdminDashboard() {
                         <div className="admin-muted">/{o.slug}</div>
                       </div>
                       <div className="admin-ellipsis">
-                        {o.owner?.username || "—"}
+                        {getUserHandle(o.owner) || getUserDisplayName(o.owner)}
                       </div>
                       <div className="admin-ellipsis" title={o.walletAddress}>
-                        <code style={{ fontSize: 11 }}>
-                          {o.walletAddress
-                            ? `${o.walletAddress.slice(0, 6)}...${o.walletAddress.slice(-4)}`
-                            : "—"}
+                        <code className="admin-code">
+                          {shortAddress(o.walletAddress)}
                         </code>
                       </div>
                       <div>
@@ -1064,17 +1188,17 @@ export default function AdminDashboard() {
                               </span>
                               {stats.COMPLETED > 0 && (
                                 <span className="admin-pill ok" title="Completed">
-                                  ✓ {stats.COMPLETED}
+                                  Completed {stats.COMPLETED}
                                 </span>
                               )}
                               {stats.EXECUTING > 0 && (
                                 <span className="admin-pill" title="Executing">
-                                  ⚙ {stats.EXECUTING}
+                                  Executing {stats.EXECUTING}
                                 </span>
                               )}
                               {(stats.OPEN + stats.FUNDED) > 0 && (
                                 <span className="admin-pill" title="Open + Funded">
-                                  ◷ {stats.OPEN + stats.FUNDED}
+                                  Open {stats.OPEN + stats.FUNDED}
                                 </span>
                               )}
                               {(stats.FAILED + stats.REFUNDED) > 0 && (
@@ -1082,7 +1206,7 @@ export default function AdminDashboard() {
                                   className="admin-pill danger"
                                   title="Failed + Refunded"
                                 >
-                                  ✕ {stats.FAILED + stats.REFUNDED}
+                                  Failed {stats.FAILED + stats.REFUNDED}
                                 </span>
                               )}
                             </div>
@@ -1094,7 +1218,7 @@ export default function AdminDashboard() {
                         )}
                       </div>
                       <div>{formatDateTime(o.createdAt)}</div>
-                      <div style={{ display: "flex", gap: 6, flexWrap: "wrap" }}>
+                      <div className="admin-actions-inline wrap">
                         <button
                           className="admin-btn"
                           onClick={() =>
@@ -1166,9 +1290,8 @@ export default function AdminDashboard() {
                                         target="_blank"
                                         rel="noopener noreferrer"
                                         className="admin-link"
-                                        style={{ fontSize: 12 }}
                                       >
-                                        Open in new tab ↗
+                                        Open
                                       </a>
                                     </div>
                                     <div className="admin-doc-card-body">
@@ -1218,11 +1341,14 @@ export default function AdminDashboard() {
         <div className="admin-grid2">
           {/* Panel 1: campaigns — filter mặc định FUNDED, đổi qua dropdown để debug */}
           <div className="admin-section">
-            <div className="admin-section-title">
-              Campaigns awaiting execution
-              <span className="admin-pill" style={{ marginLeft: 8 }}>
-                {charityState.fundedFilter}
-              </span>
+            <div className="admin-section-head">
+              <div>
+                <div className="admin-section-title">Campaigns awaiting execution</div>
+                <div className="admin-section-subtitle">
+                  {charityState.funded.length} campaign(s) in current filter
+                </div>
+              </div>
+              <span className="admin-pill info">{charityState.fundedFilter}</span>
             </div>
             <div className="admin-filters">
               <select
@@ -1249,7 +1375,7 @@ export default function AdminDashboard() {
               </button>
             </div>
             <div className="admin-table">
-              <div className="admin-row admin-head">
+              <div className="admin-row admin-head campaigns">
                 <div>Campaign</div>
                 <div>Organization</div>
                 <div>Goal (ETH)</div>
@@ -1265,8 +1391,8 @@ export default function AdminDashboard() {
                 </div>
               ) : (
                 charityState.funded.map((c) => {
-                  const goalEth = ethers.formatEther(c.goalWei || "0");
-                  const raisedEth = ethers.formatEther(c.raisedWei || "0");
+                  const goalEth = formatEth(c.goalWei);
+                  const raisedEth = formatEth(c.raisedWei);
                   const isFunded = c.status === "FUNDED";
                   const executingKey = `execute:${c.id}`;
                   const failKey = `forceFail:${c.id}`;
@@ -1274,7 +1400,7 @@ export default function AdminDashboard() {
                   const isFailing = charityState.processingKey === failKey;
                   const anyProcessing = !!charityState.processingKey;
                   const isExpanded = expandedCampaignId === c.id;
-                  const milestones = c.milestones || [];
+                  const milestones = asArray(c.milestones);
 
                   // Tính warning trên milestone plan — legacy campaign (tạo
                   // trước khi thêm rule MIN/MAX %) có thể vi phạm; hiển thị
@@ -1292,23 +1418,19 @@ export default function AdminDashboard() {
 
                   return (
                     <React.Fragment key={c.id}>
-                      <div
-                        className="admin-row"
-                        style={{ gridTemplateColumns: "2fr 1.5fr 1fr 1fr 1fr 1.6fr" }}
-                      >
+                      <div className="admin-row campaigns">
                         <div className="admin-cell">
                           <Link to={`/charity/${c.id}`} className="admin-link">
                             <div className="admin-ellipsis">{c.title}</div>
                           </Link>
                           <div className="admin-muted">
-                            #{String(c.id).slice(-8)} • {milestones.length} milestone(s)
+                            #{shortId(c.id)} - {milestones.length} milestone(s)
                             {hasWarning && (
                               <span
                                 className="admin-pill danger"
-                                style={{ marginLeft: 6, fontSize: 10 }}
                                 title="Milestone plan has issues — click View milestones"
                               >
-                                ⚠ check plan
+                                Check plan
                               </span>
                             )}
                           </div>
@@ -1321,7 +1443,7 @@ export default function AdminDashboard() {
                         <div>
                           <span className="admin-pill">{c.status}</span>
                         </div>
-                        <div style={{ display: "flex", gap: 6, flexWrap: "wrap" }}>
+                        <div className="admin-actions-inline wrap">
                           <button
                             className="admin-btn"
                             onClick={() =>
@@ -1360,18 +1482,18 @@ export default function AdminDashboard() {
                       {isExpanded && (
                         <div className="admin-row admin-expand-row">
                           <div className="admin-expand-panel">
-                            <div className="admin-expand-title">
-                              Milestone plan ({milestones.length})
-                              <span className="admin-muted" style={{ marginLeft: 8 }}>
-                                — verify the breakdown before unlocking funds.
-                                Rule: ≥ 2 mốc, ≤ {MAX_MILESTONE_PERCENT}% per
-                                mốc, sum = 100%.
+                          <div className="admin-expand-title">
+                            Milestone plan ({milestones.length})
+                            <span className="admin-muted" style={{ marginLeft: 8 }}>
+                                - verify the breakdown before unlocking funds.
+                                Rule: at least 2 milestones, max {MAX_MILESTONE_PERCENT}% per
+                                milestone, sum = 100%.
                               </span>
                             </div>
 
                             {hasWarning && (
                               <div className="admin-warn-banner">
-                                <b>⚠ Plan does not match safe milestone rules:</b>
+                                <b>Plan does not match safe milestone rules:</b>
                                 <ul style={{ margin: "6px 0 0", paddingLeft: 18 }}>
                                   {tooFew && (
                                     <li>
@@ -1399,10 +1521,7 @@ export default function AdminDashboard() {
 
                             <div className="admin-table">
                               <div
-                                className="admin-row admin-head"
-                                style={{
-                                  gridTemplateColumns: "0.4fr 2.5fr 1fr 1fr 1.4fr",
-                                }}
+                                className="admin-row admin-head milestones-plan"
                               >
                                 <div>#</div>
                                 <div>Title</div>
@@ -1411,9 +1530,7 @@ export default function AdminDashboard() {
                                 <div>Bar</div>
                               </div>
                               {milestones.map((m, idx) => {
-                                const amountEth = ethers.formatEther(
-                                  m.amountWei || "0"
-                                );
+                                const amountEth = formatEth(m.amountWei);
                                 const pct = milestonePercent(
                                   m.amountWei,
                                   c.goalWei
@@ -1421,11 +1538,8 @@ export default function AdminDashboard() {
                                 const over = pct > MAX_MILESTONE_PERCENT + 0.001;
                                 return (
                                   <div
-                                    className="admin-row"
+                                    className="admin-row milestones-plan"
                                     key={idx}
-                                    style={{
-                                      gridTemplateColumns: "0.4fr 2.5fr 1fr 1fr 1.4fr",
-                                    }}
                                   >
                                     <div>#{idx + 1}</div>
                                     <div className="admin-cell">
@@ -1459,15 +1573,11 @@ export default function AdminDashboard() {
                                 );
                               })}
                               <div
-                                className="admin-row"
-                                style={{
-                                  gridTemplateColumns: "0.4fr 2.5fr 1fr 1fr 1.4fr",
-                                  fontWeight: 600,
-                                }}
+                                className="admin-row milestones-plan total"
                               >
-                                <div>Σ</div>
+                                <div>Total</div>
                                 <div className="admin-muted">Total</div>
-                                <div>{ethers.formatEther(c.goalWei || "0")}</div>
+                                <div>{formatEth(c.goalWei)}</div>
                                 <div>
                                   <span
                                     className={`admin-pill ${sumOff ? "danger" : "ok"}`}
@@ -1476,7 +1586,7 @@ export default function AdminDashboard() {
                                   </span>
                                 </div>
                                 <div className="admin-muted">
-                                  {sumOff ? "≠ 100%" : "= 100% ✓"}
+                                  {sumOff ? "Not 100%" : "Matches"}
                                 </div>
                               </div>
                             </div>
@@ -1492,11 +1602,16 @@ export default function AdminDashboard() {
 
           {/* Panel 2: EXECUTING campaigns — group milestones theo campaign */}
           <div className="admin-section">
-            <div className="admin-section-title">
-              Campaigns awaiting milestone unlock
-              <span className="admin-pill ok" style={{ marginLeft: 8 }}>
-                EXECUTING
-              </span>
+            <div className="admin-section-head">
+              <div>
+                <div className="admin-section-title">
+                  Campaigns awaiting milestone unlock
+                </div>
+                <div className="admin-section-subtitle">
+                  {charityState.executing.length} executing campaign(s)
+                </div>
+              </div>
+              <span className="admin-pill ok">EXECUTING</span>
             </div>
             {charityState.loadingExecuting ? (
               <div className="admin-row admin-empty">Loading...</div>
@@ -1510,7 +1625,7 @@ export default function AdminDashboard() {
                 const unlockedCount = (c.milestones || []).filter(
                   (m) => m.unlocked
                 ).length;
-                const totalMs = (c.milestones || []).length;
+                const totalMs = asArray(c.milestones).length;
                 return (
                   <div key={c.id} className="admin-campaign-group">
                     <div className="admin-campaign-group-header">
@@ -1522,8 +1637,8 @@ export default function AdminDashboard() {
                           {c.title}
                         </Link>
                         <div className="admin-muted" style={{ fontSize: 12 }}>
-                          {c.organization?.name || "—"} • #
-                          {String(c.id).slice(-8)} • Milestones {unlockedCount}/
+                          {c.organization?.name || "—"} - #
+                          {shortId(c.id)} - Milestones {unlockedCount}/
                           {totalMs}
                         </div>
                       </div>
@@ -1542,24 +1657,21 @@ export default function AdminDashboard() {
                     </div>
 
                     <div className="admin-table">
-                      <div className="admin-row admin-head">
+                      <div className="admin-row admin-head executing-milestones">
                         <div>Milestone</div>
                         <div>Amount (ETH)</div>
                         <div>Status</div>
                         <div>Action</div>
                       </div>
-                      {(c.milestones || []).map((m, idx) => {
-                        const amountEth = ethers.formatEther(m.amountWei || "0");
+                      {asArray(c.milestones).map((m, idx) => {
+                        const amountEth = formatEth(m.amountWei);
                         const unlockKey = `unlock:${c.id}:${idx}`;
                         const isUnlocking =
                           charityState.processingKey === unlockKey;
                         return (
                           <div
-                            className="admin-row"
+                            className="admin-row executing-milestones"
                             key={`${c.id}-${idx}`}
-                            style={{
-                              gridTemplateColumns: "3fr 1fr 1fr 1.5fr",
-                            }}
                           >
                             <div className="admin-cell">
                               <div className="admin-ellipsis">
@@ -1715,7 +1827,14 @@ export default function AdminDashboard() {
 
       {tab === "audit" ? (
         <div className="admin-section">
-          <div className="admin-section-title">Audit log</div>
+          <div className="admin-section-head">
+            <div>
+              <div className="admin-section-title">Audit log</div>
+              <div className="admin-section-subtitle">
+                {formatNumber(audit.length)} recent action(s)
+              </div>
+            </div>
+          </div>
           {!canSeeAudit ? (
             <div className="admin-note">
               Only <b>admin</b> can view audit logs.
