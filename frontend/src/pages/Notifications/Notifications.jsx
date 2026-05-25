@@ -10,6 +10,23 @@ import { getUserAvatar, formatTimestamp } from "../../utils";
 import { showError } from "../../utils/toast";
 import "./Notifications.css";
 
+const getReferenceId = (value) => {
+  if (!value) return null;
+  if (typeof value === "string") return value;
+  return value._id || value.id || null;
+};
+
+const getNotificationPostId = (notification) => {
+  if (notification.targetType === "comment") {
+    return (
+      getReferenceId(notification.postId) ||
+      getReferenceId(notification.targetId?.postId)
+    );
+  }
+
+  return getReferenceId(notification.targetId);
+};
+
 function Notifications() {
   const { t } = useTranslation();
   const [notifications, setNotifications] = useState([]);
@@ -98,6 +115,9 @@ function Notifications() {
       notification.sender?.username || t("notificationsPage.someone");
     switch (notification.type) {
       case "like":
+        if (notification.targetType === "comment") {
+          return `${sender} ${t("notificationsPage.likedYourComment")}`;
+        }
         return `${sender} ${t("notificationsPage.likedYourPost")}`;
       case "comment":
         return `${sender} ${t("notificationsPage.commented", {
@@ -132,8 +152,11 @@ function Notifications() {
       case "comment":
       case "mention":
       case "auto_post":
-        if (notification.targetId) {
-          navigate(`/post/${notification.targetId}`);
+        {
+          const postId = getNotificationPostId(notification);
+          if (postId) {
+            navigate(`/post/${postId}`);
+          }
         }
         break;
       case "follow":

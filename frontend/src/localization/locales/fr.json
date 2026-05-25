@@ -254,6 +254,7 @@
     "someone": "Quelqu'un",
     "browserTitle": "Nouvelle notification",
     "likedYourPost": "a aimé votre publication",
+    "likedYourComment": "a aimé votre commentaire",
     "commentedOnYourPost": "a commenté votre publication",
     "commented": "a commenté : {{text}}",
     "startedFollowingYou": "a commencé à vous suivre",

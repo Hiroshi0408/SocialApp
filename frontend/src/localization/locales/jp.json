@@ -254,6 +254,7 @@
     "someone": "誰か",
     "browserTitle": "新しい通知",
     "likedYourPost": "があなたの投稿にいいねしました",
+    "likedYourComment": "があなたのコメントにいいねしました",
     "commentedOnYourPost": "があなたの投稿にコメントしました",
     "commented": "がコメントしました：{{text}}",
     "startedFollowingYou": "があなたをフォローしました",

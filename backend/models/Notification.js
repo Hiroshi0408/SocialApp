@@ -37,6 +37,11 @@ const notificationSchema = new mongoose.Schema(
       type: mongoose.Schema.Types.ObjectId,
       required: true,
     },
+    postId: {
+      type: mongoose.Schema.Types.ObjectId,
+      ref: "Post",
+      default: null,
+    },
     text: {
       type: String,
       default: "",
@@ -53,6 +58,7 @@ const notificationSchema = new mongoose.Schema(
 
 notificationSchema.index({ recipientId: 1, createdAt: -1 });
 notificationSchema.index({ recipientId: 1, read: 1 });
+notificationSchema.index({ postId: 1 });
 notificationSchema.index(
   { recipientId: 1, senderId: 1, targetId: 1, type: 1 },
   { unique: true },

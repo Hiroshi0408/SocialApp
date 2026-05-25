@@ -112,6 +112,7 @@ class CommentService {
               type: "mention",
               targetType: "comment",
               targetId: comment._id,
+              postId,
               text: text.trim().substring(0, 100),
             })
             .catch((err) =>
@@ -259,6 +260,7 @@ class CommentService {
           type: "like",
           targetType: "comment",
           targetId: commentId,
+          postId: comment.postId,
         })
         .catch((err) =>
           logger.error("Comment like notification failed:", err.message),

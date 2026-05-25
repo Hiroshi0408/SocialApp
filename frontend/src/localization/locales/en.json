@@ -282,6 +282,7 @@
     "someone": "Someone",
     "browserTitle": "New Notification",
     "likedYourPost": "liked your post",
+    "likedYourComment": "liked your comment",
     "commentedOnYourPost": "commented on your post",
     "commented": "commented: {{text}}",
     "startedFollowingYou": "started following you",

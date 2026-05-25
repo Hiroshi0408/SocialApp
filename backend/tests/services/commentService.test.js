@@ -373,6 +373,8 @@ describe("toggleCommentLike", () => {
         senderId: "userId123",
         type: "like",
         targetType: "comment",
+        targetId: "comment1",
+        postId: "post123",
       }),
     );
     expect(result).toEqual({ isLiked: true, likesCount: 3 });

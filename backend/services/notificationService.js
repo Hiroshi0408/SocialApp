@@ -1,4 +1,5 @@
 const notificationDAO = require("../dao/notificationDAO");
+const commentDAO = require("../dao/commentDAO");
 const AppError = require("../utils/AppError");
 const logger = require("../utils/logger");
 const { getTimeAgo } = require("../utils/timeHelper");
@@ -6,6 +7,10 @@ const { getIO } = require("../config/socket");
 const { DEFAULT_PAGE_SIZE, MAX_PAGE_SIZE } = require("../constants");
 
 class NotificationService {
+  _getId(value) {
+    return value?._id || value;
+  }
+
   // Format notification cho client (thêm sender alias + timestamp)
   _format(notification) {
     return {
@@ -13,6 +18,64 @@ class NotificationService {
       sender: notification.senderId,
       timestamp: getTimeAgo(notification.createdAt),
     };
+  }
+
+  async _resolveCommentPostId(targetId) {
+    if (!targetId) return null;
+
+    const comment = await commentDAO.findById(targetId, {
+      select: "postId",
+      lean: true,
+      includeDeleted: true,
+    });
+
+    return comment?.postId || null;
+  }
+
+  async _attachCommentPostIds(notifications) {
+    const commentIds = [
+      ...new Set(
+        notifications
+          .filter((notification) => (
+            notification.targetType === "comment" &&
+            !notification.postId &&
+            notification.targetId
+          ))
+          .map((notification) => this._getId(notification.targetId).toString()),
+      ),
+    ];
+
+    if (commentIds.length === 0) return notifications;
+
+    const comments = await commentDAO.findMany(
+      { _id: { $in: commentIds } },
+      {
+        select: "postId",
+        lean: true,
+        includeDeleted: true,
+        limit: commentIds.length,
+      },
+    );
+    const postIdByCommentId = new Map(
+      comments.map((comment) => [
+        comment._id.toString(),
+        comment.postId,
+      ]),
+    );
+
+    return notifications.map((notification) => {
+      if (
+        notification.targetType !== "comment" ||
+        notification.postId ||
+        !notification.targetId
+      ) {
+        return notification;
+      }
+
+      const commentId = this._getId(notification.targetId).toString();
+      const postId = postIdByCommentId.get(commentId);
+      return postId ? { ...notification, postId } : notification;
+    });
   }
 
   async getNotifications(userId, query = {}) {
@@ -28,9 +91,11 @@ class NotificationService {
       notificationDAO.countByUser(userId),
       notificationDAO.countUnread(userId),
     ]);
+    const notificationsWithPostIds =
+      await this._attachCommentPostIds(notifications);
 
     return {
-      notifications: notifications.map(this._format),
+      notifications: notificationsWithPostIds.map(this._format),
       unreadCount,
       pagination: {
         page,
@@ -68,6 +133,7 @@ class NotificationService {
   // Tạo notification và push realtime qua socket — được gọi từ các service khác
   async createNotification(data) {
     const { recipientId, senderId, type, targetType, targetId, text } = data;
+    let { postId } = data;
 
     // Không tạo self-notification — TRỪ type "auto_post":
     // post do hệ thống tạo thay org owner, owner cần được noti để review/edit
@@ -82,12 +148,17 @@ class NotificationService {
 
     let notification;
     try {
+      if (!postId && targetType === "comment") {
+        postId = await this._resolveCommentPostId(targetId);
+      }
+
       notification = await notificationDAO.create({
         recipientId,
         senderId,
         type,
         targetType,
         targetId,
+        postId,
         text: text || "",
       });
     } catch (error) {

@@ -254,6 +254,7 @@
     "someone": "Jemand",
     "browserTitle": "Neue Benachrichtigung",
     "likedYourPost": "hat deinen Beitrag geliked",
+    "likedYourComment": "hat deinen Kommentar geliked",
     "commentedOnYourPost": "hat deinen Beitrag kommentiert",
     "commented": "hat kommentiert: {{text}}",
     "startedFollowingYou": "folgt dir jetzt",
