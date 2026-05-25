@@ -652,6 +652,13 @@
   font-weight: 800;
 }
 
+.admin-doc-actions {
+  display: inline-flex;
+  align-items: center;
+  gap: 10px;
+  white-space: nowrap;
+}
+
 .admin-doc-card-body {
   display: flex;
   align-items: center;
@@ -671,6 +678,49 @@
 .admin-doc-card-body iframe {
   display: block;
   border: none;
+}
+
+.admin-doc-file-preview {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  width: 100%;
+  min-height: 220px;
+  padding: 22px;
+  text-align: center;
+}
+
+.admin-doc-file-icon {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 64px;
+  height: 64px;
+  border: 1px solid var(--admin-border);
+  border-radius: 8px;
+  background: var(--admin-surface);
+  color: var(--admin-muted);
+  font-size: 13px;
+  font-weight: 900;
+  letter-spacing: 0;
+}
+
+.admin-doc-file-icon.pdf {
+  border-color: rgba(220, 38, 38, 0.28);
+  background: var(--admin-red-soft);
+  color: var(--admin-red);
+}
+
+.admin-doc-file-name {
+  max-width: 100%;
+  color: var(--admin-text);
+  font-size: 13px;
+  font-weight: 800;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
 }
 
 .admin-warn-banner {

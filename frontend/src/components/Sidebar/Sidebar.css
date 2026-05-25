@@ -9,6 +9,7 @@
   z-index: var(--z-modal);
   display: flex;
   flex-direction: column;
+  transition: width var(--transition-base);
 }
 
 .sidebar-container {
@@ -148,8 +149,9 @@
   text-overflow: ellipsis;
 }
 
-/* Responsive - Hide sidebar on mobile */
-@media (max-width: 768px) {
+/* Narrow desktop/mobile: collapse sidebar to keep the header usable when
+   browser side panels reduce the viewport width. */
+@media (max-width: 1180px) {
   .sidebar {
     width: var(--sidebar-width-collapsed);
   }

@@ -17,6 +17,11 @@ const CATEGORY_OPTIONS = [
   "poverty",
 ];
 
+const IMAGE_MAX_SIZE_MB = 10;
+const PROOF_MAX_SIZE_MB = 15;
+const IMAGE_MAX_SIZE = IMAGE_MAX_SIZE_MB * 1024 * 1024;
+const PROOF_MAX_SIZE = PROOF_MAX_SIZE_MB * 1024 * 1024;
+
 function ApplyOrganization() {
   const { t } = useTranslation();
   const navigate = useNavigate();
@@ -56,6 +61,64 @@ function ApplyOrganization() {
     });
   };
 
+  const showFileTooLarge = (file, sizeMb) => {
+    showError(
+      t("organizations.apply.errors.fileTooLarge", {
+        name: file?.name || t("organizations.apply.errors.selectedFile"),
+        size: sizeMb,
+      })
+    );
+  };
+
+  const handleImageFileChange = (setter) => (e) => {
+    const file = e.target.files?.[0] || null;
+    if (!file) {
+      setter(null);
+      return;
+    }
+    if (!file.type.startsWith("image/")) {
+      showError(t("organizations.apply.errors.invalidImage"));
+      e.target.value = "";
+      setter(null);
+      return;
+    }
+    if (file.size > IMAGE_MAX_SIZE) {
+      showFileTooLarge(file, IMAGE_MAX_SIZE_MB);
+      e.target.value = "";
+      setter(null);
+      return;
+    }
+    setter(file);
+  };
+
+  const handleProofFilesChange = (e) => {
+    const files = Array.from(e.target.files || []);
+    if (files.length === 0) {
+      setProofFiles([]);
+      return;
+    }
+
+    const invalidFile = files.find(
+      (file) => !file.type.startsWith("image/") && file.type !== "application/pdf"
+    );
+    if (invalidFile) {
+      showError(t("organizations.apply.errors.invalidProof"));
+      e.target.value = "";
+      setProofFiles([]);
+      return;
+    }
+
+    const oversizedFile = files.find((file) => file.size > PROOF_MAX_SIZE);
+    if (oversizedFile) {
+      showFileTooLarge(oversizedFile, PROOF_MAX_SIZE_MB);
+      e.target.value = "";
+      setProofFiles([]);
+      return;
+    }
+
+    setProofFiles(files);
+  };
+
   async function uploadOne(file) {
     const res = await uploadService.uploadImage(file);
     return res?.url || "";
@@ -76,6 +139,16 @@ function ApplyOrganization() {
     }
     if (proofFiles.length === 0) {
       return showError(t("organizations.apply.errors.proofRequired"));
+    }
+    if (logoFile?.size > IMAGE_MAX_SIZE) {
+      return showFileTooLarge(logoFile, IMAGE_MAX_SIZE_MB);
+    }
+    if (coverFile?.size > IMAGE_MAX_SIZE) {
+      return showFileTooLarge(coverFile, IMAGE_MAX_SIZE_MB);
+    }
+    const oversizedProof = proofFiles.find((file) => file.size > PROOF_MAX_SIZE);
+    if (oversizedProof) {
+      return showFileTooLarge(oversizedProof, PROOF_MAX_SIZE_MB);
     }
 
     setSubmitting(true);
@@ -205,7 +278,7 @@ function ApplyOrganization() {
               <input
                 type="file"
                 accept="image/*"
-                onChange={(e) => setLogoFile(e.target.files?.[0] || null)}
+                onChange={handleImageFileChange(setLogoFile)}
               />
             </div>
 
@@ -214,7 +287,7 @@ function ApplyOrganization() {
               <input
                 type="file"
                 accept="image/*"
-                onChange={(e) => setCoverFile(e.target.files?.[0] || null)}
+                onChange={handleImageFileChange(setCoverFile)}
               />
             </div>
 
@@ -225,9 +298,7 @@ function ApplyOrganization() {
                 accept="image/*,application/pdf"
                 multiple
                 required
-                onChange={(e) =>
-                  setProofFiles(Array.from(e.target.files || []))
-                }
+                onChange={handleProofFilesChange}
               />
               <small>{t("organizations.apply.proofHint")}</small>
             </div>

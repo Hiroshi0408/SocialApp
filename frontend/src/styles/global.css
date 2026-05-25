@@ -165,6 +165,14 @@ body {
   --gradient-end: #eef2ff;
 }
 
+/* Narrow desktop: khi viewport bị co bởi side panel như MetaMask,
+   ưu tiên thu sidebar trước để header/main content còn đủ chỗ. */
+@media (max-width: 1180px) {
+  :root {
+    --sidebar-width: var(--sidebar-width-collapsed);
+  }
+}
+
 /* ======================================
    DARK MODE
    ====================================== */

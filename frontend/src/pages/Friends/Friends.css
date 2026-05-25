@@ -6,7 +6,7 @@
 
 .friends-content-wrapper {
   flex: 1;
-  margin-left: 244px;
+  margin-left: var(--sidebar-width);
 }
 
 .friends-main {

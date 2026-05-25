@@ -662,7 +662,7 @@
       "logo": "Logo",
       "cover": "Ảnh bìa",
       "proof": "Tài liệu chứng minh (giấy phép, chứng nhận...)",
-      "proofHint": "Tải lên ảnh scan hoặc PDF giấy tờ pháp lý. Chỉ admin mới xem được tài liệu này.",
+      "proofHint": "Tải lên ảnh scan hoặc PDF giấy tờ pháp lý, tối đa 15MB mỗi file. Chỉ admin mới xem được tài liệu này.",
       "submit": "Gửi đơn đăng ký",
       "submitting": "Đang gửi...",
       "errors": {
@@ -670,6 +670,10 @@
         "walletRequired": "Vui lòng nhập địa chỉ ví",
         "walletInvalid": "Định dạng địa chỉ ví không hợp lệ",
         "proofRequired": "Vui lòng tải lên ít nhất một tài liệu chứng minh",
+        "selectedFile": "File đã chọn",
+        "invalidImage": "Logo và ảnh bìa chỉ hỗ trợ file ảnh.",
+        "invalidProof": "Tài liệu chứng minh chỉ hỗ trợ ảnh hoặc PDF.",
+        "fileTooLarge": "{{name}} vượt quá giới hạn {{size}}MB. Vui lòng nén file hoặc chọn file khác.",
         "submitFailed": "Gửi đơn đăng ký thất bại"
       },
       "successToast": "Đã gửi đơn đăng ký. Admin sẽ duyệt trong thời gian sớm nhất."

@@ -662,7 +662,7 @@
       "logo": "Logo",
       "cover": "Cover image",
       "proof": "Proof documents (license, certificate...)",
-      "proofHint": "Upload scanned images or PDF legal documents. These are only visible to admin reviewers.",
+      "proofHint": "Upload scanned images or PDF legal documents, up to 15MB per file. These are only visible to admin reviewers.",
       "submit": "Submit application",
       "submitting": "Submitting...",
       "errors": {
@@ -670,6 +670,10 @@
         "walletRequired": "Wallet address is required",
         "walletInvalid": "Wallet address format is invalid",
         "proofRequired": "Please upload at least one proof document",
+        "selectedFile": "Selected file",
+        "invalidImage": "Logo and cover image only support image files.",
+        "invalidProof": "Proof documents only support images or PDF files.",
+        "fileTooLarge": "{{name}} exceeds the {{size}}MB limit. Please compress it or choose another file.",
         "submitFailed": "Failed to submit application"
       },
       "successToast": "Application submitted. Admin will review shortly."

@@ -7,7 +7,7 @@
 
 .messages-content-wrapper {
   flex: 1;
-  margin-left: 244px; /* Should match var(--sidebar-width) */
+  margin-left: var(--sidebar-width);
   position: relative; /* Positioning context for the main content */
 }
 
@@ -97,7 +97,7 @@
 
 @media (max-width: 768px) {
   .messages-content-wrapper {
-    margin-left: 72px;
+    margin-left: var(--sidebar-width-collapsed);
   }
 
   .messages-tabs {

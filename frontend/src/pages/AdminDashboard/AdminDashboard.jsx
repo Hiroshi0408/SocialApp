@@ -71,10 +71,28 @@ const getUserHandle = (userLike) => {
 };
 
 // Detect Cloudinary/standard URLs theo extension. Cloudinary có thể append
-// query string transformations → tách `?` và `#` trước khi match.
+// query string transformations -> tach `?` va `#` truoc khi match.
 const isImageUrl = (url) =>
   /\.(jpe?g|png|gif|webp|bmp|svg)(\?|#|$)/i.test(url || "");
 const isPdfUrl = (url) => /\.pdf(\?|#|$)/i.test(url || "");
+
+const getDocumentName = (url, fallback) => {
+  try {
+    const path = new URL(url).pathname;
+    const name = path.split("/").filter(Boolean).pop();
+    return name ? decodeURIComponent(name) : fallback;
+  } catch {
+    return fallback;
+  }
+};
+
+const getCloudinaryDownloadUrl = (url) => {
+  if (!url || !/res\.cloudinary\.com/i.test(url) || !url.includes("/upload/")) {
+    return url;
+  }
+  if (url.includes("/upload/fl_attachment/")) return url;
+  return url.replace("/upload/", "/upload/fl_attachment/");
+};
 
 // % milestone trên goal — BigInt math để khỏi mất precision khi goal lớn.
 // Trả Number 2 chữ số thập phân, vd 33.33.
@@ -1279,20 +1297,35 @@ export default function AdminDashboard() {
                               {docs.map((url, i) => {
                                 const img = isImageUrl(url);
                                 const pdf = isPdfUrl(url);
+                                const label = img ? "Image" : pdf ? "PDF" : "File";
+                                const fileName = getDocumentName(url, `Proof ${i + 1}`);
+                                const downloadUrl = getCloudinaryDownloadUrl(url);
                                 return (
                                   <div className="admin-doc-card" key={i}>
                                     <div className="admin-doc-card-head">
                                       <span className="admin-doc-card-label">
-                                        #{i + 1} {img ? "Image" : pdf ? "PDF" : "File"}
+                                        #{i + 1} {label}
                                       </span>
-                                      <a
-                                        href={url}
-                                        target="_blank"
-                                        rel="noopener noreferrer"
-                                        className="admin-link"
-                                      >
-                                        Open
-                                      </a>
+                                      <span className="admin-doc-actions">
+                                        <a
+                                          href={url}
+                                          target="_blank"
+                                          rel="noopener noreferrer"
+                                          className="admin-link"
+                                        >
+                                          Open
+                                        </a>
+                                        {downloadUrl && (
+                                          <a
+                                            href={downloadUrl}
+                                            target="_blank"
+                                            rel="noopener noreferrer"
+                                            className="admin-link"
+                                          >
+                                            Download
+                                          </a>
+                                        )}
+                                      </span>
                                     </div>
                                     <div className="admin-doc-card-body">
                                       {img ? (
@@ -1301,17 +1334,25 @@ export default function AdminDashboard() {
                                           alt={`Proof ${i + 1}`}
                                           loading="lazy"
                                         />
-                                      ) : pdf ? (
-                                        <iframe
-                                          src={url}
-                                          title={`Proof ${i + 1}`}
-                                          width="100%"
-                                          height="500"
-                                        />
                                       ) : (
-                                        <div className="admin-muted">
-                                          Unsupported preview format. Use the
-                                          link above to download.
+                                        <div className="admin-doc-file-preview">
+                                          <div
+                                            className={`admin-doc-file-icon ${
+                                              pdf ? "pdf" : ""
+                                            }`}
+                                          >
+                                            {pdf ? "PDF" : "FILE"}
+                                          </div>
+                                          <div
+                                            className="admin-doc-file-name"
+                                            title={fileName}
+                                          >
+                                            {fileName}
+                                          </div>
+                                          <div className="admin-muted">
+                                            Open this document in a new tab to
+                                            review it.
+                                          </div>
                                         </div>
                                       )}
                                     </div>
