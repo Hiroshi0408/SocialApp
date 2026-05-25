@@ -244,6 +244,7 @@
     "walletConnectionFailed": "Verbindung zur Wallet fehlgeschlagen",
     "walletLinkedSuccess": "Wallet erfolgreich verbunden!",
     "walletLinkFailed": "Wallet konnte nicht verbunden werden",
+    "walletSignRejected": "Du hast die MetaMask-Signatur/Bestätigung abgebrochen",
     "logout": "Abmelden"
   },
   "notificationsPage": {

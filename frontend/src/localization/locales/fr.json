@@ -244,6 +244,7 @@
     "walletConnectionFailed": "Échec de la connexion au portefeuille",
     "walletLinkedSuccess": "Portefeuille connecté avec succès !",
     "walletLinkFailed": "Échec de la connexion du portefeuille",
+    "walletSignRejected": "Vous avez annulé la signature/confirmation MetaMask",
     "logout": "Déconnexion"
   },
   "notificationsPage": {

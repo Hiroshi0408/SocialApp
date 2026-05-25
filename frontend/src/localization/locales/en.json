@@ -264,6 +264,7 @@
     "walletConnectionFailed": "Wallet connection failed",
     "walletLinkedSuccess": "Wallet linked successfully!",
     "walletLinkFailed": "Failed to link wallet",
+    "walletSignRejected": "You cancelled the MetaMask signature/confirmation request",
     "walletConnectedSuccess": "Wallet connected!",
     "walletDisconnect": "Unlink wallet",
     "walletUnlinking": "Unlinking...",

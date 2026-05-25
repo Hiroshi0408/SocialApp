@@ -244,6 +244,7 @@
     "walletConnectionFailed": "ウォレット接続に失敗しました",
     "walletLinkedSuccess": "ウォレットの接続に成功しました！",
     "walletLinkFailed": "ウォレットの接続に失敗しました",
+    "walletSignRejected": "MetaMaskの署名/確認をキャンセルしました",
     "logout": "ログアウト"
   },
   "notificationsPage": {

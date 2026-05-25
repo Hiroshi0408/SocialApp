@@ -10,6 +10,22 @@ import { getUserAvatar, showError, showSuccess } from "../../utils";
 import "./Settings.css";
 import { useWeb3 } from "../../contexts/Web3Context";
 import web3Service from "../../api/web3Service";
+import { parseWeb3Error } from "../../utils/web3Errors";
+
+const getWalletLinkErrorMessage = (error, t) => {
+  const parsed = parseWeb3Error(error);
+  if (parsed.type === "rejected") {
+    return t("settings.walletSignRejected");
+  }
+
+  return (
+    error.response?.data?.message ||
+    error.response?.data?.errors?.signature ||
+    error.response?.data?.errors?.walletAddress ||
+    parsed.rawMessage ||
+    t("settings.walletLinkFailed")
+  );
+};
 
 function Settings() {
   const { t } = useTranslation();
@@ -152,6 +168,7 @@ function Settings() {
   };
 
   const handleWalletLink = async () => {
+    if (isWalletLoading) return;
     setIsWalletLoading(true);
     try {
       const result = await connectWallet();
@@ -172,7 +189,7 @@ function Settings() {
       }
     } catch (error) {
       console.error("Wallet link error:", error);
-      showError(t("settings.walletLinkFailed"));
+      showError(getWalletLinkErrorMessage(error, t));
     } finally {
       setIsWalletLoading(false);
     }

@@ -264,6 +264,7 @@
     "walletConnectionFailed": "Kết nối ví thất bại",
     "walletLinkedSuccess": "Liên kết ví thành công!",
     "walletLinkFailed": "Liên kết ví thất bại",
+    "walletSignRejected": "Bạn đã hủy yêu cầu ký/xác nhận trong MetaMask",
     "walletConnectedSuccess": "Đã kết nối ví!",
     "walletDisconnect": "Ngắt liên kết",
     "walletUnlinking": "Đang ngắt...",
