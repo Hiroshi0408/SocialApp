@@ -27,14 +27,18 @@ import "./PostCard.css";
 import PostModal from "../PostModal/PostModal";
 import { POST_LIMITS, SEPOLIA_ETHERSCAN_BASE } from "../../constants";
 
+const normalizeCount = (value) => {
+  if (Array.isArray(value)) return value.length;
+  const parsed = Number(value);
+  return Number.isFinite(parsed) ? parsed : 0;
+};
+
+const getCommentLikesCount = (comment) =>
+  normalizeCount(comment?.likesCount ?? comment?.likes);
+
 function PostCard({ post, onPostDeleted }) {
   const { t } = useTranslation();
   const { user: currentUser } = useAuth();
-  const normalizeCount = (value) => {
-    if (Array.isArray(value)) return value.length;
-    const parsed = Number(value);
-    return Number.isFinite(parsed) ? parsed : 0;
-  };
   const [isLiked, setIsLiked] = useState(post.isLiked);
   const [isSaved, setIsSaved] = useState(post.isSaved);
   const [likes, setLikes] = useState(normalizeCount(post.likes));
@@ -359,8 +363,8 @@ function PostCard({ post, onPostDeleted }) {
                   ...comment,
                   isLiked: !comment.isLiked,
                   likesCount: !comment.isLiked
-                    ? (comment.likesCount || 0) + 1
-                    : Math.max(0, (comment.likesCount || 0) - 1),
+                    ? getCommentLikesCount(comment) + 1
+                    : Math.max(0, getCommentLikesCount(comment) - 1),
                 }
               : comment,
           );
@@ -376,8 +380,8 @@ function PostCard({ post, onPostDeleted }) {
                     ...reply,
                     isLiked: !reply.isLiked,
                     likesCount: !reply.isLiked
-                      ? (reply.likesCount || 0) + 1
-                      : Math.max(0, (reply.likesCount || 0) - 1),
+                      ? getCommentLikesCount(reply) + 1
+                      : Math.max(0, getCommentLikesCount(reply) - 1),
                   }
                 : reply,
             );
@@ -967,6 +971,7 @@ function PostCard({ post, onPostDeleted }) {
                     const commentUserId = comment.user._id || comment.user.id;
                     const currentUserId = currentUser?._id || currentUser?.id;
                     const isOwnComment = currentUserId === commentUserId;
+                    const commentLikesCount = getCommentLikesCount(comment);
 
                     return (
                       <div key={commentId}>
@@ -990,11 +995,10 @@ function PostCard({ post, onPostDeleted }) {
                                   comment.createdAt || comment.timestamp,
                                 )}
                               </span>
-                              {comment.likesCount > 0 && (
+                              {commentLikesCount > 0 && (
                                 <span className="comment-likes">
-                                  {comment.likesCount}{" "}
                                   {t("postCard.commentLikes", {
-                                    count: comment.likesCount,
+                                    count: commentLikesCount,
                                   })}
                                 </span>
                               )}
@@ -1096,6 +1100,8 @@ function PostCard({ post, onPostDeleted }) {
                                   reply.user._id || reply.user.id;
                                 const isOwnReply =
                                   currentUserId === replyUserId;
+                                const replyLikesCount =
+                                  getCommentLikesCount(reply);
 
                                 return (
                                   <div
@@ -1124,11 +1130,10 @@ function PostCard({ post, onPostDeleted }) {
                                             reply.createdAt || reply.timestamp,
                                           )}
                                         </span>
-                                        {reply.likesCount > 0 && (
+                                        {replyLikesCount > 0 && (
                                           <span className="comment-likes">
-                                            {reply.likesCount}{" "}
                                             {t("postCard.commentLikes", {
-                                              count: reply.likesCount,
+                                              count: replyLikesCount,
                                             })}
                                           </span>
                                         )}
