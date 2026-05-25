@@ -924,24 +924,27 @@
     }
   },
   "web3": {
-    "disconnected": "Wallet disconnected",
-    "accountSwitched": "Wallet account switched",
+    "disconnected": "MetaMask wallet disconnected",
+    "accountSwitched": "MetaMask wallet synced",
     "wrongNetwork": "Please switch to Sepolia network to use blockchain features",
     "backToSepolia": "Switched back to Sepolia",
-    "connectRejected": "You cancelled the wallet connection",
+    "connectRejected": "You cancelled the MetaMask request",
     "connectFailed": "Failed to connect wallet, please try again",
     "noProvider": "Please install MetaMask to use blockchain features",
-    "walletChangedMustRelogin": "MetaMask account changed. You will be logged out — please sign in again with the new wallet.",
-    "walletDisconnectedNotLinked": "MetaMask account changed. Wallet disconnected — link this wallet in Settings to use Web3 features.",
+    "walletChangedMustRelogin": "The signed-in wallet changed. The app will log you out so you can sign in with the new wallet.",
+    "walletDisconnectedNotLinked": "Kept the current account and disconnected the new wallet. You can link it later in Settings.",
     "switchUser": {
-      "title": "Switch account?",
-      "messageWalletOnly": "MetaMask account changed. Sign in with this wallet? Your current account will be signed out.",
-      "messageEmail": "MetaMask account changed. Sign in with this wallet? Your current email session will be replaced.",
-      "confirm": "Sign in with new wallet",
+      "title": "MetaMask wallet changed",
+      "messageWalletOnly": "This wallet is your sign-in identity. Continue to sign in with the newly selected wallet.",
+      "messageEmail": "Your current account stays active unless you switch to the user for the newly selected wallet.",
+      "currentAccount": "Current account",
+      "currentAccountFallback": "Current account",
+      "selectedWallet": "Selected wallet",
+      "confirm": "Sign in with this wallet",
       "cancelWalletOnly": "Logout",
-      "cancelEmail": "Just disconnect wallet",
-      "success": "Signed in as {{username}}",
-      "failed": "Failed to switch account — please try again"
+      "cancelEmail": "Keep current account",
+      "success": "Switched to {{username}}",
+      "failed": "Could not switch account. Please try again."
     },
     "error": {
       "insufficient": "Insufficient ETH balance to complete this transaction"

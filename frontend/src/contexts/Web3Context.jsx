@@ -10,6 +10,9 @@ const SEPOLIA_CHAIN_ID = "0xaa36a7"; // 11155111
 
 const Web3Context = createContext();
 
+const shortAddress = (address) =>
+  address ? `${address.slice(0, 6)}...${address.slice(-4)}` : "";
+
 export const Web3Provider = ({ children }) => {
   const { t } = useTranslation();
   const { user: currentUser, logout, updateUser } = useAuth();
@@ -71,7 +74,7 @@ export const Web3Provider = ({ children }) => {
       if (!window.ethereum) return;
       if (accounts.length === 0) {
         disconnectWallet();
-        if (!silent) toast(t("web3.disconnected"), { icon: "👛" });
+        if (!silent) toast(t("web3.disconnected"));
         return;
       }
 
@@ -244,7 +247,7 @@ export const Web3Provider = ({ children }) => {
       setTimeout(() => logout(), 1500);
     } else {
       disconnectWallet();
-      toast(t("web3.walletDisconnectedNotLinked"), { icon: "🔌" });
+      toast(t("web3.walletDisconnectedNotLinked"));
     }
   };
 
@@ -301,7 +304,7 @@ export const Web3Provider = ({ children }) => {
         error.code === 4001 ||
         error?.info?.error?.code === 4001
       ) {
-        toast(t("web3.connectRejected"), { icon: "🚫" });
+        toast(t("web3.connectRejected"));
       } else {
         toast.error(t("web3.connectFailed"));
       }
@@ -311,6 +314,10 @@ export const Web3Provider = ({ children }) => {
   };
 
   const isWalletOnlyUser = currentUser && !currentUser.email;
+  const switchWalletAddress = switchModal.address || "";
+  const switchAccountLabel = currentUser?.username
+    ? `@${currentUser.username}`
+    : t("web3.switchUser.currentAccountFallback");
 
   return (
     <Web3Context.Provider
@@ -330,6 +337,7 @@ export const Web3Provider = ({ children }) => {
         onClose={handleSwitchCancel}
         onConfirm={handleSwitchConfirm}
         closeOnConfirm={false}
+        className="wallet-switch-dialog"
         title={t("web3.switchUser.title")}
         message={
           isWalletOnlyUser
@@ -342,7 +350,29 @@ export const Web3Provider = ({ children }) => {
             ? t("web3.switchUser.cancelWalletOnly")
             : t("web3.switchUser.cancelEmail")
         }
-      />
+      >
+        <div className="wallet-switch-details">
+          <div className="wallet-switch-row">
+            <span className="wallet-switch-label">
+              {t("web3.switchUser.currentAccount")}
+            </span>
+            <span className="wallet-switch-value" title={switchAccountLabel}>
+              {switchAccountLabel}
+            </span>
+          </div>
+          <div className="wallet-switch-row">
+            <span className="wallet-switch-label">
+              {t("web3.switchUser.selectedWallet")}
+            </span>
+            <span
+              className="wallet-switch-value"
+              title={switchWalletAddress}
+            >
+              <code>{shortAddress(switchWalletAddress)}</code>
+            </span>
+          </div>
+        </div>
+      </ConfirmDialog>
     </Web3Context.Provider>
   );
 };

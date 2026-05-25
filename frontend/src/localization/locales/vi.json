@@ -924,24 +924,27 @@
     }
   },
   "web3": {
-    "disconnected": "Ví đã ngắt kết nối",
-    "accountSwitched": "Đã chuyển ví thành công",
+    "disconnected": "MetaMask đã ngắt kết nối ví",
+    "accountSwitched": "Đã đồng bộ ví MetaMask",
     "wrongNetwork": "Vui lòng chuyển sang mạng Sepolia để dùng tính năng blockchain",
     "backToSepolia": "Đã về mạng Sepolia",
-    "connectRejected": "Bạn đã hủy kết nối ví",
+    "connectRejected": "Bạn đã hủy yêu cầu trong MetaMask",
     "connectFailed": "Kết nối ví thất bại, vui lòng thử lại",
     "noProvider": "Vui lòng cài MetaMask để dùng tính năng blockchain",
-    "walletChangedMustRelogin": "Đã đổi ví trong MetaMask. Bạn sẽ bị đăng xuất — vui lòng đăng nhập lại bằng ví mới.",
-    "walletDisconnectedNotLinked": "Đã đổi ví trong MetaMask. Đã ngắt kết nối — vào Settings để liên kết ví mới nếu muốn dùng tính năng Web3.",
+    "walletChangedMustRelogin": "Ví đăng nhập đã thay đổi. Ứng dụng sẽ đăng xuất để bạn đăng nhập lại bằng ví mới.",
+    "walletDisconnectedNotLinked": "Đã giữ tài khoản hiện tại và ngắt kết nối ví mới. Bạn có thể liên kết ví trong Cài đặt.",
     "switchUser": {
-      "title": "Đổi tài khoản?",
-      "messageWalletOnly": "Đã đổi ví trong MetaMask. Đăng nhập bằng ví này? Tài khoản hiện tại sẽ bị đăng xuất.",
-      "messageEmail": "Đã đổi ví trong MetaMask. Đăng nhập bằng ví này? Phiên email hiện tại sẽ bị thay thế.",
-      "confirm": "Đăng nhập bằng ví mới",
+      "title": "Bạn vừa đổi ví MetaMask",
+      "messageWalletOnly": "Ví là tài khoản đăng nhập hiện tại. Tiếp tục để đăng nhập bằng ví mới.",
+      "messageEmail": "Tài khoản hiện tại vẫn được giữ nếu bạn không chuyển sang user của ví mới.",
+      "currentAccount": "Tài khoản hiện tại",
+      "currentAccountFallback": "Tài khoản hiện tại",
+      "selectedWallet": "Ví đang chọn",
+      "confirm": "Đăng nhập bằng ví này",
       "cancelWalletOnly": "Đăng xuất",
-      "cancelEmail": "Chỉ ngắt kết nối ví",
-      "success": "Đã đăng nhập dưới tên {{username}}",
-      "failed": "Đổi tài khoản thất bại — vui lòng thử lại"
+      "cancelEmail": "Giữ tài khoản hiện tại",
+      "success": "Đã chuyển sang {{username}}",
+      "failed": "Không chuyển được tài khoản. Vui lòng thử lại."
     },
     "error": {
       "insufficient": "Số dư ETH không đủ để thực hiện giao dịch"

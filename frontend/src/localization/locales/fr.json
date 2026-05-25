@@ -501,5 +501,32 @@
     "uploadingButton": "Téléchargement...",
     "changeMediaButton": "Changer le média",
     "selectMediaButton": "Sélectionner une image ou une vidéo"
+  },
+  "web3": {
+    "disconnected": "Portefeuille MetaMask déconnecté",
+    "accountSwitched": "Portefeuille MetaMask synchronisé",
+    "wrongNetwork": "Veuillez passer au réseau Sepolia",
+    "backToSepolia": "Retour au réseau Sepolia",
+    "connectRejected": "Vous avez annulé la demande MetaMask",
+    "connectFailed": "Échec de la connexion du portefeuille. Veuillez réessayer",
+    "noProvider": "Veuillez installer MetaMask pour utiliser les fonctions blockchain",
+    "walletChangedMustRelogin": "Le portefeuille de connexion a changé. L'application va vous déconnecter pour vous reconnecter avec le nouveau portefeuille.",
+    "walletDisconnectedNotLinked": "Le compte actuel a été conservé et le nouveau portefeuille déconnecté. Vous pouvez le lier plus tard dans les paramètres.",
+    "switchUser": {
+      "title": "Portefeuille MetaMask modifié",
+      "messageWalletOnly": "Ce portefeuille est votre identité de connexion. Continuez pour vous connecter avec le nouveau portefeuille sélectionné.",
+      "messageEmail": "Votre compte actuel reste actif sauf si vous basculez vers l'utilisateur du nouveau portefeuille sélectionné.",
+      "currentAccount": "Compte actuel",
+      "currentAccountFallback": "Compte actuel",
+      "selectedWallet": "Portefeuille sélectionné",
+      "confirm": "Se connecter avec ce portefeuille",
+      "cancelWalletOnly": "Se déconnecter",
+      "cancelEmail": "Garder le compte actuel",
+      "success": "Basculé vers {{username}}",
+      "failed": "Impossible de changer de compte. Veuillez réessayer."
+    },
+    "error": {
+      "insufficient": "Solde ETH insuffisant pour cette transaction"
+    }
   }
 }

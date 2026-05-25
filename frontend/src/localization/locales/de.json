@@ -501,5 +501,32 @@
     "uploadingButton": "Wird hochgeladen...",
     "changeMediaButton": "Medien ändern",
     "selectMediaButton": "Bild oder Video auswählen"
+  },
+  "web3": {
+    "disconnected": "MetaMask-Wallet getrennt",
+    "accountSwitched": "MetaMask-Wallet synchronisiert",
+    "wrongNetwork": "Bitte wechseln Sie zum Sepolia-Netzwerk",
+    "backToSepolia": "Zurück zu Sepolia gewechselt",
+    "connectRejected": "Sie haben die MetaMask-Anfrage abgebrochen",
+    "connectFailed": "Wallet-Verbindung fehlgeschlagen. Bitte erneut versuchen",
+    "noProvider": "Bitte installieren Sie MetaMask, um Blockchain-Funktionen zu nutzen",
+    "walletChangedMustRelogin": "Die Anmelde-Wallet wurde geändert. Die App meldet Sie ab, damit Sie sich mit der neuen Wallet anmelden können.",
+    "walletDisconnectedNotLinked": "Das aktuelle Konto wurde beibehalten und die neue Wallet getrennt. Sie können sie später in den Einstellungen verknüpfen.",
+    "switchUser": {
+      "title": "MetaMask-Wallet geändert",
+      "messageWalletOnly": "Diese Wallet ist Ihre Anmeldeidentität. Fahren Sie fort, um sich mit der neu ausgewählten Wallet anzumelden.",
+      "messageEmail": "Ihr aktuelles Konto bleibt aktiv, sofern Sie nicht zum Benutzer der neu ausgewählten Wallet wechseln.",
+      "currentAccount": "Aktuelles Konto",
+      "currentAccountFallback": "Aktuelles Konto",
+      "selectedWallet": "Ausgewählte Wallet",
+      "confirm": "Mit dieser Wallet anmelden",
+      "cancelWalletOnly": "Abmelden",
+      "cancelEmail": "Aktuelles Konto behalten",
+      "success": "Zu {{username}} gewechselt",
+      "failed": "Konto konnte nicht gewechselt werden. Bitte erneut versuchen."
+    },
+    "error": {
+      "insufficient": "ETH-Guthaben reicht für diese Transaktion nicht aus"
+    }
   }
 }

@@ -12,6 +12,8 @@ function ConfirmDialog({
   cancelText,
   isDangerous = false,
   closeOnConfirm = true,
+  className = "",
+  children,
 }) {
   const { t } = useTranslation();
 
@@ -24,13 +26,17 @@ function ConfirmDialog({
 
   return (
     <div className="confirm-overlay" onClick={onClose}>
-      <div className="confirm-dialog" onClick={(e) => e.stopPropagation()}>
+      <div
+        className={`confirm-dialog ${className}`.trim()}
+        onClick={(e) => e.stopPropagation()}
+      >
         <h3 className="confirm-title">
           {title || t("confirmDialog.defaultTitle")}
         </h3>
         <p className="confirm-message">
           {message || t("confirmDialog.defaultMessage")}
         </p>
+        {children && <div className="confirm-extra">{children}</div>}
         <div className="confirm-actions">
           <button className="confirm-cancel-btn" onClick={onClose}>
             {cancelText || t("confirmDialog.cancel")}

@@ -501,5 +501,32 @@
     "uploadingButton": "アップロード中...",
     "changeMediaButton": "メディアを変更",
     "selectMediaButton": "画像または動画を選択"
+  },
+  "web3": {
+    "disconnected": "MetaMaskウォレットが切断されました",
+    "accountSwitched": "MetaMaskウォレットを同期しました",
+    "wrongNetwork": "Sepoliaネットワークに切り替えてください",
+    "backToSepolia": "Sepoliaに戻りました",
+    "connectRejected": "MetaMaskのリクエストをキャンセルしました",
+    "connectFailed": "ウォレット接続に失敗しました。もう一度お試しください",
+    "noProvider": "ブロックチェーン機能を使うにはMetaMaskをインストールしてください",
+    "walletChangedMustRelogin": "ログイン中のウォレットが変更されました。新しいウォレットでログインするため、アプリからログアウトします。",
+    "walletDisconnectedNotLinked": "現在のアカウントを維持し、新しいウォレットを切断しました。後で設定から連携できます。",
+    "switchUser": {
+      "title": "MetaMaskウォレットが変更されました",
+      "messageWalletOnly": "このウォレットはログインIDです。続行すると、選択中の新しいウォレットでログインします。",
+      "messageEmail": "新しく選択したウォレットのユーザーへ切り替えない限り、現在のアカウントは維持されます。",
+      "currentAccount": "現在のアカウント",
+      "currentAccountFallback": "現在のアカウント",
+      "selectedWallet": "選択中のウォレット",
+      "confirm": "このウォレットでログイン",
+      "cancelWalletOnly": "ログアウト",
+      "cancelEmail": "現在のアカウントを維持",
+      "success": "{{username}}に切り替えました",
+      "failed": "アカウントを切り替えられませんでした。もう一度お試しください。"
+    },
+    "error": {
+      "insufficient": "この取引を完了するにはETH残高が不足しています"
+    }
   }
 }
