@@ -11,6 +11,7 @@ function ConfirmDialog({
   confirmText,
   cancelText,
   isDangerous = false,
+  closeOnConfirm = true,
 }) {
   const { t } = useTranslation();
 
@@ -18,7 +19,7 @@ function ConfirmDialog({
 
   const handleConfirm = () => {
     onConfirm();
-    onClose();
+    if (closeOnConfirm) onClose();
   };
 
   return (

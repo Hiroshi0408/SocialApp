@@ -66,6 +66,58 @@ export const Web3Provider = ({ children }) => {
     setBalance(null);
   }, []);
 
+  const handleWalletAccountsChanged = useCallback(
+    async (accounts, { silent = false } = {}) => {
+      if (!window.ethereum) return;
+      if (accounts.length === 0) {
+        disconnectWallet();
+        if (!silent) toast(t("web3.disconnected"), { icon: "👛" });
+        return;
+      }
+
+      const newAddress = accounts[0].toLowerCase();
+      if (newAddress === walletAddress?.toLowerCase()) return;
+      if (switchModal.open && switchModal.address === newAddress) return;
+
+      const linkedWallet = currentUser?.walletAddress?.toLowerCase();
+
+      if (linkedWallet && newAddress === linkedWallet) {
+        try {
+          const chainId = await window.ethereum.request({ method: "eth_chainId" });
+          if (chainId !== SEPOLIA_CHAIN_ID) {
+            setWalletAddress(newAddress);
+            setSigner(null);
+            setBalance(null);
+            toast.error(t("web3.wrongNetwork"));
+            return;
+          }
+          const provider = new ethers.BrowserProvider(window.ethereum);
+          const signerInstance = await provider.getSigner();
+          setSigner(signerInstance);
+          setWalletAddress(newAddress);
+          await fetchBalance(newAddress);
+          if (!silent) toast.success(t("web3.accountSwitched"));
+        } catch {
+          disconnectWallet();
+        }
+        return;
+      }
+
+      // Ví mới ≠ ví đang link → mở modal hỏi user có muốn switch user app không.
+      // Modal handler tự xử lý case wallet-only / email khi confirm/cancel.
+      setSwitchModal({ open: true, address: newAddress });
+    },
+    [
+      currentUser?.walletAddress,
+      disconnectWallet,
+      fetchBalance,
+      switchModal.address,
+      switchModal.open,
+      t,
+      walletAddress,
+    ],
+  );
+
   // Auto-reconnect khi page load — dùng eth_accounts (không popup)
   // Chỉ restore nếu đã authorize VÀ đang đúng mạng Sepolia
   useEffect(() => {
@@ -103,46 +155,43 @@ export const Web3Provider = ({ children }) => {
   // bằng ví không khớp record BE.
   useEffect(() => {
     if (!window.ethereum) return;
-    const handleAccountsChanged = async (accounts) => {
-      if (accounts.length === 0) {
-        disconnectWallet();
-        toast(t("web3.disconnected"), { icon: "👛" });
-        return;
+    window.ethereum.on("accountsChanged", handleWalletAccountsChanged);
+    return () =>
+      window.ethereum.removeListener(
+        "accountsChanged",
+        handleWalletAccountsChanged,
+      );
+  }, [handleWalletAccountsChanged]);
+
+  // MetaMask đôi khi không bắn accountsChanged ổn định sau khi tab bị background
+  // hoặc extension vừa reinstall/unlock. Khi tab quay lại, sync lại account được
+  // expose cho dapp để không rơi vào trạng thái "đổi ví mà UI không hiện gì".
+  useEffect(() => {
+    if (!window.ethereum) return;
+
+    const syncSelectedAccount = async () => {
+      try {
+        const accounts = await window.ethereum.request({ method: "eth_accounts" });
+        await handleWalletAccountsChanged(accounts, { silent: true });
+      } catch {
+        // MetaMask locked hoặc chưa authorize — bỏ qua.
       }
-      const newAddress = accounts[0].toLowerCase();
-      if (newAddress === walletAddress?.toLowerCase()) return;
-
-      const linkedWallet = currentUser?.walletAddress?.toLowerCase();
-
-      if (linkedWallet && newAddress === linkedWallet) {
-        try {
-          const chainId = await window.ethereum.request({ method: "eth_chainId" });
-          if (chainId !== SEPOLIA_CHAIN_ID) {
-            setWalletAddress(newAddress);
-            setSigner(null);
-            setBalance(null);
-            toast.error(t("web3.wrongNetwork"));
-            return;
-          }
-          const provider = new ethers.BrowserProvider(window.ethereum);
-          const signerInstance = await provider.getSigner();
-          setSigner(signerInstance);
-          setWalletAddress(newAddress);
-          await fetchBalance(newAddress);
-          toast.success(t("web3.accountSwitched"));
-        } catch {
-          disconnectWallet();
-        }
-        return;
-      }
-
-      // Ví mới ≠ ví đang link → mở modal hỏi user có muốn switch user app không.
-      // Modal handler tự xử lý case wallet-only / email khi confirm/cancel.
-      setSwitchModal({ open: true, address: newAddress });
     };
-    window.ethereum.on("accountsChanged", handleAccountsChanged);
-    return () => window.ethereum.removeListener("accountsChanged", handleAccountsChanged);
-  }, [walletAddress, fetchBalance, disconnectWallet, t, currentUser, logout]);
+
+    const handleVisibilityChange = () => {
+      if (document.visibilityState === "visible") {
+        syncSelectedAccount();
+      }
+    };
+
+    window.addEventListener("focus", syncSelectedAccount);
+    document.addEventListener("visibilitychange", handleVisibilityChange);
+
+    return () => {
+      window.removeEventListener("focus", syncSelectedAccount);
+      document.removeEventListener("visibilitychange", handleVisibilityChange);
+    };
+  }, [handleWalletAccountsChanged]);
 
   // Modal confirm: ký nonce + walletLogin → swap session sang user link với ví mới
   // (BE auto-create user_xxx nếu ví chưa link với ai).
@@ -280,6 +329,7 @@ export const Web3Provider = ({ children }) => {
         isOpen={switchModal.open}
         onClose={handleSwitchCancel}
         onConfirm={handleSwitchConfirm}
+        closeOnConfirm={false}
         title={t("web3.switchUser.title")}
         message={
           isWalletOnlyUser
