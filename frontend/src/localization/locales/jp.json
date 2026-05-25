@@ -224,6 +224,7 @@
     "emailLabel": "メール",
     "emailVerified": "メール確認済み",
     "emailNotVerified": "メール未確認",
+    "emailNotLinked": "このアカウントにはメールが連携されていません",
     "fullNameLabel": "氏名",
     "bioLabel": "自己紹介",
     "websiteLabel": "ウェブサイト",

@@ -302,13 +302,16 @@ function Settings() {
                     type="email"
                     id="email"
                     value={user?.email || ""}
+                    placeholder={!user?.email ? t("settings.emailNotLinked") : ""}
                     disabled
                     className="input-disabled"
                   />
                   <span className="help-text">
-                    {user?.isEmailVerified
-                      ? t("settings.emailVerified")
-                      : t("settings.emailNotVerified")}
+                    {!user?.email
+                      ? t("settings.emailNotLinked")
+                      : user?.isEmailVerified
+                        ? t("settings.emailVerified")
+                        : t("settings.emailNotVerified")}
                   </span>
                 </div>
 

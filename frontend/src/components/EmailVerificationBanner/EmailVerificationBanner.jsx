@@ -11,7 +11,7 @@ function EmailVerificationBanner() {
   const [isResending, setIsResending] = useState(false);
   const [isDismissed, setIsDismissed] = useState(false);
 
-  if (!user || user.isEmailVerified || isDismissed) {
+  if (!user || !user.email || user.isEmailVerified || isDismissed) {
     return null;
   }
 

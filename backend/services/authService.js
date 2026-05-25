@@ -220,6 +220,9 @@ class AuthService {
     if (user.isEmailVerified) {
       throw new AppError("Email is already verified", 400);
     }
+    if (!user.email) {
+      throw new AppError("This account has no email to verify", 400);
+    }
 
     const verificationToken = generateRawToken();
     await userDAO.saveVerificationToken(user._id, verificationToken);

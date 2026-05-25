@@ -244,6 +244,7 @@
     "emailLabel": "Email",
     "emailVerified": "Email verified",
     "emailNotVerified": "Email not verified",
+    "emailNotLinked": "This account has no linked email",
     "fullNameLabel": "Full Name",
     "bioLabel": "Bio",
     "websiteLabel": "Website",

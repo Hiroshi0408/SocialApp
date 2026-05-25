@@ -224,6 +224,7 @@
     "emailLabel": "E-mail",
     "emailVerified": "E-mail vérifié",
     "emailNotVerified": "E-mail non vérifié",
+    "emailNotLinked": "Ce compte n'a pas d'e-mail associé",
     "fullNameLabel": "Nom complet",
     "bioLabel": "Bio",
     "websiteLabel": "Site web",

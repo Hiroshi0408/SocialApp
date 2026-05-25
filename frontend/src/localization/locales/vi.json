@@ -244,6 +244,7 @@
     "emailLabel": "Email",
     "emailVerified": "Email đã được xác minh",
     "emailNotVerified": "Email chưa được xác minh",
+    "emailNotLinked": "Tài khoản này chưa liên kết email",
     "fullNameLabel": "Tên đầy đủ",
     "bioLabel": "Tiểu sử",
     "websiteLabel": "Trang web",
