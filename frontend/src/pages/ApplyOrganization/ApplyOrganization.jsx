@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from "react";
+import React, { useCallback, useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { useTranslation } from "react-i18next";
 import Header from "../../components/Header/Header";
@@ -39,12 +39,55 @@ function ApplyOrganization() {
   const [proofFiles, setProofFiles] = useState([]);
   const [submitting, setSubmitting] = useState(false);
 
-  // Auto-fill wallet khi user connect MetaMask
+  const syncWalletField = useCallback((address) => {
+    const nextAddress = address ? address.toLowerCase() : "";
+    if (!nextAddress) return;
+    setForm((prev) =>
+      prev.walletAddress?.toLowerCase() === nextAddress
+        ? prev
+        : { ...prev, walletAddress: nextAddress },
+    );
+  }, []);
+
+  // Auto-fill/sync riêng field ví khi user connect hoặc đổi account MetaMask.
+  // Các field khác trong form vẫn được giữ nguyên.
   useEffect(() => {
-    if (walletAddress && !form.walletAddress) {
-      setForm((prev) => ({ ...prev, walletAddress }));
-    }
-  }, [walletAddress, form.walletAddress]);
+    syncWalletField(walletAddress);
+  }, [walletAddress, syncWalletField]);
+
+  useEffect(() => {
+    if (!window.ethereum) return undefined;
+
+    const syncSelectedAccount = async () => {
+      try {
+        const accounts = await window.ethereum.request({ method: "eth_accounts" });
+        syncWalletField(accounts?.[0]);
+      } catch {
+        // MetaMask locked/chưa authorize thì giữ nguyên form hiện tại.
+      }
+    };
+
+    const handleAccountsChanged = (accounts = []) => {
+      syncWalletField(accounts[0]);
+    };
+
+    const handleVisibilityChange = () => {
+      if (document.visibilityState === "visible") {
+        syncSelectedAccount();
+      }
+    };
+
+    window.ethereum.on("accountsChanged", handleAccountsChanged);
+    window.addEventListener("focus", syncSelectedAccount);
+    document.addEventListener("visibilitychange", handleVisibilityChange);
+    syncSelectedAccount();
+
+    return () => {
+      window.ethereum.removeListener("accountsChanged", handleAccountsChanged);
+      window.removeEventListener("focus", syncSelectedAccount);
+      document.removeEventListener("visibilitychange", handleVisibilityChange);
+    };
+  }, [syncWalletField]);
 
   const handleChange = (key) => (e) =>
     setForm((prev) => ({ ...prev, [key]: e.target.value }));
