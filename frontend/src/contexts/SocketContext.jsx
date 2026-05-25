@@ -91,7 +91,9 @@ export const SocketProvider = ({ children }) => {
             ? notification.text || t("notificationsPage.autoPostCreated")
             : `${notification.sender?.username || t("notificationsPage.someone")} ${
                 notification.type === "like"
-                  ? t("notificationsPage.likedYourPost")
+                  ? notification.targetType === "comment"
+                    ? t("notificationsPage.likedYourComment")
+                    : t("notificationsPage.likedYourPost")
                   : notification.type === "comment"
                     ? t("notificationsPage.commentedOnYourPost")
                     : notification.type === "friend_request"

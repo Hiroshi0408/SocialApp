@@ -39,6 +39,11 @@ function Header() {
   const badgeText = unreadNotifications > 99 ? "99+" : unreadNotifications;
 
   useEffect(() => {
+    if (location.pathname === "/notifications") {
+      if (setUnreadNotifications) setUnreadNotifications(0);
+      return;
+    }
+
     const loadUnreadCount = async () => {
       try {
         const response = await notificationService.getUnreadCount();
@@ -51,7 +56,7 @@ function Header() {
     };
 
     loadUnreadCount();
-  }, [setUnreadNotifications]);
+  }, [location.pathname, setUnreadNotifications]);
 
   useEffect(() => {
     const handleClickOutside = (event) => {

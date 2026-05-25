@@ -267,7 +267,8 @@
     "noNotifications": "通知はありません",
     "emptyStateDescription": "誰かがあなたに反応すると、ここに表示されます",
     "deleteButton": "削除",
-    "usernameAlt": "ユーザー名"
+    "usernameAlt": "ユーザー名",
+    "openTargetError": "この通知を開けませんでした"
   },
   "messagesPage": {
     "loadConversationsError": "会話の読み込みに失敗しました",

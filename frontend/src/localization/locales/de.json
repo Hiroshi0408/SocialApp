@@ -267,7 +267,8 @@
     "noNotifications": "Keine Benachrichtigungen",
     "emptyStateDescription": "Wenn jemand mit dir interagiert, siehst du es hier",
     "deleteButton": "Löschen",
-    "usernameAlt": "Benutzername"
+    "usernameAlt": "Benutzername",
+    "openTargetError": "Diese Benachrichtigung konnte nicht geöffnet werden"
   },
   "messagesPage": {
     "loadConversationsError": "Fehler beim Laden der Konversationen",

@@ -267,7 +267,8 @@
     "noNotifications": "Aucune notification",
     "emptyStateDescription": "Lorsque quelqu'un interagira avec vous, vous le verrez ici",
     "deleteButton": "Supprimer",
-    "usernameAlt": "Nom d'utilisateur"
+    "usernameAlt": "Nom d'utilisateur",
+    "openTargetError": "Impossible d'ouvrir cette notification"
   },
   "messagesPage": {
     "loadConversationsError": "Échec du chargement des conversations",

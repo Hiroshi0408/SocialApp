@@ -296,7 +296,8 @@
     "noNotifications": "Chưa có thông báo nào",
     "emptyStateDescription": "Khi ai đó tương tác với bạn, bạn sẽ thấy ở đây",
     "deleteButton": "Xóa",
-    "usernameAlt": "Tên người dùng"
+    "usernameAlt": "Tên người dùng",
+    "openTargetError": "Không mở được nội dung của thông báo này"
   },
   "messagesPage": {
     "loadConversationsError": "Tải cuộc trò chuyện thất bại",

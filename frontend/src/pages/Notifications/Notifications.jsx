@@ -13,7 +13,12 @@ import "./Notifications.css";
 const getReferenceId = (value) => {
   if (!value) return null;
   if (typeof value === "string") return value;
-  return value._id || value.id || null;
+  if (typeof value === "number") return String(value);
+  if (value.$oid) return value.$oid;
+  if (value._id || value.id) return getReferenceId(value._id || value.id);
+
+  const stringValue = value.toString?.();
+  return stringValue && stringValue !== "[object Object]" ? stringValue : null;
 };
 
 const getNotificationPostId = (notification) => {
@@ -27,6 +32,26 @@ const getNotificationPostId = (notification) => {
   return getReferenceId(notification.targetId);
 };
 
+const getNotificationDestination = (notification) => {
+  switch (notification.type) {
+    case "like":
+    case "comment":
+    case "mention":
+    case "auto_post": {
+      const postId = getNotificationPostId(notification);
+      return postId ? `/post/${postId}` : null;
+    }
+    case "follow":
+    case "friend_request":
+    case "friend_accept":
+      return notification.sender?.username
+        ? `/profile/${notification.sender.username}`
+        : null;
+    default:
+      return null;
+  }
+};
+
 function Notifications() {
   const { t } = useTranslation();
   const [notifications, setNotifications] = useState([]);
@@ -34,14 +59,6 @@ function Notifications() {
   const [error, setError] = useState(null);
   const { socket, setUnreadNotifications } = useSocket();
   const navigate = useNavigate();
-
-  useEffect(() => {
-    loadNotifications();
-
-    if (setUnreadNotifications) {
-      setUnreadNotifications(0);
-    }
-  }, [setUnreadNotifications]);
 
   const handleNewNotification = useCallback((data) => {
     const { notification } = data;
@@ -58,28 +75,54 @@ function Notifications() {
     }
   }, [socket, handleNewNotification]);
 
-  const loadNotifications = async () => {
+  const markAllReadLocally = useCallback(() => {
+    setNotifications((prev) => prev.map((notif) => ({ ...notif, read: true })));
+    if (setUnreadNotifications) {
+      setUnreadNotifications(0);
+    }
+  }, [setUnreadNotifications]);
+
+  const loadNotifications = useCallback(async () => {
     try {
       setLoading(true);
       const response = await notificationService.getAllNotifications();
       if (response.success) {
-        setNotifications(response.notifications);
+        const nextNotifications = response.notifications || [];
+        setNotifications(nextNotifications);
+
+        if (nextNotifications.some((notif) => !notif.read)) {
+          await notificationService.markAllAsRead();
+          setNotifications(
+            nextNotifications.map((notif) => ({ ...notif, read: true })),
+          );
+        }
+
+        if (setUnreadNotifications) {
+          setUnreadNotifications(0);
+        }
       }
     } catch (err) {
       setError(err.response?.data?.message || t("notificationsPage.loadError"));
     } finally {
       setLoading(false);
     }
-  };
+  }, [setUnreadNotifications, t]);
+
+  useEffect(() => {
+    loadNotifications();
+  }, [loadNotifications]);
 
   const handleMarkAsRead = async (notificationId) => {
     try {
       await notificationService.markAsRead(notificationId);
-      setNotifications(
-        notifications.map((notif) =>
+      setNotifications((prev) =>
+        prev.map((notif) =>
           notif._id === notificationId ? { ...notif, read: true } : notif,
         ),
       );
+      if (setUnreadNotifications) {
+        setUnreadNotifications((prev) => Math.max(0, prev - 1));
+      }
     } catch (err) {
       showError(t("notificationsPage.markAsReadError"));
     }
@@ -88,12 +131,7 @@ function Notifications() {
   const handleMarkAllAsRead = async () => {
     try {
       await notificationService.markAllAsRead();
-      setNotifications(
-        notifications.map((notif) => ({ ...notif, read: true })),
-      );
-      if (setUnreadNotifications) {
-        setUnreadNotifications(0);
-      }
+      markAllReadLocally();
     } catch (err) {
       showError(t("notificationsPage.markAllAsReadError"));
     }
@@ -143,31 +181,16 @@ function Notifications() {
   };
 
   const handleNotificationClick = async (notification) => {
+    const destination = getNotificationDestination(notification);
+
     if (!notification.read) {
-      await handleMarkAsRead(notification._id);
+      handleMarkAsRead(notification._id);
     }
 
-    switch (notification.type) {
-      case "like":
-      case "comment":
-      case "mention":
-      case "auto_post":
-        {
-          const postId = getNotificationPostId(notification);
-          if (postId) {
-            navigate(`/post/${postId}`);
-          }
-        }
-        break;
-      case "follow":
-      case "friend_request":
-      case "friend_accept":
-        if (notification.sender?.username) {
-          navigate(`/profile/${notification.sender.username}`);
-        }
-        break;
-      default:
-        break;
+    if (destination) {
+      navigate(destination);
+    } else {
+      showError(t("notificationsPage.openTargetError"));
     }
   };
 

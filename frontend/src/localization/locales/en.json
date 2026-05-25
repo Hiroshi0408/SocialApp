@@ -296,7 +296,8 @@
     "noNotifications": "No notifications yet",
     "emptyStateDescription": "When someone interacts with you, you'll see it here",
     "deleteButton": "Delete",
-    "usernameAlt": "Username"
+    "usernameAlt": "Username",
+    "openTargetError": "Couldn't open this notification"
   },
   "messagesPage": {
     "loadConversationsError": "Failed to load conversations",
