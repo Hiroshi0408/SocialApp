@@ -8,13 +8,28 @@ const { DEFAULT_PAGE_SIZE, MAX_PAGE_SIZE } = require("../constants");
 
 class NotificationService {
   _getId(value) {
-    return value?._id || value;
+    if (!value) return null;
+    const raw = value._id || value.id || value;
+    const stringValue = raw.toString?.();
+    return stringValue && stringValue !== "[object Object]"
+      ? stringValue
+      : raw;
   }
 
   // Format notification cho client (thêm sender alias + timestamp)
   _format(notification) {
+    const notificationId = this._getId(notification._id || notification.id);
+    const targetId = this._getId(notification.targetId);
+    const postId = this._getId(
+      notification.postId || notification.targetId?.postId,
+    );
+
     return {
       ...notification,
+      _id: notificationId,
+      id: notificationId,
+      targetId,
+      postId,
       sender: notification.senderId,
       timestamp: getTimeAgo(notification.createdAt),
     };
@@ -95,7 +110,9 @@ class NotificationService {
       await this._attachCommentPostIds(notifications);
 
     return {
-      notifications: notificationsWithPostIds.map(this._format),
+      notifications: notificationsWithPostIds.map((notification) =>
+        this._format(notification),
+      ),
       unreadCount,
       pagination: {
         page,

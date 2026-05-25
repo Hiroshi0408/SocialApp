@@ -21,6 +21,9 @@ const getReferenceId = (value) => {
   return stringValue && stringValue !== "[object Object]" ? stringValue : null;
 };
 
+const getNotificationId = (notification) =>
+  getReferenceId(notification?._id || notification?.id);
+
 const getNotificationPostId = (notification) => {
   if (notification.targetType === "comment") {
     return (
@@ -60,10 +63,37 @@ function Notifications() {
   const { socket, setUnreadNotifications } = useSocket();
   const navigate = useNavigate();
 
-  const handleNewNotification = useCallback((data) => {
-    const { notification } = data;
-    setNotifications((prev) => [notification, ...prev]);
-  }, []);
+  const markNotificationReadLocally = useCallback(
+    (notificationId) => {
+      if (!notificationId) return;
+      setNotifications((prev) =>
+        prev.map((notif) =>
+          getNotificationId(notif) === notificationId
+            ? { ...notif, read: true }
+            : notif,
+        ),
+      );
+      if (setUnreadNotifications) {
+        setUnreadNotifications((prev) => Math.max(0, prev - 1));
+      }
+    },
+    [setUnreadNotifications],
+  );
+
+  const handleNewNotification = useCallback(
+    (data) => {
+      const { notification } = data;
+      const notificationId = getNotificationId(notification);
+      setNotifications((prev) => [{ ...notification, read: true }, ...prev]);
+      if (setUnreadNotifications) {
+        setUnreadNotifications(0);
+      }
+      if (notificationId) {
+        notificationService.markAsRead(notificationId).catch(() => {});
+      }
+    },
+    [setUnreadNotifications],
+  );
 
   useEffect(() => {
     if (socket) {
@@ -112,19 +142,17 @@ function Notifications() {
     loadNotifications();
   }, [loadNotifications]);
 
-  const handleMarkAsRead = async (notificationId) => {
+  const handleMarkAsRead = async (notification) => {
+    const notificationId = getNotificationId(notification);
+    if (!notificationId) return;
+
+    markNotificationReadLocally(notificationId);
+
     try {
       await notificationService.markAsRead(notificationId);
-      setNotifications((prev) =>
-        prev.map((notif) =>
-          notif._id === notificationId ? { ...notif, read: true } : notif,
-        ),
-      );
-      if (setUnreadNotifications) {
-        setUnreadNotifications((prev) => Math.max(0, prev - 1));
-      }
     } catch (err) {
-      showError(t("notificationsPage.markAsReadError"));
+      // Local read state is enough for navigation; stale/deleted noti should not block clicks.
+      console.warn("Failed to mark notification as read:", err);
     }
   };
 
@@ -138,10 +166,13 @@ function Notifications() {
   };
 
   const handleDelete = async (notificationId) => {
+    const id = getReferenceId(notificationId);
+    if (!id) return;
+
     try {
-      await notificationService.deleteNotification(notificationId);
+      await notificationService.deleteNotification(id);
       setNotifications(
-        notifications.filter((notif) => notif._id !== notificationId),
+        notifications.filter((notif) => getNotificationId(notif) !== id),
       );
     } catch (err) {
       showError(t("notificationsPage.deleteError"));
@@ -180,11 +211,45 @@ function Notifications() {
     }
   };
 
+  const resolveDestinationFromServer = async (notification) => {
+    const notificationId = getNotificationId(notification);
+    if (!notificationId) return null;
+
+    try {
+      const response = await notificationService.getAllNotifications();
+      if (!response.success) return null;
+
+      const nextNotifications = response.notifications || [];
+      setNotifications(
+        nextNotifications.map((notif) => ({ ...notif, read: true })),
+      );
+      if (setUnreadNotifications) {
+        setUnreadNotifications(0);
+      }
+      if (nextNotifications.some((notif) => !notif.read)) {
+        notificationService.markAllAsRead().catch(() => {});
+      }
+
+      const freshNotification = nextNotifications.find(
+        (notif) => getNotificationId(notif) === notificationId,
+      );
+      return freshNotification
+        ? getNotificationDestination(freshNotification)
+        : null;
+    } catch {
+      return null;
+    }
+  };
+
   const handleNotificationClick = async (notification) => {
-    const destination = getNotificationDestination(notification);
+    let destination = getNotificationDestination(notification);
 
     if (!notification.read) {
-      handleMarkAsRead(notification._id);
+      handleMarkAsRead(notification);
+    }
+
+    if (!destination) {
+      destination = await resolveDestinationFromServer(notification);
     }
 
     if (destination) {
@@ -260,7 +325,7 @@ function Notifications() {
                     <button
                       onClick={(e) => {
                         e.stopPropagation();
-                        handleDelete(notification._id);
+                        handleDelete(getNotificationId(notification));
                       }}
                       className="delete-btn"
                     >
