@@ -9,6 +9,7 @@
   background: var(--card-bg, #fff);
   border: 1px solid var(--border-color, #ddd);
   border-radius: 6px;
+  color: var(--text-primary, #1a1a2e);
   padding: 8px 12px;
   cursor: pointer;
   font-size: 14px;
@@ -20,7 +21,7 @@
 
 .dropdown-toggle:hover {
   border-color: var(--primary-color, #0095f6);
-  background-color: rgba(0, 149, 246, 0.1);
+  background-color: var(--primary-light, rgba(0, 149, 246, 0.1));
 }
 
 .dropdown-menu {
@@ -31,6 +32,7 @@
   border: 1px solid var(--border-color, #ddd);
   border-radius: 6px;
   box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+  color: var(--text-primary, #1a1a2e);
   min-width: 160px;
   margin-top: 4px;
 }
@@ -39,6 +41,7 @@
   width: 100%;
   background: none;
   border: none;
+  color: var(--text-primary, #1a1a2e);
   padding: 10px 12px;
   cursor: pointer;
   text-align: left;
@@ -54,7 +57,7 @@
 
 .dropdown-item.active {
   background-color: var(--primary-color, #0095f6);
-  color: white;
+  color: var(--primary-text-color, white);
 }
 
 .dropdown-item.active:hover {

@@ -223,7 +223,7 @@ function Login() {
         {/* Google Login Button */}
         <button
           type="button"
-          className="google-login-button"
+          className="login-social-button login-google-button"
           onClick={handleGoogleLogin}
           disabled={isGoogleLoading || isLoading}
         >
@@ -256,7 +256,7 @@ function Login() {
         {/* Wallet Login Button */}
         <button
           type="button"
-          className="wallet-login-button"
+          className="login-social-button login-wallet-button"
           onClick={handleWalletLogin}
           disabled={isWalletLoading || isLoading}
         >
@@ -281,7 +281,7 @@ function Login() {
             />
             <circle cx="17.2" cy="13.25" r="0.9" fill="#8b5e16" />
           </svg>
-          {isWalletLoading ? "Logging in..." : "Continue with Wallet"}
+          {isWalletLoading ? "Logging in..." : "Continue with MetaMask"}
         </button>
         <div className="register-section">
           <p>
