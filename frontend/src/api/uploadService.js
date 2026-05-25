@@ -53,6 +53,24 @@ const uploadService = {
       throw error;
     }
   },
+
+  uploadDocument: async (file) => {
+    try {
+      const formData = new FormData();
+      formData.append("document", file);
+
+      const response = await axios.post("/upload/document", formData, {
+        headers: {
+          "Content-Type": "multipart/form-data",
+        },
+        timeout: 300000,
+      });
+
+      return response.data;
+    } catch (error) {
+      throw error;
+    }
+  },
 };
 
 export default uploadService;

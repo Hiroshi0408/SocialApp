@@ -262,6 +262,7 @@
     "acceptedFriendRequest": "hat deine Freundschaftsanfrage angenommen",
     "mentionedYou": "hat dich erwähnt: {{text}}",
     "interactedWithYourContent": "hat mit deinem Inhalt interagiert",
+    "organizationRejected": "Dein Organisationsantrag wurde abgelehnt. Du kannst dich mit aktualisierten Informationen erneut bewerben.",
     "title": "Benachrichtigungen",
     "markAllAsReadButton": "Alle als gelesen markieren",
     "noNotifications": "Keine Benachrichtigungen",

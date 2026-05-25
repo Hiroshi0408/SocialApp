@@ -25,12 +25,13 @@ const notificationSchema = new mongoose.Schema(
         // Hệ thống tự tạo post thay org owner (kickoff/funded/milestone của Charity).
         // Recipient = org owner để họ vào xem/chỉnh sửa caption nếu cần.
         "auto_post",
+        "organization_rejected",
       ],
       required: true,
     },
     targetType: {
       type: String,
-      enum: ["post", "comment", "user"],
+      enum: ["post", "comment", "user", "organization"],
       required: true,
     },
     targetId: {

@@ -85,10 +85,15 @@ export const SocketProvider = ({ children }) => {
       setUnreadNotifications((prev) => prev + 1);
 
       if (window.Notification && Notification.permission === "granted") {
-        // auto_post: text BE đã build sẵn, hiển thị nguyên không prefix sender
+        // System notifications: BE đã build sẵn text, hiển thị nguyên không prefix sender.
         const body =
-          notification.type === "auto_post"
-            ? notification.text || t("notificationsPage.autoPostCreated")
+          ["auto_post", "organization_rejected"].includes(notification.type)
+            ? notification.text ||
+              t(
+                notification.type === "organization_rejected"
+                  ? "notificationsPage.organizationRejected"
+                  : "notificationsPage.autoPostCreated",
+              )
             : `${notification.sender?.username || t("notificationsPage.someone")} ${
                 notification.type === "like"
                   ? notification.targetType === "comment"

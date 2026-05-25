@@ -520,7 +520,7 @@ export default function AdminDashboard() {
     if (reason === null) return; // cancelled
     try {
       await organizationService.adminReject(org.id, reason);
-      toast.success("Organization rejected");
+      toast.success("Organization rejected and removed");
       await loadOrganizations();
     } catch (e) {
       toast.error(getApiErrorMessage(e, "Failed to reject"));

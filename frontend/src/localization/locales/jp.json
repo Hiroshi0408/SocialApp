@@ -262,6 +262,7 @@
     "acceptedFriendRequest": "があなたの友達申請を承認しました",
     "mentionedYou": "があなたをメンションしました：{{text}}",
     "interactedWithYourContent": "があなたのコンテンツに反応しました",
+    "organizationRejected": "組織申請が却下されました。情報を更新して再申請できます。",
     "title": "通知",
     "markAllAsReadButton": "すべて既読にする",
     "noNotifications": "通知はありません",

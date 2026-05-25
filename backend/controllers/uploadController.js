@@ -2,6 +2,7 @@ const {
   uploadImage,
   uploadVideo,
   uploadMedia,
+  uploadDocument,
 } = require("../config/cloudinary");
 const userDAO = require("../dao/userDAO.js");
 const logger = require("../utils/logger.js");
@@ -124,6 +125,44 @@ exports.uploadMediaToCloudinary = async (req, res) => {
     res.status(500).json({
       success: false,
       message: "Failed to upload media",
+      error: process.env.NODE_ENV === "development" ? error.message : undefined,
+    });
+  }
+};
+
+//[POST] /api/upload/document - Upload proof document (image/PDF)
+exports.uploadDocumentToCloudinary = async (req, res) => {
+  try {
+    if (!req.file) {
+      return res.status(400).json({
+        success: false,
+        message: "No document file provided",
+      });
+    }
+
+    logger.info(
+      ` Uploading document: ${req.file.originalname} (${req.file.size} bytes)`,
+    );
+
+    const result = await uploadDocument(
+      req.file.buffer,
+      "social-app/organization-documents",
+    );
+
+    res.status(200).json({
+      success: true,
+      message: "Document uploaded successfully",
+      url: result.url,
+      publicId: result.publicId,
+      format: result.format,
+      resourceType: result.resourceType,
+      pages: result.pages,
+    });
+  } catch (error) {
+    logger.error(" Document upload error:", error);
+    res.status(500).json({
+      success: false,
+      message: "Failed to upload document",
       error: process.env.NODE_ENV === "development" ? error.message : undefined,
     });
   }

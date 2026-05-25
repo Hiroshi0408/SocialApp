@@ -158,7 +158,7 @@ exports.rejectOrganization = async (req, res, next) => {
   try {
     const reason = req.body?.reason || "";
     const organization = await organizationService.reject(req.user.id, req.params.id, reason);
-    res.json({ success: true, message: "Organization rejected", organization });
+    res.json({ success: true, message: "Organization rejected and removed", organization });
   } catch (error) {
     next(error);
   }

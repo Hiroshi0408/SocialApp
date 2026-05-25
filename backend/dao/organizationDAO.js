@@ -74,6 +74,14 @@ class OrganizationDAO {
     );
   }
 
+  async deleteById(id) {
+    return await Organization.findOneAndDelete({ _id: id, ...ACTIVE_FILTER });
+  }
+
+  async deleteMany(filter = {}) {
+    return await Organization.deleteMany({ ...filter, ...ACTIVE_FILTER });
+  }
+
   async incrementCampaigns(id) {
     return await Organization.findByIdAndUpdate(
       id,

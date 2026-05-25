@@ -262,6 +262,7 @@
     "acceptedFriendRequest": "a accepté votre demande d'ami",
     "mentionedYou": "vous a mentionné : {{text}}",
     "interactedWithYourContent": "a interagi avec votre contenu",
+    "organizationRejected": "Votre demande d'organisation a été refusée. Vous pouvez refaire une demande avec des informations mises à jour.",
     "title": "Notifications",
     "markAllAsReadButton": "Tout marquer comme lu",
     "noNotifications": "Aucune notification",

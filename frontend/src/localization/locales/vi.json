@@ -291,6 +291,7 @@
     "mentionedYou": "đã nhắc đến bạn: {{text}}",
     "interactedWithYourContent": "đã tương tác với nội dung của bạn",
     "autoPostCreated": "Hệ thống vừa đăng một bài viết tự động cho chiến dịch của bạn",
+    "organizationRejected": "Đơn đăng ký tổ chức của bạn đã bị từ chối. Bạn có thể đăng ký lại với thông tin cập nhật.",
     "title": "Thông báo",
     "markAllAsReadButton": "Đánh dấu tất cả đã đọc",
     "noNotifications": "Chưa có thông báo nào",
@@ -659,13 +660,14 @@
       "logo": "Logo",
       "cover": "Ảnh bìa",
       "proof": "Tài liệu chứng minh (giấy phép, chứng nhận...)",
-      "proofHint": "Tải lên ảnh scan các giấy tờ pháp lý. Chỉ admin mới xem được tài liệu này.",
+      "proofHint": "Tải lên ảnh scan hoặc PDF giấy tờ pháp lý. Chỉ admin mới xem được tài liệu này.",
       "submit": "Gửi đơn đăng ký",
       "submitting": "Đang gửi...",
       "errors": {
         "nameRequired": "Vui lòng nhập tên tổ chức",
         "walletRequired": "Vui lòng nhập địa chỉ ví",
         "walletInvalid": "Định dạng địa chỉ ví không hợp lệ",
+        "proofRequired": "Vui lòng tải lên ít nhất một tài liệu chứng minh",
         "submitFailed": "Gửi đơn đăng ký thất bại"
       },
       "successToast": "Đã gửi đơn đăng ký. Admin sẽ duyệt trong thời gian sớm nhất."

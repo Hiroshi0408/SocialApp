@@ -61,6 +61,11 @@ function ApplyOrganization() {
     return res?.url || "";
   }
 
+  async function uploadProof(file) {
+    const res = await uploadService.uploadDocument(file);
+    return res?.url || "";
+  }
+
   async function handleSubmit(e) {
     e.preventDefault();
     if (!form.name.trim()) return showError(t("organizations.apply.errors.nameRequired"));
@@ -69,13 +74,16 @@ function ApplyOrganization() {
     if (!/^0x[a-fA-F0-9]{40}$/.test(form.walletAddress.trim())) {
       return showError(t("organizations.apply.errors.walletInvalid"));
     }
+    if (proofFiles.length === 0) {
+      return showError(t("organizations.apply.errors.proofRequired"));
+    }
 
     setSubmitting(true);
     try {
       const [logoUrl, coverUrl, proofUrls] = await Promise.all([
         logoFile ? uploadOne(logoFile) : Promise.resolve(""),
         coverFile ? uploadOne(coverFile) : Promise.resolve(""),
-        Promise.all(proofFiles.map((f) => uploadOne(f))),
+        Promise.all(proofFiles.map((f) => uploadProof(f))),
       ]);
 
       const res = await organizationService.apply({
@@ -211,11 +219,12 @@ function ApplyOrganization() {
             </div>
 
             <div className="form-group">
-              <label>{t("organizations.apply.proof")}</label>
+              <label>{t("organizations.apply.proof")} *</label>
               <input
                 type="file"
-                accept="image/*"
+                accept="image/*,application/pdf"
                 multiple
+                required
                 onChange={(e) =>
                   setProofFiles(Array.from(e.target.files || []))
                 }

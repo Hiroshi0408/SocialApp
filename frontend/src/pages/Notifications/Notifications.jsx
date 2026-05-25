@@ -44,6 +44,8 @@ const getNotificationDestination = (notification) => {
       const postId = getNotificationPostId(notification);
       return postId ? `/post/${postId}` : null;
     }
+    case "organization_rejected":
+      return "/organizations/apply";
     case "follow":
     case "friend_request":
     case "friend_accept":
@@ -206,6 +208,8 @@ function Notifications() {
         // Hệ thống tạo post thay org owner — text đã được BE build sẵn theo loại
         // event (kickoff/funded/milestone). Không prefix sender vì recipient = sender.
         return notification.text || t("notificationsPage.autoPostCreated");
+      case "organization_rejected":
+        return notification.text || t("notificationsPage.organizationRejected");
       default:
         return `${sender} ${t("notificationsPage.interactedWithYourContent")}`;
     }

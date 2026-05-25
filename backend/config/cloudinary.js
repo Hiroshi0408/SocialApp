@@ -94,6 +94,40 @@ const uploadMedia = async (fileBuffer, mimetype, folder = "social-app") => {
   return uploadImage(fileBuffer, `${folder}/images`);
 };
 
+// Upload legal/proof documents (image or PDF)
+const uploadDocument = async (fileBuffer, folder = "social-app/documents") => {
+  try {
+    return new Promise((resolve, reject) => {
+      const uploadStream = cloudinary.uploader.upload_stream(
+        {
+          folder,
+          resource_type: "auto",
+        },
+        (error, result) => {
+          if (error) {
+            logger.error("Cloudinary document upload error:", error);
+            reject(error);
+          } else {
+            logger.info("Document uploaded to Cloudinary:", result.secure_url);
+            resolve({
+              url: result.secure_url,
+              publicId: result.public_id,
+              format: result.format,
+              resourceType: result.resource_type,
+              pages: result.pages,
+            });
+          }
+        }
+      );
+
+      uploadStream.end(fileBuffer);
+    });
+  } catch (error) {
+    logger.error("Document upload failed:", error);
+    throw error;
+  }
+};
+
 // Delete image from Cloudinary
 const deleteImage = async (publicId) => {
   try {
@@ -111,5 +145,6 @@ module.exports = {
   uploadImage,
   uploadVideo,
   uploadMedia,
+  uploadDocument,
   deleteImage,
 };

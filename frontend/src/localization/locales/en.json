@@ -291,6 +291,7 @@
     "mentionedYou": "mentioned you: {{text}}",
     "interactedWithYourContent": "interacted with your content",
     "autoPostCreated": "An automatic post has been published for your campaign",
+    "organizationRejected": "Your organization application was rejected. You can apply again with updated information.",
     "title": "Notifications",
     "markAllAsReadButton": "Mark all as read",
     "noNotifications": "No notifications yet",
@@ -659,13 +660,14 @@
       "logo": "Logo",
       "cover": "Cover image",
       "proof": "Proof documents (license, certificate...)",
-      "proofHint": "Upload scanned images of your legal documents. These are only visible to admin reviewers.",
+      "proofHint": "Upload scanned images or PDF legal documents. These are only visible to admin reviewers.",
       "submit": "Submit application",
       "submitting": "Submitting...",
       "errors": {
         "nameRequired": "Name is required",
         "walletRequired": "Wallet address is required",
         "walletInvalid": "Wallet address format is invalid",
+        "proofRequired": "Please upload at least one proof document",
         "submitFailed": "Failed to submit application"
       },
       "successToast": "Application submitted. Admin will review shortly."

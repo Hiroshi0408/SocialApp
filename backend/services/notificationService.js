@@ -158,7 +158,7 @@ class NotificationService {
     // sender = recipient = owner; vẫn cần noti có ý nghĩa).
     if (
       recipientId.toString() === senderId.toString() &&
-      type !== "auto_post"
+      !["auto_post", "organization_rejected"].includes(type)
     ) {
       return;
     }
@@ -188,10 +188,12 @@ class NotificationService {
     }
 
     await notification.populate("senderId", "username fullName avatar");
-    await notification.populate({
-      path: "targetId",
-      select: "image caption username fullName",
-    });
+    if (targetType !== "organization") {
+      await notification.populate({
+        path: "targetId",
+        select: "image caption username fullName",
+      });
+    }
 
     const formatted = this._format(notification.toObject());
 

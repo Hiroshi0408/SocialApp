@@ -88,6 +88,33 @@ const mediaUpload = multer({
   },
 });
 
+// Document upload config (organization proof: image or PDF)
+const documentUpload = multer({
+  storage: storage,
+  limits: {
+    fileSize: 15 * 1024 * 1024, // 15MB limit for proof documents
+  },
+  fileFilter: (req, file, cb) => {
+    const allowedTypes = [
+      "image/jpeg",
+      "image/jpg",
+      "image/png",
+      "image/gif",
+      "image/webp",
+      "application/pdf",
+    ];
+
+    if (allowedTypes.includes(file.mimetype)) {
+      cb(null, true);
+    } else {
+      cb(
+        new Error("Only images (JPEG, PNG, GIF, WebP) and PDF files are allowed"),
+        false,
+      );
+    }
+  },
+});
+
 // All routes require authentication
 router.use(authMiddleware);
 
@@ -113,6 +140,14 @@ router.post(
   uploadLimiter,
   mediaUpload.single("media"),
   uploadController.uploadMediaToCloudinary,
+);
+
+// Upload organization proof document
+router.post(
+  "/document",
+  uploadLimiter,
+  documentUpload.single("document"),
+  uploadController.uploadDocumentToCloudinary,
 );
 
 // Upload avatar

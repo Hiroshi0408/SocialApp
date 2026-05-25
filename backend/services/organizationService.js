@@ -1,5 +1,6 @@
 const organizationDAO = require("../dao/organizationDAO");
 const groupDAO = require("../dao/groupDAO");
+const notificationService = require("./notificationService");
 const AppError = require("../utils/AppError");
 const logger = require("../utils/logger");
 // Lazy require để tránh circular dependency (charityService → organizationDAO, organizationService → charityService)
@@ -64,6 +65,16 @@ const generateSlug = async (name) => {
 const isValidEthAddress = (addr) =>
   typeof addr === "string" && /^0x[a-fA-F0-9]{40}$/.test(addr);
 
+const normalizeDocuments = (documents) =>
+  Array.isArray(documents) ? documents.filter(Boolean) : [];
+
+const buildRejectNotificationText = (orgName, reason = "") => {
+  const trimmedReason = String(reason || "").trim();
+  return trimmedReason
+    ? `Đơn đăng ký tổ chức "${orgName}" đã bị từ chối. Lý do: ${trimmedReason}`
+    : `Đơn đăng ký tổ chức "${orgName}" đã bị từ chối. Bạn có thể cập nhật thông tin và đăng ký lại.`;
+};
+
 class OrganizationService {
   // User apply tạo Organization mới — status mặc định pending
   async apply(ownerId, data) {
@@ -85,6 +96,16 @@ class OrganizationService {
       throw new AppError("Invalid wallet address format", 400);
 
     const walletLower = walletAddress.toLowerCase();
+    const normalizedProofDocuments = normalizeDocuments(proofDocuments);
+    if (normalizedProofDocuments.length === 0) {
+      throw new AppError("Proof documents are required", 400);
+    }
+
+    // Dọn các application đã bị reject từ phiên bản cũ để user có thể nộp lại.
+    await organizationDAO.deleteMany({
+      status: "rejected",
+      $or: [{ owner: ownerId }, { walletAddress: walletLower }],
+    });
 
     // 1 ví chỉ map 1 org
     const existingWallet = await organizationDAO.findByWallet(walletLower, { lean: true });
@@ -107,7 +128,7 @@ class OrganizationService {
       coverImage,
       categories: Array.isArray(categories) ? categories : [],
       walletAddress: walletLower,
-      proofDocuments: Array.isArray(proofDocuments) ? proofDocuments : [],
+      proofDocuments: normalizedProofDocuments,
       contactEmail: contactEmail.trim(),
       website: website.trim(),
       owner: ownerId,
@@ -173,7 +194,7 @@ class OrganizationService {
 
   async getMine(ownerId) {
     const org = await organizationDAO.findOne(
-      { owner: ownerId, status: { $in: ["pending", "verified", "rejected"] } },
+      { owner: ownerId, status: { $in: ["pending", "verified"] } },
       { populate: [POPULATE_OWNER, POPULATE_VERIFIER] }
     );
     if (!org) return null;
@@ -206,7 +227,13 @@ class OrganizationService {
           throw new AppError("Wallet already linked to another organization", 400);
         patch.walletAddress = walletLower;
       }
-      if (data.proofDocuments !== undefined) patch.proofDocuments = data.proofDocuments;
+      if (data.proofDocuments !== undefined) {
+        const normalizedProofDocuments = normalizeDocuments(data.proofDocuments);
+        if (normalizedProofDocuments.length === 0) {
+          throw new AppError("Proof documents are required", 400);
+        }
+        patch.proofDocuments = normalizedProofDocuments;
+      }
     }
 
     const updated = await organizationDAO.updateById(orgId, patch);
@@ -286,14 +313,29 @@ class OrganizationService {
     if (org.status === "verified")
       throw new AppError("Cannot reject a verified organization", 400);
 
-    const updated = await organizationDAO.updateById(orgId, {
+    const rawOrg =
+      typeof org.toObject === "function" ? org.toObject() : { ...org };
+    const rejectedSnapshot = {
+      ...rawOrg,
       status: "rejected",
       verifiedBy: adminId,
       rejectedReason: reason,
+    };
+
+    await notificationService.createNotification({
+      recipientId: org.owner,
+      senderId: adminId,
+      type: "organization_rejected",
+      targetType: "organization",
+      targetId: org._id,
+      text: buildRejectNotificationText(org.name, reason),
     });
 
-    logger.info(`Organization rejected - id=${orgId}, admin=${adminId}`);
-    return formatOrganization(updated, { isAdmin: true });
+    const deleted = await organizationDAO.deleteById(orgId);
+    if (!deleted) throw new AppError("Organization not found", 404);
+
+    logger.info(`Organization rejected and deleted - id=${orgId}, admin=${adminId}`);
+    return formatOrganization(rejectedSnapshot, { isAdmin: true });
   }
 }
 
