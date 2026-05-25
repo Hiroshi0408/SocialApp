@@ -94,6 +94,15 @@ const getCloudinaryDownloadUrl = (url) => {
   return url.replace("/upload/", "/upload/fl_attachment/");
 };
 
+const getCloudinaryPdfPreviewUrl = (url) => {
+  if (!url || !isPdfUrl(url) || !/res\.cloudinary\.com/i.test(url)) {
+    return "";
+  }
+  // Cloudinary có thể chặn delivery PDF gốc, nhưng vẫn cho render page đầu
+  // thành ảnh. Dùng ảnh preview để admin xem được tài liệu trong dashboard.
+  return url.replace("/upload/", "/upload/pg_1,f_jpg,w_1000/");
+};
+
 // % milestone trên goal — BigInt math để khỏi mất precision khi goal lớn.
 // Trả Number 2 chữ số thập phân, vd 33.33.
 const milestonePercent = (amountWei, goalWei) => {
@@ -1299,7 +1308,11 @@ export default function AdminDashboard() {
                                 const pdf = isPdfUrl(url);
                                 const label = img ? "Image" : pdf ? "PDF" : "File";
                                 const fileName = getDocumentName(url, `Proof ${i + 1}`);
-                                const downloadUrl = getCloudinaryDownloadUrl(url);
+                                const pdfPreviewUrl = getCloudinaryPdfPreviewUrl(url);
+                                const reviewUrl = pdfPreviewUrl || url;
+                                const downloadUrl = getCloudinaryDownloadUrl(
+                                  pdfPreviewUrl || url
+                                );
                                 return (
                                   <div className="admin-doc-card" key={i}>
                                     <div className="admin-doc-card-head">
@@ -1308,12 +1321,12 @@ export default function AdminDashboard() {
                                       </span>
                                       <span className="admin-doc-actions">
                                         <a
-                                          href={url}
+                                          href={reviewUrl}
                                           target="_blank"
                                           rel="noopener noreferrer"
                                           className="admin-link"
                                         >
-                                          Open
+                                          {pdfPreviewUrl ? "Open preview" : "Open"}
                                         </a>
                                         {downloadUrl && (
                                           <a
@@ -1322,7 +1335,7 @@ export default function AdminDashboard() {
                                             rel="noopener noreferrer"
                                             className="admin-link"
                                           >
-                                            Download
+                                            {pdfPreviewUrl ? "Download preview" : "Download"}
                                           </a>
                                         )}
                                       </span>
@@ -1331,6 +1344,12 @@ export default function AdminDashboard() {
                                       {img ? (
                                         <img
                                           src={url}
+                                          alt={`Proof ${i + 1}`}
+                                          loading="lazy"
+                                        />
+                                      ) : pdfPreviewUrl ? (
+                                        <img
+                                          src={pdfPreviewUrl}
                                           alt={`Proof ${i + 1}`}
                                           loading="lazy"
                                         />
